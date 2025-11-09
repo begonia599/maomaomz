@@ -2834,7 +2834,8 @@ function saveToChatVar() {
 
 function loadFromChatVar() {
   try {
-    const chatId = SillyTavern.getCurrentChatId();
+    // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
+    const chatId = SillyTavern.chatId;
     console.log('正在加载数据，聊天 ID:', chatId);
 
     let data;
@@ -2868,8 +2869,9 @@ function loadFromChatVar() {
 // 立即加载数据
 loadFromChatVar();
 
+// 插件环境：监听 SillyTavern.chatId 属性变化
 watch(
-  () => SillyTavern.getCurrentChatId(),
+  () => SillyTavern.chatId,
   () => {
     loadFromChatVar();
     currentId.value = '';

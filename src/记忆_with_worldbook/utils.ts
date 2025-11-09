@@ -84,11 +84,12 @@ export function getScriptIdSafe(): string {
 }
 
 /**
- * 安全获取聊天 ID
+ * 安全获取聊天 ID（插件环境）
  */
 export function getChatIdSafe(): string {
   try {
-    return SillyTavern.getCurrentChatId();
+    // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
+    return SillyTavern.chatId || '';
   } catch (error) {
     console.error('获取聊天 ID 失败:', error);
     return '';

@@ -288,7 +288,8 @@ $(() => {
             return;
           }
 
-          const chat_id = SillyTavern.getCurrentChatId();
+          // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
+          const chat_id = SillyTavern.chatId;
           console.log('获取到的聊天ID:', chat_id, '类型:', typeof chat_id);
 
           if (!chat_id && chat_id !== 0) {

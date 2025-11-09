@@ -1673,7 +1673,7 @@ const handleImportFromTavern = async () => {
 
     // 步骤 1: 获取当前配置文件名称
     console.log('1️⃣ 执行 /profile 获取当前配置文件...');
-    const currentProfileResult = await triggerSlash('/profile', '');
+    const currentProfileResult = await triggerSlash('/profile');
     console.log('当前配置文件返回:', currentProfileResult);
 
     // 如果没有配置文件，尝试直接读取全局配置
@@ -1732,7 +1732,7 @@ const handleImportFromTavern = async () => {
     const profileName = currentProfileResult.trim();
     console.log(`2️⃣ 获取配置文件详情: ${profileName}`);
 
-    const profileDetailsResult = await triggerSlash('/profile-get', profileName);
+    const profileDetailsResult = await triggerSlash(`/profile-get ${profileName}`);
     console.log('配置文件详情返回:', profileDetailsResult);
 
     // 解析 JSON
