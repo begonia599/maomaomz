@@ -75,7 +75,6 @@
           <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">API 提供商</label>
           <select
             v-model="settings.api_provider"
-            @change="handleProviderChange"
             style="
               width: 100%;
               padding: 10px 12px;
@@ -87,6 +86,7 @@
               transition: border-color 0.2s;
               cursor: pointer;
             "
+            @change="handleProviderChange"
           >
             <option value="openai">OpenAI</option>
             <option value="gemini">Gemini AI Studio</option>
@@ -1329,7 +1329,7 @@ const headerTemplates = ref<Array<{ name: string; headers: string }>>([]);
 const selectedTemplate = ref<string>('');
 const currentTemplate = ref<{ name: string; headers: string }>({ name: '', headers: '' });
 
-// 生成状态管理
+// 生成状态管理（插件环境 - 使用 localStorage）
 const loadGenerationStatus = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -1337,10 +1337,29 @@ const loadGenerationStatus = () => {
       console.warn('script_id 为空，无法加载生成状态');
       return;
     }
-    const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-    is_summarizing.value = scriptVars.is_summarizing || false;
-    is_generating_table.value = scriptVars.is_generating_table || false;
-    console.log('已加载生成状态:', { summarizing: is_summarizing.value, generating_table: is_generating_table.value });
+
+    // 插件环境：从 localStorage 读取
+    const storageKey = `${scriptId}_generation_status`;
+    const savedData = localStorage.getItem(storageKey);
+
+    if (savedData) {
+      try {
+        const status = JSON.parse(savedData);
+        is_summarizing.value = status.is_summarizing || false;
+        is_generating_table.value = status.is_generating_table || false;
+        console.log('✅ 从 localStorage 加载生成状态:', {
+          summarizing: is_summarizing.value,
+          generating_table: is_generating_table.value,
+        });
+      } catch (parseError) {
+        console.error('解析生成状态失败:', parseError);
+        is_summarizing.value = false;
+        is_generating_table.value = false;
+      }
+    } else {
+      is_summarizing.value = false;
+      is_generating_table.value = false;
+    }
   } catch (error) {
     console.error('加载生成状态失败:', error);
     is_summarizing.value = false;
@@ -1355,14 +1374,15 @@ const saveGenerationStatus = () => {
       console.warn('script_id 为空，无法保存生成状态');
       return;
     }
-    insertOrAssignVariables(
-      {
-        is_summarizing: is_summarizing.value,
-        is_generating_table: is_generating_table.value,
-      },
-      { type: 'script', script_id: scriptId },
-    );
-    console.log('已保存生成状态');
+
+    // 插件环境：保存到 localStorage
+    const storageKey = `${scriptId}_generation_status`;
+    const status = {
+      is_summarizing: is_summarizing.value,
+      is_generating_table: is_generating_table.value,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(status));
+    console.log('✅ 已保存生成状态到 localStorage');
   } catch (error) {
     console.error('保存生成状态失败:', error);
   }
@@ -1377,7 +1397,7 @@ const stopGeneration = () => {
   }
 };
 
-// 表格列头模板管理
+// 表格列头模板管理（插件环境 - 使用 localStorage）
 const loadHeaderTemplates = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -1385,15 +1405,27 @@ const loadHeaderTemplates = () => {
       console.warn('script_id 为空，无法加载列头模板');
       return;
     }
-    const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-    // 兼容 header_templates 可能为 null、undefined、字符串等类型
-    let templates = scriptVars.header_templates;
-    // 将 null、undefined 或不为数组的情况都归为 []
-    if (!Array.isArray(templates)) {
-      templates = [];
+
+    // 插件环境：从 localStorage 读取
+    const storageKey = `${scriptId}_header_templates`;
+    const savedData = localStorage.getItem(storageKey);
+
+    if (savedData) {
+      try {
+        let templates = JSON.parse(savedData);
+        // 将 null、undefined 或不为数组的情况都归为 []
+        if (!Array.isArray(templates)) {
+          templates = [];
+        }
+        headerTemplates.value = templates;
+        console.log('✅ 从 localStorage 加载列头模板:', headerTemplates.value.length, '个');
+      } catch (parseError) {
+        console.error('解析列头模板失败:', parseError);
+        headerTemplates.value = [];
+      }
+    } else {
+      headerTemplates.value = [];
     }
-    headerTemplates.value = templates;
-    console.log('已加载列头模板:', headerTemplates.value.length, '个');
   } catch (error) {
     console.error('加载列头模板失败:', error);
     headerTemplates.value = [];
@@ -1407,11 +1439,11 @@ const saveHeaderTemplates = () => {
       console.warn('script_id 为空，无法保存列头模板');
       return;
     }
-    insertOrAssignVariables(klona({ header_templates: headerTemplates.value }), {
-      type: 'script',
-      script_id: scriptId,
-    });
-    console.log('已保存列头模板');
+
+    // 插件环境：保存到 localStorage
+    const storageKey = `${scriptId}_header_templates`;
+    localStorage.setItem(storageKey, JSON.stringify(headerTemplates.value));
+    console.log('✅ 已保存列头模板到 localStorage');
   } catch (error) {
     console.error('保存列头模板失败:', error);
   }
@@ -1468,7 +1500,7 @@ const deleteTemplate = () => {
   }
 };
 
-// 从酒馆变量加载隐藏楼层数据
+// 从 localStorage 加载隐藏楼层数据（插件环境）
 const loadHiddenMessages = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -1478,31 +1510,28 @@ const loadHiddenMessages = () => {
     }
     console.log('脚本ID:', scriptId);
 
-    const saved = getVariables({ type: 'script', script_id: scriptId });
-    console.log('从酒馆变量加载的数据:', saved);
-    console.log('检查 hidden_messages 字段:', saved?.hidden_messages);
+    // 插件环境：从 localStorage 加载
+    const storageKey = `${scriptId}_hidden_messages`;
+    const savedData = localStorage.getItem(storageKey);
 
-    if (saved && saved.hidden_messages) {
-      hidden_messages.value = saved.hidden_messages;
-      console.log('成功加载隐藏楼层数据:', hidden_messages.value.length, '个');
-    } else {
-      console.log('没有找到隐藏楼层数据，尝试其他字段名...');
-      // 尝试其他可能的字段名
-      const possibleFields = ['hiddenMessages', 'hidden_floors', 'hiddenFloors', 'floor_data'];
-      for (const field of possibleFields) {
-        if (saved && saved[field]) {
-          console.log(`找到字段 ${field}:`, saved[field]);
-          hidden_messages.value = saved[field];
-          break;
-        }
+    if (savedData) {
+      try {
+        hidden_messages.value = JSON.parse(savedData);
+        console.log('✅ 从 localStorage 加载隐藏楼层数据:', hidden_messages.value.length, '个');
+      } catch (parseError) {
+        console.error('解析隐藏楼层数据失败:', parseError);
+        hidden_messages.value = [];
       }
+    } else {
+      console.log('📝 localStorage 中没有隐藏楼层数据');
+      hidden_messages.value = [];
     }
   } catch (error) {
     console.error('加载隐藏楼层数据失败:', error);
   }
 };
 
-// 保存隐藏楼层数据到酒馆变量
+// 保存隐藏楼层数据到 localStorage（插件环境）
 const saveHiddenMessages = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -1513,20 +1542,11 @@ const saveHiddenMessages = () => {
     console.log('保存到脚本ID:', scriptId);
     console.log('要保存的数据:', klona(hidden_messages.value));
 
-    const dataToSave = {
-      hidden_messages: hidden_messages.value,
-    };
-    console.log('准备保存的数据对象:', klona(dataToSave));
+    // 插件环境：保存到 localStorage
+    const storageKey = `${scriptId}_hidden_messages`;
+    localStorage.setItem(storageKey, JSON.stringify(hidden_messages.value));
 
-    insertOrAssignVariables(klona(dataToSave), { type: 'script', script_id: scriptId });
-    console.log('成功保存隐藏楼层数据:', hidden_messages.value.length, '个');
-
-    // 验证保存是否成功
-    setTimeout(() => {
-      const saved = getVariables({ type: 'script', script_id: scriptId });
-      console.log('验证保存结果:', saved);
-      console.log('验证 hidden_messages 字段:', saved?.hidden_messages);
-    }, 100);
+    console.log('✅ 成功保存隐藏楼层数据到 localStorage:', hidden_messages.value.length, '个');
   } catch (error) {
     console.error('保存隐藏楼层数据失败:', error);
   }
@@ -1993,10 +2013,12 @@ const handle_summarize = async () => {
 
     console.log('总结完成:', summary);
 
-    // 保存总结结果到脚本变量
+    // 保存总结结果（插件环境 - 使用 localStorage）
     const scriptId = getScriptIdSafe();
     if (scriptId) {
-      insertOrAssignVariables(klona({ last_summary: summary }), { type: 'script', script_id: scriptId });
+      const storageKey = `${scriptId}_last_summary`;
+      localStorage.setItem(storageKey, JSON.stringify({ last_summary: summary }));
+      console.log('✅ 总结已保存到 localStorage');
     }
 
     // 保存到当前聊天的总结历史
@@ -2311,12 +2333,25 @@ ${messagesText}
       data: aiTableData.data,
     };
 
-    // 保存表格到聊天变量
+    // 保存表格（插件环境 - 使用 localStorage，按聊天ID分别存储）
     const chat_id = getChatIdSafe();
     if (chat_id) {
-      const chat_vars = getVariables({ type: 'chat' });
-      const table_history = chat_vars.table_history || [];
+      const scriptId = getScriptIdSafe();
+      const storageKey = `${scriptId}_table_history_${chat_id}`;
 
+      // 从 localStorage 读取当前聊天的表格历史
+      let table_history = [];
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        try {
+          table_history = JSON.parse(savedData);
+        } catch (e) {
+          console.error('解析表格历史失败:', e);
+          table_history = [];
+        }
+      }
+
+      // 添加新表格
       table_history.push({
         start_id: settings.value.table_start_message_id,
         end_id: settings.value.table_end_message_id,
@@ -2324,7 +2359,9 @@ ${messagesText}
         data: tableData.data,
       });
 
-      insertOrAssignVariables(klona({ table_history }), { type: 'chat' });
+      // 保存回 localStorage
+      localStorage.setItem(storageKey, JSON.stringify(table_history));
+      console.log('✅ 表格已保存到 localStorage，chat_id:', chat_id);
 
       progressDialogRef.value?.setProgress(100);
       progressDialogRef.value?.setMessage('✅ 表格生成完成！');
@@ -2384,14 +2421,30 @@ const handle_create_table = () => {
       data: [], // 空数据，用户可以手动填充
     };
 
-    // 保存表格到聊天变量
+    // 保存表格（插件环境 - 使用 localStorage，按聊天ID分别存储）
     const chat_id = getChatIdSafe();
     if (chat_id) {
-      const chat_vars = getVariables({ type: 'chat' });
-      const table_history = chat_vars.table_history || [];
+      const scriptId = getScriptIdSafe();
+      const storageKey = `${scriptId}_table_history_${chat_id}`;
 
+      // 从 localStorage 读取当前聊天的表格历史
+      let table_history = [];
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        try {
+          table_history = JSON.parse(savedData);
+        } catch (e) {
+          console.error('解析表格历史失败:', e);
+          table_history = [];
+        }
+      }
+
+      // 添加新表格
       table_history.push(emptyTableData);
-      insertOrAssignVariables(klona({ table_history }), { type: 'chat' });
+
+      // 保存回 localStorage
+      localStorage.setItem(storageKey, JSON.stringify(table_history));
+      console.log('✅ 空表格已保存到 localStorage，chat_id:', chat_id);
 
       window.toastr.success(`空表格创建成功！列头：${headers.join(', ')}`);
       console.log('空表格已保存到聊天变量:', emptyTableData);

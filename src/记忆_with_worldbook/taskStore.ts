@@ -23,18 +23,25 @@ export interface Task {
   error?: string;
 }
 
-// 从酒馆变量加载任务
+// 从 localStorage 加载任务（插件环境）
 const loadTasksFromVariables = (): Task[] => {
   try {
     const scriptId = getScriptIdSafe();
     if (!scriptId) return [];
 
-    const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-    const savedTasks = scriptVars?.tasks;
+    const storageKey = `${scriptId}_tasks`;
+    const savedDataString = localStorage.getItem(storageKey);
 
-    if (Array.isArray(savedTasks)) {
-      console.log('📥 [任务管理] 从酒馆变量加载任务:', savedTasks.length);
-      return savedTasks;
+    if (savedDataString) {
+      try {
+        const savedTasks = JSON.parse(savedDataString);
+        if (Array.isArray(savedTasks)) {
+          console.log('📥 [任务管理] 从 localStorage 加载任务:', savedTasks.length);
+          return savedTasks;
+        }
+      } catch (parseError) {
+        console.error('❌ [任务管理] 解析任务数据失败:', parseError);
+      }
     }
   } catch (error) {
     console.error('❌ [任务管理] 加载任务失败:', error);
@@ -42,7 +49,7 @@ const loadTasksFromVariables = (): Task[] => {
   return [];
 };
 
-// 保存任务到酒馆变量
+// 保存任务到 localStorage（插件环境）
 const saveTasksToVariables = (tasks: Task[]) => {
   try {
     const scriptId = getScriptIdSafe();
@@ -51,8 +58,9 @@ const saveTasksToVariables = (tasks: Task[]) => {
     // 只保存最近50个任务，避免数据过大
     const tasksToSave = tasks.slice(0, 50);
 
-    insertOrAssignVariables({ tasks: tasksToSave }, { type: 'script', script_id: scriptId });
-    console.log('💾 [任务管理] 任务已保存到酒馆变量:', tasksToSave.length);
+    const storageKey = `${scriptId}_tasks`;
+    localStorage.setItem(storageKey, JSON.stringify(tasksToSave));
+    console.log('💾 [任务管理] 任务已保存到 localStorage:', tasksToSave.length);
   } catch (error) {
     console.error('❌ [任务管理] 保存任务失败:', error);
   }

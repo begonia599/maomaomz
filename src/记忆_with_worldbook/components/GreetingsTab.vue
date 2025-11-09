@@ -938,10 +938,24 @@ async function loadConfig() {
     const allGreetings = [character.first_mes, ...(character.data?.alternate_greetings || [])];
     console.log('找到', allGreetings.length, '个开场白');
 
-    // 从角色卡变量加载配置
-    const savedConfig = getVariables({ type: 'character' });
-    const configs = savedConfig?.greetings_config || [];
-    const savedUIConfig = savedConfig?.ui_config;
+    // 从 localStorage 加载配置（插件环境）
+    const scriptId = getScriptIdSafe();
+    const storageKey = `${scriptId}_greetings_${character.avatar}`;
+    
+    let configs = [];
+    let savedUIConfig = null;
+    
+    const savedData = localStorage.getItem(storageKey);
+    if (savedData) {
+      try {
+        const savedConfig = JSON.parse(savedData);
+        configs = savedConfig?.greetings_config || [];
+        savedUIConfig = savedConfig?.ui_config;
+        console.log('✅ 从 localStorage 加载开场白配置');
+      } catch (e) {
+        console.error('解析开场白配置失败:', e);
+      }
+    }
 
     // 初始化开场白配置
     greetings.value = allGreetings.map((_, index) => {
@@ -973,16 +987,25 @@ async function loadConfig() {
   }
 }
 
-// 保存配置
+// 保存配置（插件环境 - 使用 localStorage）
 function saveConfig() {
   try {
-    replaceVariables(
-      {
-        greetings_config: klona(greetings.value),
-        ui_config: klona(uiConfig.value),
-      },
-      { type: 'character' },
-    );
+    const character = getCurrentCharacter();
+    if (!character) {
+      console.warn('无法保存：未找到角色卡');
+      return;
+    }
+    
+    const scriptId = getScriptIdSafe();
+    const storageKey = `${scriptId}_greetings_${character.avatar}`;
+    
+    const configData = {
+      greetings_config: klona(greetings.value),
+      ui_config: klona(uiConfig.value),
+    };
+    
+    localStorage.setItem(storageKey, JSON.stringify(configData));
+    console.log('✅ 已保存开场白配置到 localStorage');
     updatePreview(); // 保存后更新预览
   } catch (error) {
     console.error('保存配置失败:', error);

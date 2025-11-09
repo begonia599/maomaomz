@@ -385,28 +385,33 @@ const showModify = ref(false);
 const modifyInstruction = ref('');
 const previewFrame = ref<HTMLIFrameElement | null>(null);
 
-// 从酒馆变量加载数据
+// 从 localStorage 加载数据（插件环境）
 const loadData = () => {
   try {
     const scriptId = getScriptIdSafe();
     if (!scriptId) return;
 
-    const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-    const savedData = scriptVars?.regex_ui_generator;
+    const storageKey = `${scriptId}_regex_ui_generator`;
+    const savedDataString = localStorage.getItem(storageKey);
 
-    if (savedData) {
-      triggerKeyword.value = savedData.triggerKeyword || '【开场白】';
-      interfaceDescription.value = savedData.interfaceDescription || '';
-      generatedCode.value = savedData.generatedCode || '';
-      generatedRegex.value = savedData.generatedRegex || '';
-      console.log('✅ [界面生成器] 数据已加载');
+    if (savedDataString) {
+      try {
+        const savedData = JSON.parse(savedDataString);
+        triggerKeyword.value = savedData.triggerKeyword || '【开场白】';
+        interfaceDescription.value = savedData.interfaceDescription || '';
+        generatedCode.value = savedData.generatedCode || '';
+        generatedRegex.value = savedData.generatedRegex || '';
+        console.log('✅ [界面生成器] 数据已从 localStorage 加载');
+      } catch (parseError) {
+        console.error('❌ [界面生成器] 解析数据失败:', parseError);
+      }
     }
   } catch (error) {
     console.error('❌ [界面生成器] 加载数据失败:', error);
   }
 };
 
-// 保存数据到酒馆变量
+// 保存数据到 localStorage（插件环境）
 const saveData = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -419,8 +424,9 @@ const saveData = () => {
       generatedRegex: generatedRegex.value,
     };
 
-    insertOrAssignVariables({ regex_ui_generator: klona(dataToSave) }, { type: 'script', script_id: scriptId });
-    console.log('💾 [界面生成器] 数据已保存');
+    const storageKey = `${scriptId}_regex_ui_generator`;
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    console.log('💾 [界面生成器] 数据已保存到 localStorage');
   } catch (error) {
     console.error('❌ [界面生成器] 保存数据失败:', error);
   }

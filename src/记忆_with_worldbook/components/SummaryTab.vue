@@ -614,7 +614,7 @@ const copySummary = (content: string) => {
   copyToClipboard(content, '总结已复制到剪贴板');
 };
 
-// 删除总结
+// 删除总结（插件环境 - 使用 localStorage）
 const deleteSummary = (index: number) => {
   if (confirm('确定要删除这条总结吗？')) {
     try {
@@ -625,7 +625,13 @@ const deleteSummary = (index: number) => {
       }
 
       summary_history.value.splice(index, 1);
-      insertOrAssignVariables({ summary_history: summary_history.value }, { type: 'chat' });
+      
+      // 保存到 localStorage（按聊天ID存储）
+      const scriptId = getScriptIdSafe();
+      const storageKey = `${scriptId}_summary_history_${chat_id}`;
+      localStorage.setItem(storageKey, JSON.stringify(summary_history.value));
+      console.log('✅ 总结已删除并保存到 localStorage');
+      
       window.toastr.success('总结已删除');
     } catch (error) {
       console.error('删除总结失败:', error);
