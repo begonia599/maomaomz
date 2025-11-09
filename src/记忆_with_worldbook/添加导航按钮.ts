@@ -152,11 +152,29 @@ $(() => {
       }
     }, 2000);
 
-    // 监听酒馆的各种可能导致UI更新的事件
-    if (typeof eventOn === 'function') {
+    // 监听酒馆的各种可能导致UI更新的事件（插件环境 - 使用 SillyTavern.eventSource）
+    if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
       try {
         // 监听聊天变化
-        eventOn(tavern_events.CHAT_CHANGED, () => {
+        SillyTavern.eventSource.on(SillyTavern.eventTypes.CHAT_CHANGED, () => {
+          console.log('聊天变化，检查按钮...');
+          setTimeout(() => {
+            const button = $('#memoryNavButton');
+            if (button.length === 0 && !isAdding) {
+              console.log('聊天变化后按钮消失，重新添加...');
+              addNavButton();
+            }
+          }, 500);
+        });
+      } catch (e) {
+        console.log('无法监听事件:', e);
+      }
+    } else if (typeof (window as any).TavernHelper !== 'undefined' && typeof (window as any).TavernHelper.eventOn === 'function') {
+      // 降级：使用 TavernHelper (酒馆助手环境)
+      try {
+        const TavernHelper = (window as any).TavernHelper;
+        const tavern_events = (window as any).tavern_events;
+        TavernHelper.eventOn(tavern_events.CHAT_CHANGED, () => {
           console.log('聊天变化，检查按钮...');
           setTimeout(() => {
             const button = $('#memoryNavButton');

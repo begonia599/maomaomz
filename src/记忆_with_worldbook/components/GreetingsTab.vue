@@ -906,25 +906,24 @@ const progressWithElapsedTime = computed(() => {
   };
 });
 
-// 获取当前角色卡（插件环境）
+// 获取当前角色卡（插件环境 - 使用 TavernHelper）
 function getCurrentCharacter() {
   try {
-    // 插件环境：尝试从 SillyTavern API 获取
-    if (typeof SillyTavern !== 'undefined') {
-      // 尝试访问当前角色数据
-      const charData = (SillyTavern as any).getContext?.()?.characters?.[0];
-      if (charData) {
-        console.log('找到角色卡:', charData.name);
-        return charData;
+    // 插件环境：优先使用 TavernHelper 接口
+    if (typeof (window as any).TavernHelper !== 'undefined') {
+      const char = (window as any).TavernHelper.getCharData('current');
+      if (char) {
+        console.log('找到角色卡 (TavernHelper):', char.name);
+        return char;
       }
     }
     
-    // 如果全局API可用（Tavern Helper环境）
-    if (typeof (window as any).getCharData === 'function') {
-      const char = (window as any).getCharData('current');
-      if (char) {
-        console.log('找到角色卡 (Tavern Helper):', char.name);
-        return char;
+    // 降级：尝试直接从 SillyTavern API 获取
+    if (typeof SillyTavern !== 'undefined') {
+      const charData = (SillyTavern as any).getContext?.()?.characters?.[0];
+      if (charData) {
+        console.log('找到角色卡 (SillyTavern):', charData.name);
+        return charData;
       }
     }
     

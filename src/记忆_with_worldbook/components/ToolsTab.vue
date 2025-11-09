@@ -2424,16 +2424,16 @@ const editingEntryUid = ref<number | null>(null);
 // 标志位：是否已完成初始加载（避免加载时触发保存）
 const isDataLoaded = ref(false);
 
-// 加载可用的世界书列表（插件环境可能不支持）
+// 加载可用的世界书列表（插件环境使用 TavernHelper）
 const loadAvailableWorldbooks = () => {
   try {
-    // 插件环境：getWorldbookNames 可能不可用，使用空数组
-    if (typeof getWorldbookNames !== 'undefined') {
-      availableWorldbooks.value = getWorldbookNames();
-      console.log('✅ 已加载世界书列表:', availableWorldbooks.value);
+    // 插件环境：优先使用 TavernHelper.getWorldbookNames()
+    if (typeof (window as any).TavernHelper !== 'undefined' && typeof (window as any).TavernHelper.getWorldbookNames === 'function') {
+      availableWorldbooks.value = (window as any).TavernHelper.getWorldbookNames();
+      console.log('✅ 已加载世界书列表 (TavernHelper):', availableWorldbooks.value);
     } else {
       availableWorldbooks.value = [];
-      console.warn('⚠️ 插件环境不支持 getWorldbookNames，世界书功能受限');
+      console.warn('⚠️ TavernHelper 不可用，世界书功能受限');
     }
   } catch (error) {
     console.error('❌ 加载世界书列表失败:', error);
