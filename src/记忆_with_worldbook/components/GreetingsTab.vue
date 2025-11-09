@@ -918,7 +918,7 @@ function getCurrentCharacter() {
         return charData;
       }
     }
-    
+
     // 如果全局API可用（Tavern Helper环境）
     if (typeof (window as any).getCharData === 'function') {
       const char = (window as any).getCharData('current');
@@ -927,7 +927,7 @@ function getCurrentCharacter() {
         return char;
       }
     }
-    
+
     console.log('未找到角色卡');
     return null;
   } catch (error) {
@@ -1173,7 +1173,7 @@ ${greetingContent}
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${settings.value.api_key}`,
+        Authorization: `Bearer ${settings.value.api_key}`,
       },
       body: JSON.stringify({
         model: settings.value.model,
@@ -1309,7 +1309,7 @@ ${requirement}
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${settings.value.api_key}`,
+        Authorization: `Bearer ${settings.value.api_key}`,
       },
       body: JSON.stringify({
         model: settings.value.model,
@@ -1586,7 +1586,7 @@ ${switchGreetingCode}
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${settings.value.api_key}`,
+        Authorization: `Bearer ${settings.value.api_key}`,
       },
       body: JSON.stringify({
         model: settings.value.model,
