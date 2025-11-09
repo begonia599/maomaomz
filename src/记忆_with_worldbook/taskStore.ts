@@ -28,10 +28,10 @@ const loadTasksFromVariables = (): Task[] => {
   try {
     const scriptId = getScriptIdSafe();
     if (!scriptId) return [];
-    
+
     const scriptVars = getVariables({ type: 'script', script_id: scriptId });
     const savedTasks = scriptVars?.tasks;
-    
+
     if (Array.isArray(savedTasks)) {
       console.log('📥 [任务管理] 从酒馆变量加载任务:', savedTasks.length);
       return savedTasks;
@@ -47,10 +47,10 @@ const saveTasksToVariables = (tasks: Task[]) => {
   try {
     const scriptId = getScriptIdSafe();
     if (!scriptId) return;
-    
+
     // 只保存最近50个任务，避免数据过大
     const tasksToSave = tasks.slice(0, 50);
-    
+
     insertOrAssignVariables({ tasks: tasksToSave }, { type: 'script', script_id: scriptId });
     console.log('💾 [任务管理] 任务已保存到酒馆变量:', tasksToSave.length);
   } catch (error) {
@@ -60,11 +60,15 @@ const saveTasksToVariables = (tasks: Task[]) => {
 
 export const useTaskStore = defineStore('tasks', () => {
   const tasks = ref<Task[]>(loadTasksFromVariables());
-  
+
   // 监听任务变化，自动保存
-  watch(tasks, (newTasks) => {
-    saveTasksToVariables(newTasks);
-  }, { deep: true });
+  watch(
+    tasks,
+    newTasks => {
+      saveTasksToVariables(newTasks);
+    },
+    { deep: true },
+  );
 
   // 创建任务
   const createTask = (type: TaskType, title: string): string => {
@@ -187,4 +191,3 @@ export const useTaskStore = defineStore('tasks', () => {
     runningTaskCount,
   };
 });
-

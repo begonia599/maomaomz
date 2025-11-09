@@ -285,22 +285,22 @@ $(() => {
       }
 
       // 暴露调试函数到全局
-      
+
       // 1. 重置起始楼层 - 将当前聊天的auto_summary_start_id重置为当前楼层
       (window as any).smartResetChat = () => {
         try {
           console.log('🔄 开始智能重置起始楼层...');
-          
+
           // 检查必要的API
           if (typeof SillyTavern === 'undefined') {
             console.error('❌ SillyTavern API 不可用');
             window.toastr.error('SillyTavern API 不可用');
             return;
           }
-          
+
           const chat_id = SillyTavern.getCurrentChatId();
           console.log('获取到的聊天ID:', chat_id, '类型:', typeof chat_id);
-          
+
           if (!chat_id && chat_id !== 0) {
             console.error('❌ 无法获取当前聊天ID，可能未打开任何聊天');
             window.toastr.error('请先打开一个聊天');
@@ -309,10 +309,10 @@ $(() => {
 
           const lastMessageId = getLastMessageId();
           console.log('最新消息ID:', lastMessageId);
-          
+
           const messages = getChatMessages(`0-${lastMessageId}`);
           console.log('获取到的消息数量:', messages?.length);
-          
+
           if (!messages || messages.length === 0) {
             console.warn('⚠️ 当前聊天没有消息');
             window.toastr.warning('当前聊天没有消息');
@@ -320,7 +320,7 @@ $(() => {
           }
 
           const current_floor = lastMessageId;
-          
+
           // 将起始楼层重置为当前楼层
           try {
             insertOrAssignVariables({ auto_summary_start_id: current_floor }, { type: 'chat' });
@@ -329,17 +329,16 @@ $(() => {
             console.error('❌ 写入变量失败:', varError);
             throw new Error('写入变量失败: ' + (varError as Error).message);
           }
-          
+
           console.log(`✅ 起始楼层已重置为: ${current_floor}`);
           window.toastr.success(`起始楼层已重置为第 ${current_floor} 层`);
-          
+
           // 输出详细信息
           console.log('重置详情:', {
             聊天ID: String(chat_id),
             当前楼层: current_floor,
             消息数量: messages.length,
           });
-          
         } catch (error) {
           console.error('❌ 重置起始楼层失败:', error);
           console.error('错误堆栈:', (error as Error).stack);
@@ -351,29 +350,29 @@ $(() => {
       (window as any).testCompleteAutoSummary = () => {
         try {
           console.log('🧪 开始测试完整自动总结流程...');
-          
+
           const store = useSettingsStore();
           const settings = store.settings;
-          
+
           console.log('当前设置:', {
             自动总结开启: settings.auto_summarize_enabled,
             总结间隔: settings.summary_interval,
             保存到世界书: settings.auto_save_to_worldbook,
           });
-          
+
           const lastMessageId = getLastMessageId();
           const messages = getChatMessages(`0-${lastMessageId}`);
           const chat_id = SillyTavern.getCurrentChatId();
           const chatVars = getVariables({ type: 'chat' });
           const auto_summary_start_id = chatVars?.auto_summary_start_id || 0;
-          
+
           console.log('当前状态:', {
             聊天ID: chat_id,
             当前楼层: messages.length - 1,
             起始楼层: auto_summary_start_id,
             间隔: settings.summary_interval,
           });
-          
+
           window.toastr.info('测试信息已输出到控制台');
         } catch (error) {
           console.error('❌ 测试失败:', error);
@@ -385,23 +384,23 @@ $(() => {
       (window as any).syncAutoSummaryData = () => {
         try {
           console.log('🔄 开始同步数据...');
-          
+
           const chat_id = SillyTavern.getCurrentChatId();
           if (!chat_id) {
             console.error('❌ 无法获取当前聊天ID');
             window.toastr.error('无法获取当前聊天ID');
             return;
           }
-          
+
           const chatVars = getVariables({ type: 'chat' });
           console.log('当前聊天变量:', chatVars);
-          
+
           const scriptId = getScriptIdSafe();
           if (scriptId) {
             const scriptVars = getVariables({ type: 'script', script_id: scriptId });
             console.log('脚本变量:', scriptVars);
           }
-          
+
           window.toastr.success('数据已同步，请查看控制台');
         } catch (error) {
           console.error('❌ 同步失败:', error);
@@ -413,7 +412,7 @@ $(() => {
       (window as any).checkCurrentFloor = () => {
         try {
           console.log('🔍 开始检查楼层...');
-          
+
           const lastMessageId = getLastMessageId();
           const messages = getChatMessages(`0-${lastMessageId}`);
           if (!messages || messages.length === 0) {
@@ -421,18 +420,18 @@ $(() => {
             window.toastr.warning('当前聊天没有消息');
             return;
           }
-          
+
           const current_floor = lastMessageId;
           const chatVars = getVariables({ type: 'chat' });
           const auto_summary_start_id = chatVars?.auto_summary_start_id || 0;
-          
+
           console.log('楼层信息:', {
             当前楼层: current_floor,
             起始楼层: auto_summary_start_id,
             消息总数: messages.length,
             最后一条消息: messages[messages.length - 1],
           });
-          
+
           window.toastr.info(`当前楼层: ${current_floor}, 起始楼层: ${auto_summary_start_id}`);
         } catch (error) {
           console.error('❌ 检查失败:', error);
@@ -444,7 +443,7 @@ $(() => {
       (window as any).testFloorCalculation = () => {
         try {
           console.log('🧮 开始验证楼层计算...');
-          
+
           const store = useSettingsStore();
           const settings = store.settings;
           const lastMessageId = getLastMessageId();
@@ -452,10 +451,10 @@ $(() => {
           const chatVars = getVariables({ type: 'chat' });
           const auto_summary_start_id = chatVars?.auto_summary_start_id || 0;
           const current_floor = messages.length - 1;
-          
+
           const relative_position = current_floor - auto_summary_start_id;
           const should_trigger = relative_position > 0 && relative_position % settings.summary_interval === 0;
-          
+
           console.log('计算结果:', {
             当前楼层: current_floor,
             起始楼层: auto_summary_start_id,
@@ -464,7 +463,7 @@ $(() => {
             是否触发: should_trigger,
             下次触发楼层: auto_summary_start_id + settings.summary_interval,
           });
-          
+
           window.toastr.info(`相对位置: ${relative_position}, 是否触发: ${should_trigger}`);
         } catch (error) {
           console.error('❌ 计算验证失败:', error);
@@ -476,14 +475,14 @@ $(() => {
       (window as any).checkAutoSummaryStatus = () => {
         try {
           console.log('📊 开始检查自动总结状态...');
-          
+
           const store = useSettingsStore();
           const settings = store.settings;
           const lastMessageId = getLastMessageId();
           const messages = getChatMessages(`0-${lastMessageId}`);
           const chat_id = SillyTavern.getCurrentChatId();
           const chatVars = getVariables({ type: 'chat' });
-          
+
           const status = {
             基本信息: {
               聊天ID: chat_id,
@@ -501,11 +500,11 @@ $(() => {
               聊天变量: chatVars,
             },
           };
-          
+
           console.log('状态详情:', status);
           console.table(status.基本信息);
           console.table(status.设置信息);
-          
+
           window.toastr.success('状态信息已输出到控制台');
         } catch (error) {
           console.error('❌ 状态检查失败:', error);
@@ -548,7 +547,7 @@ $(() => {
 
       const taskApp = createApp(TaskManager);
       taskApp.use(globalPinia); // 使用全局pinia实例
-      
+
       // 使用选择器挂载
       taskApp.mount('#global-task-manager');
 

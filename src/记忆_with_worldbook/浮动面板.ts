@@ -523,7 +523,7 @@ $(() => {
     }
 
     console.log('mzrodyu猫猫的小破烂浮动面板已创建，面板元素:', panelContainer[0]);
-    
+
     // 创建常驻的最小化图标
     setTimeout(() => {
       createMinimizeIcon();
@@ -630,17 +630,28 @@ function createMinimizeIcon() {
   quickMenu.find('.quick-menu-item').on('click', function () {
     const tabKey = $(this).data('tab');
     const panel = $('#memoryManagementPanel');
-    
+
     // 显示面板
     if (!panel.is(':visible')) {
       panel.fadeIn(200);
     }
-    
+
     // 延迟切换标签，确保面板已完全显示
     setTimeout(() => {
-      const tabOrder = ['settings', 'summary', 'table', 'greetings', 'regex', 'status', 'project', 'tools', 'mvu', 'help'];
+      const tabOrder = [
+        'settings',
+        'summary',
+        'table',
+        'greetings',
+        'regex',
+        'status',
+        'project',
+        'tools',
+        'mvu',
+        'help',
+      ];
       const tabIndex = tabOrder.indexOf(tabKey);
-      
+
       if (tabIndex >= 0) {
         // 通过索引直接点击对应的标签
         const tabs = panel.find('.tab-item');
@@ -649,7 +660,7 @@ function createMinimizeIcon() {
         }
       }
     }, 150);
-    
+
     // 隐藏菜单
     quickMenu.fadeOut(200);
   });
@@ -692,26 +703,26 @@ function createMinimizeIcon() {
     const iconHeight = icon.outerHeight() || 72;
     const menuWidth = quickMenu.outerWidth() || 200;
     const menuHeight = quickMenu.outerHeight() || 400;
-    
+
     console.log('🔍 位置计算开始:', { iconPos, iconWidth, iconHeight, menuWidth, menuHeight });
-    
+
     if (!iconPos) {
       console.warn('⚠️ 图标位置获取失败');
       return;
     }
-    
+
     // 默认显示在图标左侧
     let left = iconPos.left - menuWidth - 10;
     let top = iconPos.top;
-    
+
     console.log('📍 初始位置（图标左侧）:', { left, top });
-    
+
     // 如果左侧空间不够，显示在右侧
     if (left < 10) {
       left = iconPos.left + iconWidth + 10;
       console.log('📍 左侧不够，移到右侧:', left);
     }
-    
+
     // 如果右侧也不够，显示在图标上方或下方
     const windowWidth = $(window).width() || 1920;
     if (left + menuWidth > windowWidth - 10) {
@@ -726,14 +737,14 @@ function createMinimizeIcon() {
         console.log('📍 右侧不够，移到下方:', { left, top });
       }
     }
-    
+
     // 确保不超出屏幕边界
     const windowHeight = $(window).height() || 1080;
     const finalLeft = Math.max(10, Math.min(left, windowWidth - menuWidth - 10));
     const finalTop = Math.max(10, Math.min(top, windowHeight - Math.min(menuHeight, windowHeight * 0.8) - 10));
-    
+
     console.log('✅ 最终位置:', { finalLeft, finalTop, windowWidth, windowHeight });
-    
+
     quickMenu.css({ left: finalLeft + 'px', top: finalTop + 'px' });
   }
 
@@ -744,13 +755,13 @@ function createMinimizeIcon() {
         clearTimeout(hideMenuTimeout);
         hideMenuTimeout = null;
       }
-      
+
       $(this).css({
         transform: 'scale(1.15) rotate(5deg)',
         boxShadow: '0 6px 24px rgba(74, 158, 255, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4)',
         borderColor: '#5ab0ff',
       });
-      
+
       // 先显示菜单（但透明），计算位置后再显示
       quickMenu.css('opacity', '0').show();
       updateMenuPosition();
@@ -763,7 +774,7 @@ function createMinimizeIcon() {
         boxShadow: '0 4px 16px rgba(74, 158, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3)',
         borderColor: '#4a9eff',
       });
-      
+
       // 延迟隐藏菜单，给用户时间移动到菜单上
       hideMenuTimeout = window.setTimeout(() => {
         if (!quickMenu.is(':hover')) {
@@ -772,7 +783,7 @@ function createMinimizeIcon() {
       }, 200);
     },
   );
-  
+
   // 菜单悬停时保持显示
   quickMenu.hover(
     function () {
@@ -814,11 +825,11 @@ function createMinimizeIcon() {
 
   $('body').append(quickMenu);
   $('body').append(icon);
-  
+
   console.log('✅ 最小化图标已创建:', icon);
   console.log('✅ 快捷菜单已创建:', quickMenu);
   console.log('📍 快捷菜单是否在页面中:', $('#memoryPanelQuickMenu').length > 0);
-  
+
   return icon;
 }
 

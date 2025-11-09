@@ -33,8 +33,16 @@
         transition: 'all 0.2s',
       }"
       @click="toggleCollapse"
-      @mouseenter="e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(74, 158, 255, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%)')"
-      @mouseleave="e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)')"
+      @mouseenter="
+        e =>
+          (e.currentTarget.style.background =
+            'linear-gradient(135deg, rgba(74, 158, 255, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%)')
+      "
+      @mouseleave="
+        e =>
+          (e.currentTarget.style.background =
+            'linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)')
+      "
     >
       <div :style="{ display: 'flex', alignItems: 'center', gap: '10px' }">
         <i class="fa-solid fa-tasks" style="color: #4a9eff"></i>
@@ -81,8 +89,22 @@
             fontSize: '13px',
           }"
           @click.stop="clearCompleted"
-          @mouseenter="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.borderColor = '#4a9eff'; e.currentTarget.style.color = '#4a9eff'; e.currentTarget.style.transform = 'scale(1.05)'; }"
-          @mouseleave="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ccc'; e.currentTarget.style.transform = 'scale(1)'; }"
+          @mouseenter="
+            e => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = '#4a9eff';
+              e.currentTarget.style.color = '#4a9eff';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }
+          "
+          @mouseleave="
+            e => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.color = '#ccc';
+              e.currentTarget.style.transform = 'scale(1)';
+            }
+          "
         >
           <i class="fa-solid fa-broom"></i>
         </button>
@@ -98,8 +120,22 @@
             transition: 'all 0.2s',
             fontSize: '13px',
           }"
-          @mouseenter="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.borderColor = '#4a9eff'; e.currentTarget.style.color = '#4a9eff'; e.currentTarget.style.transform = 'scale(1.05)'; }"
-          @mouseleave="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ccc'; e.currentTarget.style.transform = 'scale(1)'; }"
+          @mouseenter="
+            e => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.borderColor = '#4a9eff';
+              e.currentTarget.style.color = '#4a9eff';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }
+          "
+          @mouseleave="
+            e => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.color = '#ccc';
+              e.currentTarget.style.transform = 'scale(1)';
+            }
+          "
         >
           <i :class="isCollapsed ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'"></i>
         </button>
@@ -116,8 +152,22 @@
             fontSize: '13px',
           }"
           @click.stop="hideTaskManager"
-          @mouseenter="e => { e.currentTarget.style.background = 'rgba(255, 107, 107, 0.2)'; e.currentTarget.style.borderColor = '#ff6b6b'; e.currentTarget.style.color = '#ff6b6b'; e.currentTarget.style.transform = 'scale(1.05)'; }"
-          @mouseleave="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ccc'; e.currentTarget.style.transform = 'scale(1)'; }"
+          @mouseenter="
+            e => {
+              e.currentTarget.style.background = 'rgba(255, 107, 107, 0.2)';
+              e.currentTarget.style.borderColor = '#ff6b6b';
+              e.currentTarget.style.color = '#ff6b6b';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }
+          "
+          @mouseleave="
+            e => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.color = '#ccc';
+              e.currentTarget.style.transform = 'scale(1)';
+            }
+          "
         >
           <i class="fa-solid fa-times"></i>
         </button>
@@ -170,8 +220,25 @@
           padding: '12px',
           transition: 'all 0.2s',
         }"
-        @mouseenter="e => { e.currentTarget.style.background = 'rgba(42, 42, 42, 1)'; e.currentTarget.style.borderColor = 'rgba(74, 158, 255, 0.3)'; e.currentTarget.style.transform = 'translateX(-2px)'; }"
-        @mouseleave="e => { e.currentTarget.style.background = 'rgba(42, 42, 42, 0.8)'; e.currentTarget.style.borderColor = task.status === 'completed' ? 'rgba(81, 207, 102, 0.3)' : task.status === 'failed' ? 'rgba(255, 107, 107, 0.3)' : 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.transform = 'translateX(0)'; }"
+        @mouseenter="
+          e => {
+            e.currentTarget.style.background = 'rgba(42, 42, 42, 1)';
+            e.currentTarget.style.borderColor = 'rgba(74, 158, 255, 0.3)';
+            e.currentTarget.style.transform = 'translateX(-2px)';
+          }
+        "
+        @mouseleave="
+          e => {
+            e.currentTarget.style.background = 'rgba(42, 42, 42, 0.8)';
+            e.currentTarget.style.borderColor =
+              task.status === 'completed'
+                ? 'rgba(81, 207, 102, 0.3)'
+                : task.status === 'failed'
+                  ? 'rgba(255, 107, 107, 0.3)'
+                  : 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }
+        "
       >
         <!-- 任务头部 -->
         <div :style="{ display: 'flex', alignItems: 'flex-start', gap: '10px' }">
@@ -222,8 +289,22 @@
               flexShrink: 0,
             }"
             @click="removeTask(task.id)"
-            @mouseenter="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.borderColor = '#4a9eff'; e.currentTarget.style.color = '#4a9eff'; e.currentTarget.style.transform = 'scale(1.05)'; }"
-            @mouseleave="e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.color = '#ccc'; e.currentTarget.style.transform = 'scale(1)'; }"
+            @mouseenter="
+              e => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = '#4a9eff';
+                e.currentTarget.style.color = '#4a9eff';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            "
+            @mouseleave="
+              e => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.color = '#ccc';
+                e.currentTarget.style.transform = 'scale(1)';
+              }
+            "
           >
             <i class="fa-solid fa-times"></i>
           </button>
@@ -232,7 +313,14 @@
         <!-- 进度条 -->
         <div
           v-if="task.status === 'running'"
-          :style="{ width: '100%', height: '4px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '2px', overflow: 'hidden', marginTop: '8px' }"
+          :style="{
+            width: '100%',
+            height: '4px',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '2px',
+            overflow: 'hidden',
+            marginTop: '8px',
+          }"
         >
           <div
             :style="{
@@ -298,11 +386,14 @@ const isVisible = ref(true);
 const runningCount = computed(() => taskStore.runningTaskCount());
 
 // 当有任务时自动显示
-watch(() => taskStore.tasks.length, (newLen, oldLen) => {
-  if (newLen > oldLen && newLen > 0) {
-    isVisible.value = true;
-  }
-});
+watch(
+  () => taskStore.tasks.length,
+  (newLen, oldLen) => {
+    if (newLen > oldLen && newLen > 0) {
+      isVisible.value = true;
+    }
+  },
+);
 
 console.log('📊 [TaskManager] 组件已挂载，当前任务数:', taskStore.tasks.length);
 

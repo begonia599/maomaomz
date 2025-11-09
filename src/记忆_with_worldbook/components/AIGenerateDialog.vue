@@ -98,7 +98,7 @@
             "
           ></div>
         </div>
-        
+
         <!-- 进度文字 -->
         <p style="color: #888; margin-top: 20px; font-size: 14px; font-weight: 500">
           <span
@@ -114,7 +114,7 @@
             正在生成中，请稍候...
           </span>
         </p>
-        
+
         <!-- 加载点动画 -->
         <div style="display: flex; justify-content: center; gap: 8px; margin-top: 10px">
           <div
@@ -147,16 +147,26 @@
         </div>
 
         <!-- 进度信息 -->
-        <div v-if="progress" style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #444">
+        <div
+          v-if="progress"
+          style="margin-top: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #444"
+        >
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px">
             <span style="color: #667eea; font-size: 13px; font-weight: 600">
               步骤 {{ progress.step }}/{{ progress.total }}: {{ progress.stepName }}
             </span>
-            <span style="color: #e0e0e0; font-size: 14px; font-weight: 700">
-              {{ progress.percentage }}%
-            </span>
+            <span style="color: #e0e0e0; font-size: 14px; font-weight: 700"> {{ progress.percentage }}% </span>
           </div>
-          <div style="width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-bottom: 10px">
+          <div
+            style="
+              width: 100%;
+              height: 6px;
+              background: #333;
+              border-radius: 3px;
+              overflow: hidden;
+              margin-bottom: 10px;
+            "
+          >
             <div
               style="
                 height: 100%;

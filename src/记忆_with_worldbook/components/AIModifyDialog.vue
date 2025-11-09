@@ -78,11 +78,11 @@
             <span style="color: #ffc107; font-size: 13px; font-weight: 600">
               步骤 {{ progress.step }}/{{ progress.total }}: {{ progress.stepName }}
             </span>
-            <span style="color: #e0e0e0; font-size: 14px; font-weight: 700">
-              {{ progress.percentage }}%
-            </span>
+            <span style="color: #e0e0e0; font-size: 14px; font-weight: 700"> {{ progress.percentage }}% </span>
           </div>
-          <div style="width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-bottom: 8px">
+          <div
+            style="width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-bottom: 8px"
+          >
             <div
               style="
                 height: 100%;

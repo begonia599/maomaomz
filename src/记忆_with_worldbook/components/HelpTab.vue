@@ -39,12 +39,8 @@
 
       <div style="position: relative; z-index: 1">
         <div style="font-size: 48px; margin-bottom: 10px">🐱</div>
-        <h2 style="margin: 0 0 10px 0; color: white; font-size: 24px; font-weight: 600">
-          mzrodyu猫猫的小破烂
-        </h2>
-        <div style="color: rgba(255, 255, 255, 0.9); font-size: 14px" class="version-info">
-          版本 v1.34
-        </div>
+        <h2 style="margin: 0 0 10px 0; color: white; font-size: 24px; font-weight: 600">mzrodyu猫猫的小破烂</h2>
+        <div style="color: rgba(255, 255, 255, 0.9); font-size: 14px" class="version-info">版本 v1.34</div>
 
         <!-- 版权声明 -->
         <div
@@ -116,7 +112,9 @@
             <li style="margin-bottom: 8px">
               <strong>写卡辅助：</strong>生成角色卡、世界书条目，支持流式传输和 AI 修改
             </li>
-            <li style="margin-bottom: 8px"><strong>状态栏生成：</strong>可视化配置状态栏，生成正则 JSON 和世界书条目</li>
+            <li style="margin-bottom: 8px">
+              <strong>状态栏生成：</strong>可视化配置状态栏，生成正则 JSON 和世界书条目
+            </li>
             <li style="margin-bottom: 8px"><strong>MVU Beta：</strong>生成变量结构、提示词模板、meta 配置</li>
             <li><strong>其他：</strong>去八股、正则界面生成、前端项目管理、表格生成</li>
           </ul>

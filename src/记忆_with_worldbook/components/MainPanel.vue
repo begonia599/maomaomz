@@ -19,8 +19,14 @@
       "
     >
       <div class="header-left" style="display: flex; align-items: center; gap: 12px">
-        <span class="header-icon" style="font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))">🐱</span>
-        <span class="panel-title" style="font-size: 16px; font-weight: 600; color: #fff; letter-spacing: 0.5px">猫猫的小破烂</span>
+        <span
+          class="header-icon"
+          style="font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))"
+          >🐱</span
+        >
+        <span class="panel-title" style="font-size: 16px; font-weight: 600; color: #fff; letter-spacing: 0.5px"
+          >猫猫的小破烂</span
+        >
       </div>
       <div class="header-actions" style="display: flex; gap: 8px; align-items: center">
         <button

@@ -460,13 +460,7 @@
             <input
               v-model="settings.auto_summarize_enabled"
               type="checkbox"
-              style="
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-                accent-color: #4a9eff;
-                border-radius: 4px;
-              "
+              style="width: 18px; height: 18px; cursor: pointer; accent-color: #4a9eff; border-radius: 4px"
             />
             启用自动总结
           </label>
@@ -2260,11 +2254,9 @@ ${messagesText}
       ) {
         // 这是错误信息，不是JSON数据
         showProgress.value = false;
-        window.toastr.error(
-          `API调用失败，请检查API配置！\n\n错误信息：\n${aiResponse.slice(0, 200)}`,
-          '',
-          { timeOut: 10000 },
-        );
+        window.toastr.error(`API调用失败，请检查API配置！\n\n错误信息：\n${aiResponse.slice(0, 200)}`, '', {
+          timeOut: 10000,
+        });
         console.error('❌ API返回错误信息:', aiResponse);
         return;
       }
@@ -2289,11 +2281,7 @@ ${messagesText}
       console.error('解析AI响应失败:', parseError);
       console.log('AI原始响应:', aiResponse);
       showProgress.value = false;
-      window.toastr.error(
-        `AI返回的数据格式不正确！\n\n原始响应：\n${aiResponse.slice(0, 200)}`,
-        '',
-        { timeOut: 8000 },
-      );
+      window.toastr.error(`AI返回的数据格式不正确！\n\n原始响应：\n${aiResponse.slice(0, 200)}`, '', { timeOut: 8000 });
       return;
     }
 
