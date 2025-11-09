@@ -941,10 +941,10 @@ async function loadConfig() {
     // 从 localStorage 加载配置（插件环境）
     const scriptId = getScriptIdSafe();
     const storageKey = `${scriptId}_greetings_${character.avatar}`;
-    
+
     let configs = [];
     let savedUIConfig = null;
-    
+
     const savedData = localStorage.getItem(storageKey);
     if (savedData) {
       try {
@@ -995,15 +995,15 @@ function saveConfig() {
       console.warn('无法保存：未找到角色卡');
       return;
     }
-    
+
     const scriptId = getScriptIdSafe();
     const storageKey = `${scriptId}_greetings_${character.avatar}`;
-    
+
     const configData = {
       greetings_config: klona(greetings.value),
       ui_config: klona(uiConfig.value),
     };
-    
+
     localStorage.setItem(storageKey, JSON.stringify(configData));
     console.log('✅ 已保存开场白配置到 localStorage');
     updatePreview(); // 保存后更新预览
