@@ -91,78 +91,30 @@ export const useSettingsStore = defineStore('settings', () => {
     return true; // 插件环境强制使用 localStorage
   };
 
-  // 初始化设置
+  // 初始化设置（插件环境 - 始终使用 localStorage）
   const initSettings = () => {
-    // 本地调试：使用 localStorage
-    if (isLocalDebug()) {
-      console.warn('🔧 本地调试模式：使用 localStorage 存储设置');
-      try {
-        const saved = localStorage.getItem('tavern_helper_settings');
-        if (saved) {
-          return ref(Settings.parse(JSON.parse(saved)));
-        }
-      } catch (e) {
-        console.warn('从 localStorage 读取设置失败:', e);
-      }
-      return ref(Settings.parse({}));
-    }
-
-    // 正常模式：使用全局变量（不绑定script_id，确保版本更新后数据不丢失）
+    console.log('🔧 插件环境：使用 localStorage 存储设置');
     try {
-      const globalVars = getVariables({ type: 'global' });
-      const savedSettings = globalVars[SETTINGS_GLOBAL_KEY];
-      if (savedSettings) {
-        console.log('📦 从全局变量加载设置');
-        return ref(Settings.parse(savedSettings));
+      const saved = localStorage.getItem('tavern_helper_settings');
+      if (saved) {
+        return ref(Settings.parse(JSON.parse(saved)));
       }
     } catch (e) {
-      console.warn('读取全局变量失败，使用默认设置:', e);
+      console.warn('从 localStorage 读取设置失败:', e);
     }
     return ref(Settings.parse({}));
   };
 
   const settings = initSettings();
 
-  // 在初始化后尝试读取真实变量（使用全局变量）
-  setTimeout(() => {
-    if (isLocalDebug()) {
-      console.log('🔧 本地调试模式：跳过酒馆变量读取');
-      return;
-    }
-
-    try {
-      const globalVars = getVariables({ type: 'global' });
-      const savedSettings = globalVars[SETTINGS_GLOBAL_KEY];
-      if (savedSettings && Object.keys(savedSettings).length > 0) {
-        settings.value = Settings.parse(savedSettings);
-        console.log('✅ 从全局变量重新加载设置成功');
-      }
-    } catch (e) {
-      console.warn('读取真实变量失败，使用初始值:', e);
-    }
-  }, 200);
-
-  // 立即保存函数（内部使用）
+  // 立即保存函数（内部使用，插件环境 - localStorage）
   const saveImmediately = (new_settings: any) => {
-    // 本地调试：保存到 localStorage
-    if (isLocalDebug()) {
-      try {
-        console.log('💾 本地调试：立即保存设置到 localStorage:', klona(new_settings));
-        localStorage.setItem('tavern_helper_settings', JSON.stringify(klona(new_settings)));
-        console.log('✅ 设置已保存到 localStorage');
-      } catch (e) {
-        console.error('❌ 保存到 localStorage 失败:', e);
-      }
-      return;
-    }
-
-    // 正常模式：保存到全局变量（不绑定script_id，确保版本更新后数据不丢失）
     try {
-      console.log('💾 立即保存设置到全局变量:', klona(new_settings));
-      insertOrAssignVariables({ [SETTINGS_GLOBAL_KEY]: klona(new_settings) }, { type: 'global' });
-      console.log('✅ 设置已保存');
+      console.log('💾 插件环境：立即保存设置到 localStorage:', klona(new_settings));
+      localStorage.setItem('tavern_helper_settings', JSON.stringify(klona(new_settings)));
+      console.log('✅ 设置已保存到 localStorage');
     } catch (e) {
-      console.error('❌ 保存设置失败:', e);
+      console.error('❌ 保存到 localStorage 失败:', e);
       window.toastr?.error('设置保存失败: ' + (e as Error).message);
     }
   };
@@ -188,56 +140,38 @@ export const useSettingsStore = defineStore('settings', () => {
     });
   }
 
-  // 手动保存设置函数
+  // 手动保存设置函数（插件环境 - localStorage）
   const saveSettings = () => {
-    // 本地调试：保存到 localStorage
-    if (isLocalDebug()) {
-      try {
-        console.log('💾 本地调试：手动保存设置到 localStorage:', klona(settings.value));
-        localStorage.setItem('tavern_helper_settings', JSON.stringify(klona(settings.value)));
-        window.toastr?.success('设置已保存（localStorage）');
-        return true;
-      } catch (e) {
-        console.error('❌ 保存到 localStorage 失败:', e);
-        window.toastr?.error('设置保存失败: ' + (e as Error).message);
-        return false;
-      }
-    }
-
-    // 正常模式：保存到全局变量（确保版本更新后数据不丢失）
     try {
-      console.log('💾 手动保存设置到全局变量:', klona(settings.value));
-      insertOrAssignVariables({ [SETTINGS_GLOBAL_KEY]: klona(settings.value) }, { type: 'global' });
-      window.toastr?.success('设置已保存');
+      console.log('💾 插件环境：手动保存设置到 localStorage:', klona(settings.value));
+      localStorage.setItem('tavern_helper_settings', JSON.stringify(klona(settings.value)));
+      window.toastr?.success('设置已保存（localStorage）');
       return true;
     } catch (e) {
-      console.error('❌ 手动保存设置失败:', e);
+      console.error('❌ 保存到 localStorage 失败:', e);
       window.toastr?.error('设置保存失败: ' + (e as Error).message);
       return false;
     }
   };
 
-  // 重新加载设置函数
+  // 重新加载设置函数（插件环境 - localStorage）
   const reloadSettings = () => {
-    if (isLocalDebug()) {
-      console.warn('本地调试模式：无法重新加载酒馆变量');
-      return false;
-    }
-
     try {
-      const globalVars = getVariables({ type: 'global' });
-      const savedSettings = globalVars[SETTINGS_GLOBAL_KEY];
-      if (savedSettings && Object.keys(savedSettings).length > 0) {
-        settings.value = Settings.parse(savedSettings);
-        console.log('✅ 设置重新加载成功:', settings.value);
+      const saved = localStorage.getItem('tavern_helper_settings');
+      if (saved) {
+        settings.value = Settings.parse(JSON.parse(saved));
+        console.log('✅ 设置从 localStorage 重新加载成功:', settings.value);
         window.toastr?.success('设置已重新加载');
         return true;
       }
+      console.warn('未找到保存的设置');
+      window.toastr?.warning('未找到保存的设置');
+      return false;
     } catch (e) {
       console.error('❌ 重新加载设置失败:', e);
       window.toastr?.error('设置重新加载失败: ' + (e as Error).message);
+      return false;
     }
-    return false;
   };
 
   return {
@@ -247,7 +181,7 @@ export const useSettingsStore = defineStore('settings', () => {
   };
 });
 
-// 历史总结 Store - 简化版本
+// 历史总结 Store - 插件环境（使用 localStorage）
 export const useSummaryHistoryStore = defineStore('summaryHistory', () => {
   const addSummary = (start_id: number, end_id: number, content: string) => {
     try {
@@ -261,12 +195,18 @@ export const useSummaryHistoryStore = defineStore('summaryHistory', () => {
 
       console.log('添加总结到聊天:', chat_id);
 
-      // 从聊天变量中读取总结历史
+      // 插件环境：从 localStorage 读取总结历史
+      const scriptId = getScriptIdSafe();
+      const storageKey = `${scriptId}_summary_history_${chat_id}`;
       let chatHistory: Array<{ start_id: number; end_id: number; content: string }> = [];
+      
       try {
-        const chatData = getVariables({ type: 'chat' });
-        if (chatData && chatData.summary_history) {
-          chatHistory = Array.isArray(chatData.summary_history) ? chatData.summary_history : [];
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+          chatHistory = JSON.parse(savedData);
+          if (!Array.isArray(chatHistory)) {
+            chatHistory = [];
+          }
         }
       } catch (e) {
         console.warn('读取聊天总结历史失败:', e);
@@ -284,10 +224,10 @@ export const useSummaryHistoryStore = defineStore('summaryHistory', () => {
         chatHistory = chatHistory.slice(0, 50);
       }
 
-      // 保存到聊天变量
-      insertOrAssignVariables(klona({ summary_history: chatHistory }), { type: 'chat' });
+      // 插件环境：保存到 localStorage
+      localStorage.setItem(storageKey, JSON.stringify(chatHistory));
 
-      console.log('总结已保存到聊天变量:', chat_id);
+      console.log('总结已保存到 localStorage:', chat_id);
     } catch (error) {
       console.error('保存总结失败:', error);
       window.toastr.error('保存总结失败: ' + (error as Error).message);
@@ -301,9 +241,14 @@ export const useSummaryHistoryStore = defineStore('summaryHistory', () => {
         return [];
       }
 
-      const chatData = getVariables({ type: 'chat' });
-      if (chatData && chatData.summary_history) {
-        return Array.isArray(chatData.summary_history) ? chatData.summary_history : [];
+      // 插件环境：从 localStorage 读取
+      const scriptId = getScriptIdSafe();
+      const storageKey = `${scriptId}_summary_history_${chat_id}`;
+      const savedData = localStorage.getItem(storageKey);
+      
+      if (savedData) {
+        const history = JSON.parse(savedData);
+        return Array.isArray(history) ? history : [];
       }
       return [];
     } catch (e) {

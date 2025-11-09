@@ -2424,18 +2424,24 @@ const editingEntryUid = ref<number | null>(null);
 // 标志位：是否已完成初始加载（避免加载时触发保存）
 const isDataLoaded = ref(false);
 
-// 加载可用的世界书列表
+// 加载可用的世界书列表（插件环境可能不支持）
 const loadAvailableWorldbooks = () => {
   try {
-    availableWorldbooks.value = getWorldbookNames();
-    console.log('✅ 已加载世界书列表:', availableWorldbooks.value);
+    // 插件环境：getWorldbookNames 可能不可用，使用空数组
+    if (typeof getWorldbookNames !== 'undefined') {
+      availableWorldbooks.value = getWorldbookNames();
+      console.log('✅ 已加载世界书列表:', availableWorldbooks.value);
+    } else {
+      availableWorldbooks.value = [];
+      console.warn('⚠️ 插件环境不支持 getWorldbookNames，世界书功能受限');
+    }
   } catch (error) {
     console.error('❌ 加载世界书列表失败:', error);
-    window.toastr.error('加载世界书列表失败：' + (error as Error).message);
+    availableWorldbooks.value = [];
   }
 };
 
-// 从酒馆变量加载工具数据
+// 从 localStorage 加载工具数据（插件环境）
 const loadToolsData = () => {
   try {
     isDataLoaded.value = false; // 加载期间暂停自动保存
@@ -2445,7 +2451,11 @@ const loadToolsData = () => {
       isDataLoaded.value = true;
       return;
     }
-    const savedData = getVariables({ type: 'script', script_id });
+
+    // 插件环境：从 localStorage 加载
+    const storageKey = `${script_id}_tools_data`;
+    const savedDataString = localStorage.getItem(storageKey);
+    const savedData = savedDataString ? JSON.parse(savedDataString) : {};
 
     console.log('📥 加载工具数据:', savedData);
 
@@ -2530,7 +2540,7 @@ const loadToolsData = () => {
   }
 };
 
-// 保存工具数据到酒馆变量
+// 保存工具数据到 localStorage（插件环境）
 const saveToolsDataImmediate = () => {
   // 只有在数据加载完成后才保存
   if (!isDataLoaded.value) {
@@ -2573,8 +2583,10 @@ const saveToolsDataImmediate = () => {
       tools_expandedState: Object.fromEntries(toolExpandedState.value),
     };
 
-    insertOrAssignVariables(klona(dataToSave), { type: 'script', script_id });
-    console.log('💾 工具数据已保存:', {
+    // 插件环境：保存到 localStorage
+    const storageKey = `${script_id}_tools_data`;
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    console.log('💾 工具数据已保存到 localStorage:', {
       antiCliche_input_length: antiClicheInput.value.length,
       antiCliche_output_length: antiClicheOutput.value.length,
       character_desc_length: characterDescription.value.length,

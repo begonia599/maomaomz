@@ -2886,7 +2886,7 @@ ${jsFile?.content || ''}
 
 // ==================== 数据持久化 ====================
 
-// 加载保存的配置
+// 加载保存的配置（插件环境 - 使用 localStorage）
 function loadSavedConfig() {
   try {
     const scriptId = getScriptIdSafe();
@@ -2895,19 +2895,25 @@ function loadSavedConfig() {
       return;
     }
 
-    const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-    const savedConfig = scriptVars.statusbar_generator_config;
+    // 插件环境：从 localStorage 加载
+    const storageKey = `${scriptId}_statusbar_generator_config`;
+    const savedDataString = localStorage.getItem(storageKey);
 
-    if (savedConfig) {
-      config.value = { ...config.value, ...savedConfig };
-      console.log('✅ 已加载保存的状态栏配置');
+    if (savedDataString) {
+      try {
+        const savedConfig = JSON.parse(savedDataString);
+        config.value = { ...config.value, ...savedConfig };
+        console.log('✅ 已从 localStorage 加载保存的状态栏配置');
+      } catch (e) {
+        console.error('解析状态栏配置失败:', e);
+      }
     }
   } catch (error) {
     console.error('加载状态栏配置失败:', error);
   }
 }
 
-// 保存配置
+// 保存配置（插件环境 - 使用 localStorage）
 function saveConfig() {
   try {
     const scriptId = getScriptIdSafe();
@@ -2916,7 +2922,10 @@ function saveConfig() {
       return;
     }
 
-    insertOrAssignVariables({ statusbar_generator_config: config.value }, { type: 'script', script_id: scriptId });
+    // 插件环境：保存到 localStorage
+    const storageKey = `${scriptId}_statusbar_generator_config`;
+    localStorage.setItem(storageKey, JSON.stringify(config.value));
+    console.log('💾 状态栏配置已保存到 localStorage');
   } catch (error) {
     console.error('保存状态栏配置失败:', error);
   }

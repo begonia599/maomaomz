@@ -906,16 +906,30 @@ const progressWithElapsedTime = computed(() => {
   };
 });
 
-// 获取当前角色卡
+// 获取当前角色卡（插件环境）
 function getCurrentCharacter() {
   try {
-    const char = getCharData('current');
-    if (char) {
-      console.log('找到角色卡:', char.name);
-    } else {
-      console.log('未找到角色卡');
+    // 插件环境：尝试从 SillyTavern API 获取
+    if (typeof SillyTavern !== 'undefined') {
+      // 尝试访问当前角色数据
+      const charData = (SillyTavern as any).getContext?.()?.characters?.[0];
+      if (charData) {
+        console.log('找到角色卡:', charData.name);
+        return charData;
+      }
     }
-    return char;
+    
+    // 如果全局API可用（Tavern Helper环境）
+    if (typeof (window as any).getCharData === 'function') {
+      const char = (window as any).getCharData('current');
+      if (char) {
+        console.log('找到角色卡 (Tavern Helper):', char.name);
+        return char;
+      }
+    }
+    
+    console.log('未找到角色卡');
+    return null;
   } catch (error) {
     console.error('获取角色卡失败:', error);
     return null;
@@ -1152,26 +1166,35 @@ ${greetingContent}
 
 直接输出描述文本：`;
 
-    console.log('🚀 使用酒馆助手的generateRaw调用AI...');
+    console.log('🚀 直接调用 AI API (插件环境)...');
 
-    // 使用酒馆助手提供的generateRaw函数，通过酒馆后端调用API
-    let aiDescription = await generateRaw({
-      ordered_prompts: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      custom_api: {
-        apiurl: settings.value.api_endpoint,
-        key: settings.value.api_key,
+    // 插件环境：直接调用 API
+    const response = await fetch(settings.value.api_endpoint + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.value.api_key}`,
+      },
+      body: JSON.stringify({
         model: settings.value.model,
-        source: 'openai',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
         temperature: settings.value.temperature,
         max_tokens: settings.value.max_tokens,
         top_p: settings.value.top_p,
         presence_penalty: settings.value.presence_penalty,
         frequency_penalty: settings.value.frequency_penalty,
-      },
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error(`API 调用失败: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    let aiDescription = data.choices?.[0]?.message?.content;
 
     console.log('📝 [生成] AI 原始返回:', aiDescription);
 
@@ -1279,26 +1302,35 @@ ${requirement}
 
 请输出修改后的描述：`;
 
-    console.log('🚀 使用酒馆助手的generateRaw调用AI...');
+    console.log('🚀 直接调用 AI API (插件环境)...');
 
-    // 使用酒馆助手提供的generateRaw函数，通过酒馆后端调用API
-    let aiDescription = await generateRaw({
-      ordered_prompts: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      custom_api: {
-        apiurl: settings.value.api_endpoint,
-        key: settings.value.api_key,
+    // 插件环境：直接调用 API (编辑描述)
+    const response = await fetch(settings.value.api_endpoint + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.value.api_key}`,
+      },
+      body: JSON.stringify({
         model: settings.value.model,
-        source: 'openai',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
         temperature: settings.value.temperature,
         max_tokens: settings.value.max_tokens,
         top_p: settings.value.top_p,
         presence_penalty: settings.value.presence_penalty,
         frequency_penalty: settings.value.frequency_penalty,
-      },
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error(`API 调用失败: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    let aiDescription = data.choices?.[0]?.message?.content;
 
     console.log('📝 [编辑] AI 原始返回:', aiDescription);
 
@@ -1545,28 +1577,37 @@ ${switchGreetingCode}
 
     updateProgress(2, '构建提示', '正在准备 AI 提示词和示例代码...');
 
-    console.log('🚀 使用酒馆助手的generateRaw调用AI...');
+    console.log('🚀 直接调用 AI API (插件环境)...');
 
     updateProgress(3, '调用 AI', `正在请求 ${settings.value.model} 生成界面样式...`);
 
-    // 使用酒馆助手提供的generateRaw函数，通过酒馆后端调用API
-    let generatedHtml = await generateRaw({
-      ordered_prompts: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      custom_api: {
-        apiurl: settings.value.api_endpoint,
-        key: settings.value.api_key,
+    // 插件环境：直接调用 API (生成样式)
+    const response = await fetch(settings.value.api_endpoint + '/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${settings.value.api_key}`,
+      },
+      body: JSON.stringify({
         model: settings.value.model,
-        source: 'openai',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
         temperature: settings.value.temperature,
         max_tokens: settings.value.max_tokens,
         top_p: settings.value.top_p,
         presence_penalty: settings.value.presence_penalty,
         frequency_penalty: settings.value.frequency_penalty,
-      },
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error(`API 调用失败: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    let generatedHtml = data.choices?.[0]?.message?.content;
 
     console.log('📝 [样式生成] AI 原始返回:', generatedHtml ? generatedHtml.substring(0, 500) : '(空)');
 

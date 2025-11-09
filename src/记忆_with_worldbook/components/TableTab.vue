@@ -214,7 +214,7 @@ import { getChatIdSafe } from '../utils';
 const table_history = ref<Array<{ start_id: number; end_id: number; headers: string[]; data: string[][] }>>([]);
 const tableExpandedState = ref<Map<number, boolean>>(new Map());
 
-// 更新表格历史的函数
+// 更新表格历史的函数（插件环境 - localStorage）
 const refreshTableHistory = () => {
   try {
     const chat_id = getChatIdSafe();
@@ -224,11 +224,19 @@ const refreshTableHistory = () => {
       return;
     }
 
-    const chat_vars = getVariables({ type: 'chat' });
-    console.log('从聊天变量读取的数据:', chat_vars);
-    console.log('表格历史数据:', chat_vars.table_history);
-
-    table_history.value = chat_vars.table_history || [];
+    // 插件环境：从 localStorage 读取
+    const scriptId = getScriptIdSafe();
+    const storageKey = `${scriptId}_table_history_${chat_id}`;
+    const savedData = localStorage.getItem(storageKey);
+    
+    console.log('从 localStorage 读取表格历史，key:', storageKey);
+    
+    if (savedData) {
+      table_history.value = JSON.parse(savedData);
+    } else {
+      table_history.value = [];
+    }
+    
     console.log('已刷新表格历史，当前聊天表格数:', table_history.value.length);
   } catch (e) {
     console.error('刷新表格历史失败:', e);
@@ -593,13 +601,16 @@ const copyTable = (tableItem: { headers: string[]; data: string[][] }) => {
   }
 };
 
-// 删除表格
+// 删除表格（插件环境 - localStorage）
 const deleteTable = (index: number) => {
   if (confirm('确定要删除这个表格吗？')) {
     table_history.value.splice(index, 1);
     const chat_id = getChatIdSafe();
     if (chat_id) {
-      insertOrAssignVariables({ table_history: table_history.value }, { type: 'chat' });
+      // 插件环境：保存到 localStorage
+      const scriptId = getScriptIdSafe();
+      const storageKey = `${scriptId}_table_history_${chat_id}`;
+      localStorage.setItem(storageKey, JSON.stringify(table_history.value));
       window.toastr.success('表格已删除');
     }
   }

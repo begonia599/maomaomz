@@ -60,44 +60,47 @@ $(() => {
             return;
           }
 
-          const last_message_id = getLastMessageId();
+          // 插件环境：从 SillyTavern.chat 获取消息数
+          const messages = SillyTavern?.chat || [];
+          const last_message_id = messages.length > 0 ? messages.length - 1 : 0;
 
-          // 获取当前聊天ID
-          const current_chat_id = SillyTavern.getCurrentChatId();
+          // 插件环境：使用 SillyTavern.chatId 属性
+          const current_chat_id = SillyTavern?.chatId;
           if (!current_chat_id) {
             console.log('❌ 无法获取聊天ID，跳过自动总结检查');
             return;
           }
 
-          // 获取自动总结开启时的起始楼层（基于聊天ID）
+          // 获取自动总结开启时的起始楼层（插件环境 - localStorage）
           let auto_summary_start_id = 0;
           try {
-            // 根据酒馆助手文档，使用聊天变量存储每个聊天的状态
-            const chatVars = getVariables({ type: 'chat' });
-            const auto_summary_start_id_key = 'auto_summary_start_id';
+            const scriptId = getScriptIdSafe();
+            const storageKey = `${scriptId}_auto_summary_start_id_${current_chat_id}`;
+            const savedStartId = localStorage.getItem(storageKey);
 
-            console.log(`🔍 检查聊天变量:`, {
+            console.log(`🔍 检查 localStorage:`, {
               current_chat_id,
-              chat_vars: chatVars,
-              has_start_id: chatVars[auto_summary_start_id_key] !== undefined,
-              existing_start_id: chatVars[auto_summary_start_id_key],
+              storageKey,
+              savedStartId,
             });
 
-            if (chatVars[auto_summary_start_id_key] !== undefined && chatVars[auto_summary_start_id_key] !== null) {
-              auto_summary_start_id = chatVars[auto_summary_start_id_key];
+            if (savedStartId !== null) {
+              auto_summary_start_id = parseInt(savedStartId, 10);
               console.log(`✅ 使用现有起始楼层: ${auto_summary_start_id} (聊天: ${current_chat_id})`);
             } else {
               // 当前聊天没有起始楼层，需要智能设置
               // 检查是否有现有的总结历史，避免重复总结
-              const scriptId = getScriptIdSafe();
               if (!scriptId) {
                 console.warn('script_id 为空，无法检查现有总结');
                 return;
               }
-              const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-              const existingSummaries = Array.isArray(scriptVars?.summary_history) ? scriptVars.summary_history : [];
+              
+              // 插件环境：从 localStorage 读取历史总结
+              const historyKey = `${scriptId}_summary_history_${current_chat_id}`;
+              const savedHistory = localStorage.getItem(historyKey);
+              const existingSummaries = savedHistory ? JSON.parse(savedHistory) : [];
 
-              if (existingSummaries.length > 0) {
+              if (Array.isArray(existingSummaries) && existingSummaries.length > 0) {
                 // 有现有总结，找到最后一个总结的结束楼层
                 const lastSummary = existingSummaries[0]; // 最新的总结在数组开头
                 const lastSummaryEnd = lastSummary.end_id || 0;
@@ -128,8 +131,8 @@ $(() => {
                 console.log(`⚠️ 修正起始楼层为0，从AI开场白开始`);
               }
 
-              // 保存起始楼层到聊天变量（根据酒馆助手文档）
-              insertOrAssignVariables({ [auto_summary_start_id_key]: auto_summary_start_id }, { type: 'chat' });
+              // 插件环境：保存到 localStorage
+              localStorage.setItem(storageKey, String(auto_summary_start_id));
             }
           } catch (error) {
             console.warn('获取自动总结起始楼层失败，使用当前楼层:', error);
@@ -182,10 +185,15 @@ $(() => {
                   console.error('添加自动总结到历史失败:', e);
                 }
 
-                // 更新起始楼层，为下次总结做准备
+                // 更新起始楼层，为下次总结做准备（插件环境 - localStorage）
                 const new_start_id = end_id + 1;
-                insertOrAssignVariables({ auto_summary_start_id: new_start_id }, { type: 'chat' });
-                console.log(`🔄 更新起始楼层为: ${new_start_id}`);
+                const scriptId = getScriptIdSafe();
+                const current_chat_id = SillyTavern?.chatId;
+                if (scriptId && current_chat_id) {
+                  const storageKey = `${scriptId}_auto_summary_start_id_${current_chat_id}`;
+                  localStorage.setItem(storageKey, String(new_start_id));
+                  console.log(`🔄 更新起始楼层为: ${new_start_id}`);
+                }
 
                 window.toastr.success(`✅ 已自动总结第 ${start_id}-${end_id} 楼，下次将从第 ${new_start_id} 楼开始`);
               })
@@ -200,38 +208,45 @@ $(() => {
         }
       };
 
-      // 监听消息接收事件
+      // 监听消息接收事件（插件环境 - 使用 SillyTavern.eventSource）
       try {
-        eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, () => {
-          console.log('📨 收到消息渲染事件，检查自动总结...');
-          checkAutoSummarize();
-        });
+        if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
+          // 插件环境：使用 SillyTavern.eventSource.on
+          SillyTavern.eventSource.on(SillyTavern.eventTypes.CHARACTER_MESSAGE_RENDERED, () => {
+            console.log('📨 收到消息渲染事件，检查自动总结...');
+            checkAutoSummarize();
+          });
 
-        // 监听聊天切换事件（根据酒馆助手文档）
-        eventOn(tavern_events.CHAT_CHANGED, (chat_file_name: string) => {
-          console.log('🔄 聊天切换事件:', chat_file_name);
+          // 监听聊天切换事件
+          SillyTavern.eventSource.on(SillyTavern.eventTypes.CHAT_CHANGED, (chat_file_name: string) => {
+            console.log('🔄 聊天切换事件:', chat_file_name);
 
-          // 检查新聊天是否已有自动总结状态
-          try {
-            const chatVars = getVariables({ type: 'chat' });
-            const auto_summary_start_id = chatVars.auto_summary_start_id;
+            // 插件环境：检查新聊天的localStorage状态
+            try {
+              const scriptId = getScriptIdSafe();
+              const chatId = SillyTavern.chatId;
+              const storageKey = `${scriptId}_auto_summary_start_id_${chatId}`;
+              const auto_summary_start_id = localStorage.getItem(storageKey);
 
-            if (auto_summary_start_id !== undefined && auto_summary_start_id !== null) {
-              console.log(`✅ 切换到已有自动总结的聊天: ${chat_file_name}, 起始楼层: ${auto_summary_start_id}`);
-            } else {
-              console.log(`🆕 切换到新聊天: ${chat_file_name}, 等待下一条消息时初始化`);
+              if (auto_summary_start_id) {
+                console.log(`✅ 切换到已有自动总结的聊天: ${chat_file_name}, 起始楼层: ${auto_summary_start_id}`);
+              } else {
+                console.log(`🆕 切换到新聊天: ${chat_file_name}, 等待下一条消息时初始化`);
+              }
+            } catch (error) {
+              console.warn('检查聊天状态失败:', error);
             }
-          } catch (error) {
-            console.warn('检查聊天状态失败:', error);
-          }
-        });
+          });
 
-        console.log('✅ 事件监听器已注册');
+          console.log('✅ 事件监听器已注册');
+        } else {
+          console.warn('⚠️ SillyTavern.eventSource 不可用，跳过事件监听');
+        }
       } catch (error) {
         console.error('❌ 注册事件监听器失败:', error);
       }
 
-      // 添加设置监控，当设置变化时重新验证
+      // 添加设置监控，当设置变化时重新验证（插件环境 - 使用 localStorage）
       const settingsStore = useSettingsStore();
       if (settingsStore && settingsStore.settings) {
         // 监听设置变化，确保自动总结状态正确
@@ -247,13 +262,17 @@ $(() => {
                   console.warn('script_id 为空，无法检查起始楼层');
                   return;
                 }
-                const chatVars = getVariables({ type: 'chat' });
-                const auto_summary_start_id = chatVars.auto_summary_start_id;
+
+                // 插件环境：从 localStorage 检查
+                const chatId = SillyTavern?.chatId || '';
+                const storageKey = `${scriptId}_auto_summary_start_id_${chatId}`;
+                const auto_summary_start_id = localStorage.getItem(storageKey);
 
                 // 只有在没有设置过起始楼层时才设置
-                if (auto_summary_start_id === undefined || auto_summary_start_id === null) {
-                  const last_message_id = getLastMessageId();
-                  insertOrAssignVariables({ auto_summary_start_id: last_message_id }, { type: 'chat' });
+                if (!auto_summary_start_id) {
+                  // 插件环境：需要从 SillyTavern.chat 获取消息数量
+                  const last_message_id = SillyTavern?.chat?.length ? SillyTavern.chat.length - 1 : 0;
+                  localStorage.setItem(storageKey, String(last_message_id));
                   console.log(`✅ 首次开启自动总结，起始楼层设置为: ${last_message_id}`);
                   window.toastr?.info(`自动总结已开启，将从第 ${last_message_id} 层开始`);
                 } else {
@@ -298,13 +317,13 @@ $(() => {
             return;
           }
 
-          const lastMessageId = getLastMessageId();
+          // 插件环境：从 SillyTavern.chat 获取消息数量
+          const messages = SillyTavern.chat || [];
+          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
           console.log('最新消息ID:', lastMessageId);
+          console.log('获取到的消息数量:', messages.length);
 
-          const messages = getChatMessages(`0-${lastMessageId}`);
-          console.log('获取到的消息数量:', messages?.length);
-
-          if (!messages || messages.length === 0) {
+          if (messages.length === 0) {
             console.warn('⚠️ 当前聊天没有消息');
             window.toastr.warning('当前聊天没有消息');
             return;
@@ -312,10 +331,12 @@ $(() => {
 
           const current_floor = lastMessageId;
 
-          // 将起始楼层重置为当前楼层
+          // 将起始楼层重置为当前楼层（插件环境 - 使用 localStorage）
           try {
-            insertOrAssignVariables({ auto_summary_start_id: current_floor }, { type: 'chat' });
-            console.log('✅ 变量已写入聊天变量');
+            const scriptId = getScriptIdSafe();
+            const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
+            localStorage.setItem(storageKey, String(current_floor));
+            console.log('✅ 变量已写入 localStorage');
           } catch (varError) {
             console.error('❌ 写入变量失败:', varError);
             throw new Error('写入变量失败: ' + (varError as Error).message);
@@ -337,7 +358,7 @@ $(() => {
         }
       };
 
-      // 2. 测试完整自动总结流程
+      // 2. 测试完整自动总结流程（插件环境）
       (window as any).testCompleteAutoSummary = () => {
         try {
           console.log('🧪 开始测试完整自动总结流程...');
@@ -351,15 +372,18 @@ $(() => {
             保存到世界书: settings.auto_save_to_worldbook,
           });
 
-          const lastMessageId = getLastMessageId();
-          const messages = getChatMessages(`0-${lastMessageId}`);
-          const chat_id = SillyTavern.getCurrentChatId();
-          const chatVars = getVariables({ type: 'chat' });
-          const auto_summary_start_id = chatVars?.auto_summary_start_id || 0;
+          // 插件环境：从 SillyTavern 获取信息
+          const messages = SillyTavern.chat || [];
+          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          const chat_id = SillyTavern.chatId;
+          
+          const scriptId = getScriptIdSafe();
+          const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
+          const auto_summary_start_id = localStorage.getItem(storageKey) || '0';
 
           console.log('当前状态:', {
             聊天ID: chat_id,
-            当前楼层: messages.length - 1,
+            当前楼层: lastMessageId,
             起始楼层: auto_summary_start_id,
             间隔: settings.summary_interval,
           });
@@ -371,26 +395,28 @@ $(() => {
         }
       };
 
-      // 3. 同步数据
+      // 3. 同步数据（插件环境 - localStorage）
       (window as any).syncAutoSummaryData = () => {
         try {
           console.log('🔄 开始同步数据...');
 
-          const chat_id = SillyTavern.getCurrentChatId();
+          const chat_id = SillyTavern.chatId;
           if (!chat_id) {
             console.error('❌ 无法获取当前聊天ID');
             window.toastr.error('无法获取当前聊天ID');
             return;
           }
 
-          const chatVars = getVariables({ type: 'chat' });
-          console.log('当前聊天变量:', chatVars);
-
+          // 插件环境：显示 localStorage 数据
           const scriptId = getScriptIdSafe();
-          if (scriptId) {
-            const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-            console.log('脚本变量:', scriptVars);
-          }
+          const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
+          const auto_summary_start_id = localStorage.getItem(storageKey);
+          
+          console.log('插件环境 localStorage 数据:', {
+            聊天ID: chat_id,
+            起始楼层: auto_summary_start_id,
+            插件ID: scriptId,
+          });
 
           window.toastr.success('数据已同步，请查看控制台');
         } catch (error) {
@@ -399,22 +425,26 @@ $(() => {
         }
       };
 
-      // 4. 检查当前楼层
+      // 4. 检查当前楼层（插件环境）
       (window as any).checkCurrentFloor = () => {
         try {
           console.log('🔍 开始检查楼层...');
 
-          const lastMessageId = getLastMessageId();
-          const messages = getChatMessages(`0-${lastMessageId}`);
-          if (!messages || messages.length === 0) {
+          // 插件环境：从 SillyTavern.chat 获取
+          const messages = SillyTavern.chat || [];
+          if (messages.length === 0) {
             console.warn('⚠️ 当前聊天没有消息');
             window.toastr.warning('当前聊天没有消息');
             return;
           }
 
+          const lastMessageId = messages.length - 1;
           const current_floor = lastMessageId;
-          const chatVars = getVariables({ type: 'chat' });
-          const auto_summary_start_id = chatVars?.auto_summary_start_id || 0;
+          
+          const scriptId = getScriptIdSafe();
+          const chat_id = SillyTavern.chatId;
+          const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
+          const auto_summary_start_id = localStorage.getItem(storageKey) || '0';
 
           console.log('楼层信息:', {
             当前楼层: current_floor,
@@ -430,18 +460,23 @@ $(() => {
         }
       };
 
-      // 5. 验证楼层计算
+      // 5. 验证楼层计算（插件环境）
       (window as any).testFloorCalculation = () => {
         try {
           console.log('🧮 开始验证楼层计算...');
 
           const store = useSettingsStore();
           const settings = store.settings;
-          const lastMessageId = getLastMessageId();
-          const messages = getChatMessages(`0-${lastMessageId}`);
-          const chatVars = getVariables({ type: 'chat' });
-          const auto_summary_start_id = chatVars?.auto_summary_start_id || 0;
-          const current_floor = messages.length - 1;
+          
+          // 插件环境：从 SillyTavern.chat 获取
+          const messages = SillyTavern.chat || [];
+          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          const current_floor = lastMessageId;
+          
+          const scriptId = getScriptIdSafe();
+          const chat_id = SillyTavern.chatId;
+          const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
+          const auto_summary_start_id = parseInt(localStorage.getItem(storageKey) || '0');
 
           const relative_position = current_floor - auto_summary_start_id;
           const should_trigger = relative_position > 0 && relative_position % settings.summary_interval === 0;
@@ -462,22 +497,27 @@ $(() => {
         }
       };
 
-      // 6. 检查自动总结状态
+      // 6. 检查自动总结状态（插件环境）
       (window as any).checkAutoSummaryStatus = () => {
         try {
           console.log('📊 开始检查自动总结状态...');
 
           const store = useSettingsStore();
           const settings = store.settings;
-          const lastMessageId = getLastMessageId();
-          const messages = getChatMessages(`0-${lastMessageId}`);
-          const chat_id = SillyTavern.getCurrentChatId();
-          const chatVars = getVariables({ type: 'chat' });
+          
+          // 插件环境：从 SillyTavern.chat 获取
+          const messages = SillyTavern.chat || [];
+          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          const chat_id = SillyTavern.chatId;
+          
+          const scriptId = getScriptIdSafe();
+          const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
+          const auto_summary_start_id = localStorage.getItem(storageKey) || '0';
 
           const status = {
             基本信息: {
               聊天ID: chat_id,
-              当前楼层: messages.length - 1,
+              当前楼层: lastMessageId,
               消息总数: messages.length,
             },
             设置信息: {
@@ -487,8 +527,8 @@ $(() => {
               API配置: settings.api_endpoint ? '已配置' : '未配置',
             },
             状态信息: {
-              起始楼层: chatVars?.auto_summary_start_id || 0,
-              聊天变量: chatVars,
+              起始楼层: auto_summary_start_id,
+              存储方式: 'localStorage',
             },
           };
 

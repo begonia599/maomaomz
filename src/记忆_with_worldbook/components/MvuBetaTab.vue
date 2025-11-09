@@ -1974,7 +1974,7 @@ function generateUID(): number {
 
 // ==================== 数据持久化 ====================
 
-// 加载保存的配置
+// 加载保存的配置（插件环境 - localStorage）
 function loadSavedData() {
   try {
     const scriptId = getScriptIdSafe();
@@ -1983,10 +1983,12 @@ function loadSavedData() {
       return;
     }
 
-    const scriptVars = getVariables({ type: 'script', script_id: scriptId });
-    const savedData = scriptVars.mvu_beta_config;
-
-    if (savedData) {
+    // 插件环境：从 localStorage 加载
+    const storageKey = `${scriptId}_mvu_beta_config`;
+    const savedDataStr = localStorage.getItem(storageKey);
+    
+    if (savedDataStr) {
+      const savedData = JSON.parse(savedDataStr);
       if (savedData.varName) varName.value = savedData.varName;
       if (savedData.subFields) subFields.value = savedData.subFields;
       if (savedData.generatedStructure) generatedStructure.value = savedData.generatedStructure;
@@ -1999,7 +2001,7 @@ function loadSavedData() {
   }
 }
 
-// 保存配置
+// 保存配置（插件环境 - localStorage）
 function saveData() {
   try {
     const scriptId = getScriptIdSafe();
@@ -2008,18 +2010,16 @@ function saveData() {
       return;
     }
 
-    insertOrAssignVariables(
-      {
-        mvu_beta_config: {
-          varName: varName.value,
-          subFields: subFields.value,
-          generatedStructure: generatedStructure.value,
-          variableCategories: variableCategories.value,
-          generatedPrompt: generatedPrompt.value,
-        },
-      },
-      { type: 'script', script_id: scriptId },
-    );
+    // 插件环境：保存到 localStorage
+    const storageKey = `${scriptId}_mvu_beta_config`;
+    const dataToSave = {
+      varName: varName.value,
+      subFields: subFields.value,
+      generatedStructure: generatedStructure.value,
+      variableCategories: variableCategories.value,
+      generatedPrompt: generatedPrompt.value,
+    };
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
   } catch (error) {
     console.error('保存 MVU Beta 配置失败:', error);
   }

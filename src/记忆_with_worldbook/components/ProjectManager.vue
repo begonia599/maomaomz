@@ -2800,33 +2800,23 @@ function updatePreview() {
 
 function saveToChatVar() {
   try {
-    const chatId = SillyTavern.getCurrentChatId();
-    console.log('保存数据到聊天变量，聊天 ID:', chatId);
+    // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
+    const chatId = SillyTavern.chatId;
+    console.log('保存数据到 localStorage，聊天 ID:', chatId);
 
     const dataToSave = {
       frontend_projects_files: projects.value,
       frontend_ai_history: aiHistory.value,
     };
 
-    if (chatId) {
-      console.log('准备保存到聊天变量:', dataToSave.frontend_projects_files.length, '个项目');
-      insertOrAssignVariables(dataToSave, { type: 'chat' });
-      console.log('保存成功！');
+    // 插件环境：保存到 localStorage
+    const scriptId = getScriptIdSafe();
+    const storageKey = chatId
+      ? `${scriptId}_frontend_projects_${chatId}`
+      : `${scriptId}_frontend_projects_global`;
 
-      // 验证保存
-      const verify = getVariables({ type: 'chat' });
-      if (verify?.frontend_projects_files) {
-        console.log('验证：数据已成功保存，共', verify.frontend_projects_files.length, '个项目');
-      } else {
-        console.error('验证失败：保存后无法读取数据');
-      }
-    } else {
-      // 没有聊天时使用全局变量
-      console.log('未找到聊天 ID，保存到全局变量:', dataToSave.frontend_projects_files.length, '个项目');
-      insertOrAssignVariables(dataToSave, { type: 'global' });
-      console.log('已保存到全局变量');
-      toastr.info('项目已保存到全局变量（打开聊天后可保存到聊天变量）');
-    }
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+    console.log('保存成功到 localStorage！', dataToSave.frontend_projects_files.length, '个项目');
   } catch (e) {
     console.error('保存失败:', e);
   }
@@ -2836,15 +2826,24 @@ function loadFromChatVar() {
   try {
     // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
     const chatId = SillyTavern.chatId;
-    console.log('正在加载数据，聊天 ID:', chatId);
+    console.log('正在从 localStorage 加载数据，聊天 ID:', chatId);
 
-    let data;
-    if (chatId) {
-      data = getVariables({ type: 'chat' });
-      console.log('从聊天变量读取到的数据:', data);
-    } else {
-      data = getVariables({ type: 'global' });
-      console.log('未找到聊天 ID，从全局变量读取数据:', data);
+    // 插件环境：从 localStorage 加载
+    const scriptId = getScriptIdSafe();
+    const storageKey = chatId
+      ? `${scriptId}_frontend_projects_${chatId}`
+      : `${scriptId}_frontend_projects_global`;
+
+    const savedData = localStorage.getItem(storageKey);
+    let data = null;
+
+    if (savedData) {
+      try {
+        data = JSON.parse(savedData);
+        console.log('从 localStorage 读取到的数据:', data);
+      } catch (parseError) {
+        console.error('解析 localStorage 数据失败:', parseError);
+      }
     }
 
     if (data?.frontend_projects_files && Array.isArray(data.frontend_projects_files)) {
