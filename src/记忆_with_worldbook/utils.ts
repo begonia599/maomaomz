@@ -89,7 +89,15 @@ export function getScriptIdSafe(): string {
 export function getChatIdSafe(): string {
   try {
     // 插件环境：尝试多种方式获取聊天ID
-    // 1. 优先使用 TavernHelper.getChatId()
+    // 1. 优先使用 SillyTavern.getContext()
+    if (typeof SillyTavern !== 'undefined' && typeof SillyTavern.getContext === 'function') {
+      const context = SillyTavern.getContext();
+      if (context?.chatId) {
+        return context.chatId;
+      }
+    }
+
+    // 2. 尝试 TavernHelper.getChatId()
     if (
       typeof (window as any).TavernHelper !== 'undefined' &&
       typeof (window as any).TavernHelper.getChatId === 'function'
@@ -98,7 +106,7 @@ export function getChatIdSafe(): string {
       if (chatId) return chatId;
     }
 
-    // 2. 尝试 SillyTavern.getCurrentChatId() 方法
+    // 3. 尝试 SillyTavern.getCurrentChatId() 方法
     if (
       typeof SillyTavern !== 'undefined' &&
       typeof SillyTavern.getCurrentChatId === 'function'
@@ -107,7 +115,7 @@ export function getChatIdSafe(): string {
       if (chatId) return chatId;
     }
 
-    // 3. 降级：尝试 SillyTavern.chatId 属性
+    // 4. 降级：尝试 SillyTavern.chatId 属性
     if (typeof SillyTavern !== 'undefined' && SillyTavern.chatId) {
       return SillyTavern.chatId;
     }
