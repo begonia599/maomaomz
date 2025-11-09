@@ -60,9 +60,8 @@ $(() => {
             return;
           }
 
-          // 插件环境：从 SillyTavern.chat 获取消息数
-          const messages = SillyTavern?.chat || [];
-          const last_message_id = messages.length > 0 ? messages.length - 1 : 0;
+          // TavernHelper环境：使用 getLastMessageId()
+          const last_message_id = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
 
           // 插件环境：使用 getChatIdSafe() 获取聊天ID
           const current_chat_id = getChatIdSafe();
@@ -188,7 +187,7 @@ $(() => {
                 // 更新起始楼层，为下次总结做准备（插件环境 - localStorage）
                 const new_start_id = end_id + 1;
                 const scriptId = getScriptIdSafe();
-                const current_chat_id = SillyTavern?.chatId;
+                const current_chat_id = getChatIdSafe();
                 if (scriptId && current_chat_id) {
                   const storageKey = `${scriptId}_auto_summary_start_id_${current_chat_id}`;
                   localStorage.setItem(storageKey, String(new_start_id));
@@ -208,17 +207,19 @@ $(() => {
         }
       };
 
-      // 监听消息接收事件（插件环境 - 使用 SillyTavern.eventSource）
+      // 监听消息接收事件（TavernHelper环境 - 使用 eventOn）
       try {
-        if (typeof SillyTavern !== 'undefined' && SillyTavern.eventSource) {
-          // 插件环境：使用 SillyTavern.eventSource.on
-          SillyTavern.eventSource.on(SillyTavern.eventTypes.CHARACTER_MESSAGE_RENDERED, () => {
+        if (typeof eventOn === 'function' && typeof (window as any).tavern_events !== 'undefined') {
+          // TavernHelper环境：使用 eventOn 和 tavern_events
+          const tavern_events = (window as any).tavern_events;
+
+          eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, () => {
             console.log('📨 收到消息渲染事件，检查自动总结...');
             checkAutoSummarize();
           });
 
           // 监听聊天切换事件
-          SillyTavern.eventSource.on(SillyTavern.eventTypes.CHAT_CHANGED, (chat_file_name: string) => {
+          eventOn(tavern_events.CHAT_CHANGED, (chat_file_name: string) => {
             console.log('🔄 聊天切换事件:', chat_file_name);
 
             // 插件环境：检查新聊天的localStorage状态
@@ -238,9 +239,9 @@ $(() => {
             }
           });
 
-          console.log('✅ 事件监听器已注册');
+          console.log('✅ 事件监听器已注册 (TavernHelper)');
         } else {
-          console.warn('⚠️ SillyTavern.eventSource 不可用，跳过事件监听');
+          console.warn('⚠️ eventOn 或 tavern_events 不可用，跳过事件监听');
         }
       } catch (error) {
         console.error('❌ 注册事件监听器失败:', error);
@@ -264,14 +265,14 @@ $(() => {
                 }
 
                 // 插件环境：从 localStorage 检查
-                const chatId = SillyTavern?.chatId || '';
+                const chatId = getChatIdSafe();
                 const storageKey = `${scriptId}_auto_summary_start_id_${chatId}`;
                 const auto_summary_start_id = localStorage.getItem(storageKey);
 
                 // 只有在没有设置过起始楼层时才设置
                 if (!auto_summary_start_id) {
-                  // 插件环境：需要从 SillyTavern.chat 获取消息数量
-                  const last_message_id = SillyTavern?.chat?.length ? SillyTavern.chat.length - 1 : 0;
+                  // TavernHelper环境：使用 getLastMessageId()
+                  const last_message_id = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
                   localStorage.setItem(storageKey, String(last_message_id));
                   console.log(`✅ 首次开启自动总结，起始楼层设置为: ${last_message_id}`);
                   window.toastr?.info(`自动总结已开启，将从第 ${last_message_id} 层开始`);
@@ -317,13 +318,13 @@ $(() => {
             return;
           }
 
-          // 插件环境：从 SillyTavern.chat 获取消息数量
-          const messages = SillyTavern.chat || [];
-          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          // TavernHelper环境：使用 getLastMessageId()
+          const lastMessageId = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
+          const messages = typeof getChatMessages === 'function' ? getChatMessages('0-{{lastMessageId}}') : [];
           console.log('最新消息ID:', lastMessageId);
           console.log('获取到的消息数量:', messages.length);
 
-          if (messages.length === 0) {
+          if (lastMessageId < 0) {
             console.warn('⚠️ 当前聊天没有消息');
             window.toastr.warning('当前聊天没有消息');
             return;
@@ -372,9 +373,9 @@ $(() => {
             保存到世界书: settings.auto_save_to_worldbook,
           });
 
-          // 插件环境：从 SillyTavern 获取信息
-          const messages = SillyTavern.chat || [];
-          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          // TavernHelper环境：使用 getLastMessageId() 和 getChatMessages()
+          const lastMessageId = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
+          const messages = typeof getChatMessages === 'function' ? getChatMessages('0-{{lastMessageId}}') : [];
           const chat_id = getChatIdSafe();
 
           const scriptId = getScriptIdSafe();
@@ -430,15 +431,14 @@ $(() => {
         try {
           console.log('🔍 开始检查楼层...');
 
-          // 插件环境：从 SillyTavern.chat 获取
-          const messages = SillyTavern.chat || [];
-          if (messages.length === 0) {
+          // TavernHelper环境：使用 getLastMessageId() 和 getChatMessages()
+          const lastMessageId = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
+          const messages = typeof getChatMessages === 'function' ? getChatMessages('0-{{lastMessageId}}') : [];
+          if (lastMessageId < 0) {
             console.warn('⚠️ 当前聊天没有消息');
             window.toastr.warning('当前聊天没有消息');
             return;
           }
-
-          const lastMessageId = messages.length - 1;
           const current_floor = lastMessageId;
 
           const scriptId = getScriptIdSafe();
@@ -468,9 +468,8 @@ $(() => {
           const store = useSettingsStore();
           const settings = store.settings;
 
-          // 插件环境：从 SillyTavern.chat 获取
-          const messages = SillyTavern.chat || [];
-          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          // TavernHelper环境：使用 getLastMessageId()
+          const lastMessageId = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
           const current_floor = lastMessageId;
 
           const scriptId = getScriptIdSafe();
@@ -505,9 +504,9 @@ $(() => {
           const store = useSettingsStore();
           const settings = store.settings;
 
-          // 插件环境：从 SillyTavern.chat 获取
-          const messages = SillyTavern.chat || [];
-          const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
+          // TavernHelper环境：使用 getLastMessageId() 和 getChatMessages()
+          const lastMessageId = typeof getLastMessageId === 'function' ? getLastMessageId() : 0;
+          const messages = typeof getChatMessages === 'function' ? getChatMessages('0-{{lastMessageId}}') : [];
           const chat_id = getChatIdSafe();
 
           const scriptId = getScriptIdSafe();
