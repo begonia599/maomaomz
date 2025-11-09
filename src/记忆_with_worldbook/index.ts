@@ -13,7 +13,7 @@ $(() => {
   setTimeout(() => {
     // 插件环境：使用固定的ID
     const script_id = 'maomaomz_extension_v1';
-    
+
     // 设置全局 script_id
     setGlobalScriptId(script_id);
 
