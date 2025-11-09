@@ -88,8 +88,32 @@ export function getScriptIdSafe(): string {
  */
 export function getChatIdSafe(): string {
   try {
-    // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
-    return SillyTavern.chatId || '';
+    // 插件环境：尝试多种方式获取聊天ID
+    // 1. 优先使用 TavernHelper.getChatId()
+    if (
+      typeof (window as any).TavernHelper !== 'undefined' &&
+      typeof (window as any).TavernHelper.getChatId === 'function'
+    ) {
+      const chatId = (window as any).TavernHelper.getChatId();
+      if (chatId) return chatId;
+    }
+
+    // 2. 尝试 SillyTavern.getCurrentChatId() 方法
+    if (
+      typeof SillyTavern !== 'undefined' &&
+      typeof SillyTavern.getCurrentChatId === 'function'
+    ) {
+      const chatId = SillyTavern.getCurrentChatId();
+      if (chatId) return chatId;
+    }
+
+    // 3. 降级：尝试 SillyTavern.chatId 属性
+    if (typeof SillyTavern !== 'undefined' && SillyTavern.chatId) {
+      return SillyTavern.chatId;
+    }
+
+    console.warn('⚠️ 无法获取聊天ID，可能未打开任何聊天');
+    return '';
   } catch (error) {
     console.error('获取聊天 ID 失败:', error);
     return '';

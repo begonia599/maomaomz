@@ -1588,7 +1588,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import { normalizeApiEndpoint } from '../settings';
-import { getScriptIdSafe } from '../utils';
+import { getScriptIdSafe, getChatIdSafe } from '../utils';
 import ProgressDialog from './ProgressDialog.vue';
 
 interface ProjectFile {
@@ -2822,8 +2822,8 @@ function saveToChatVar() {
 
 function loadFromChatVar() {
   try {
-    // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
-    const chatId = SillyTavern.chatId;
+    // 插件环境：使用 getChatIdSafe() 函数
+    const chatId = getChatIdSafe();
     console.log('正在从 localStorage 加载数据，聊天 ID:', chatId);
 
     // 插件环境：从 localStorage 加载
@@ -2864,9 +2864,9 @@ function loadFromChatVar() {
 // 立即加载数据
 loadFromChatVar();
 
-// 插件环境：监听 SillyTavern.chatId 属性变化
+// 插件环境：监听聊天变化（使用 getChatIdSafe）
 watch(
-  () => SillyTavern.chatId,
+  () => getChatIdSafe(),
   () => {
     loadFromChatVar();
     currentId.value = '';

@@ -3848,7 +3848,7 @@ const clearWorldbookModifyRequest = () => {
 
 // ==================== 世界书查看器相关函数 ====================
 
-// 加载世界书条目
+// 加载世界书条目（插件环境使用 TavernHelper）
 const loadWorldbookEntries = async () => {
   if (!selectedViewerWorldbook.value) {
     worldbookEntries.value = [];
@@ -3856,7 +3856,20 @@ const loadWorldbookEntries = async () => {
   }
 
   try {
-    const worldbook = await getWorldbook(selectedViewerWorldbook.value);
+    // 插件环境：优先使用 TavernHelper.getWorldbook()
+    let worldbook: any = null;
+    if (
+      typeof (window as any).TavernHelper !== 'undefined' &&
+      typeof (window as any).TavernHelper.getWorldbook === 'function'
+    ) {
+      worldbook = await (window as any).TavernHelper.getWorldbook(selectedViewerWorldbook.value);
+    } else {
+      console.error('❌ TavernHelper.getWorldbook 不可用');
+      window.toastr.error('世界书功能需要酒馆助手支持');
+      worldbookEntries.value = [];
+      return;
+    }
+
     if (worldbook && Array.isArray(worldbook) && worldbook.length > 0) {
       worldbookEntries.value = worldbook;
       console.log(`✅ 已加载世界书 "${selectedViewerWorldbook.value}" 的 ${worldbookEntries.value.length} 个条目`);

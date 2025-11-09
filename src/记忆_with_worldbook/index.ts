@@ -1,7 +1,7 @@
 import { watch, createApp } from 'vue';
 import { klona } from 'klona';
 import { useSettingsStore, useSummaryHistoryStore } from './settings';
-import { getScriptIdSafe, setGlobalScriptId } from './utils';
+import { getScriptIdSafe, getChatIdSafe, setGlobalScriptId } from './utils';
 import { summarizeMessages } from './总结功能';
 import './浮动面板';
 import './添加导航按钮';
@@ -64,8 +64,8 @@ $(() => {
           const messages = SillyTavern?.chat || [];
           const last_message_id = messages.length > 0 ? messages.length - 1 : 0;
 
-          // 插件环境：使用 SillyTavern.chatId 属性
-          const current_chat_id = SillyTavern?.chatId;
+          // 插件环境：使用 getChatIdSafe() 获取聊天ID
+          const current_chat_id = getChatIdSafe();
           if (!current_chat_id) {
             console.log('❌ 无法获取聊天ID，跳过自动总结检查');
             return;
@@ -224,7 +224,7 @@ $(() => {
             // 插件环境：检查新聊天的localStorage状态
             try {
               const scriptId = getScriptIdSafe();
-              const chatId = SillyTavern.chatId;
+              const chatId = getChatIdSafe();
               const storageKey = `${scriptId}_auto_summary_start_id_${chatId}`;
               const auto_summary_start_id = localStorage.getItem(storageKey);
 
@@ -307,8 +307,8 @@ $(() => {
             return;
           }
 
-          // 插件环境：使用 SillyTavern.chatId 属性而不是 getCurrentChatId() 函数
-          const chat_id = SillyTavern.chatId;
+          // 插件环境：使用 getChatIdSafe() 函数
+          const chat_id = getChatIdSafe();
           console.log('获取到的聊天ID:', chat_id, '类型:', typeof chat_id);
 
           if (!chat_id && chat_id !== 0) {
@@ -375,7 +375,7 @@ $(() => {
           // 插件环境：从 SillyTavern 获取信息
           const messages = SillyTavern.chat || [];
           const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
-          const chat_id = SillyTavern.chatId;
+          const chat_id = getChatIdSafe();
 
           const scriptId = getScriptIdSafe();
           const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
@@ -400,7 +400,7 @@ $(() => {
         try {
           console.log('🔄 开始同步数据...');
 
-          const chat_id = SillyTavern.chatId;
+          const chat_id = getChatIdSafe();
           if (!chat_id) {
             console.error('❌ 无法获取当前聊天ID');
             window.toastr.error('无法获取当前聊天ID');
@@ -442,7 +442,7 @@ $(() => {
           const current_floor = lastMessageId;
 
           const scriptId = getScriptIdSafe();
-          const chat_id = SillyTavern.chatId;
+          const chat_id = getChatIdSafe();
           const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
           const auto_summary_start_id = localStorage.getItem(storageKey) || '0';
 
@@ -474,7 +474,7 @@ $(() => {
           const current_floor = lastMessageId;
 
           const scriptId = getScriptIdSafe();
-          const chat_id = SillyTavern.chatId;
+          const chat_id = getChatIdSafe();
           const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
           const auto_summary_start_id = parseInt(localStorage.getItem(storageKey) || '0');
 
@@ -508,7 +508,7 @@ $(() => {
           // 插件环境：从 SillyTavern.chat 获取
           const messages = SillyTavern.chat || [];
           const lastMessageId = messages.length > 0 ? messages.length - 1 : 0;
-          const chat_id = SillyTavern.chatId;
+          const chat_id = getChatIdSafe();
 
           const scriptId = getScriptIdSafe();
           const storageKey = `${scriptId}_auto_summary_start_id_${chat_id}`;
