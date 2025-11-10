@@ -7,10 +7,23 @@ import './浮动面板';
 import './添加导航按钮';
 import { globalPinia } from './globalPinia';
 import TaskManager from './components/TaskManager.vue';
+import { checkAuthorization, isAuthorized } from './auth';
 
 $(() => {
   // 延迟初始化，确保酒馆完全加载
-  setTimeout(() => {
+  setTimeout(async () => {
+    // 🔐 首先进行授权验证
+    console.log('🔐 开始插件授权验证...');
+    const authorized = await checkAuthorization();
+    
+    if (!authorized) {
+      console.error('❌ 授权验证失败，插件功能将被限制');
+      (window as any).toastr?.error('❌ 未授权，插件功能已被限制\n\n请前往 Discord 获取授权码后刷新页面');
+      return; // 阻止插件继续初始化
+    }
+    
+    console.log('✅ 授权验证通过，开始加载插件...');
+    
     // 插件环境：使用固定的ID
     const script_id = 'maomaomz_extension_v1';
 
@@ -859,9 +872,15 @@ $(() => {
 
 // 全局挂载任务管理器（独立于主面板，不受面板开关影响）
 $(() => {
-  // 延迟挂载，确保DOM完全加载
+  // 延迟挂载，确保DOM完全加载和授权验证完成
   setTimeout(() => {
     try {
+      // 🔐 检查授权状态
+      if (!isAuthorized()) {
+        console.warn('⚠️ 未授权，跳过任务管理器挂载');
+        return;
+      }
+
       // 检查是否已存在，避免重复挂载
       const existingContainer = document.getElementById('global-task-manager');
       if (existingContainer) {
@@ -887,5 +906,5 @@ $(() => {
       console.error('❌ 挂载任务管理器失败:', error);
       window.toastr?.error('任务管理器挂载失败');
     }
-  }, 500);
+  }, 1000); // 增加延迟，确保授权验证完成
 });

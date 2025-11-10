@@ -1,0 +1,17 @@
+# 🐱 猫猫的小破烂 - Cloudflare Workers 配置文件
+
+name = "maomaomz-auth"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# KV 命名空间绑定
+[[kv_namespaces]]
+binding = "CODES"
+id = "736f830f14394b1b18c315a2d6b9db31b"
+
+# 环境变量（管理员密钥）
+[vars]
+# 注意：实际密钥应该在 Cloudflare Dashboard 中以 Secret 形式设置
+# 这里只是示例
+ADMIN_SECRET = "your-super-secret-admin-key-here"
+
