@@ -233,7 +233,7 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
       }
     } else {
       // 降级方案：遍历每个楼层（如果可用）
-  for (let i = start_id; i <= end_id; i++) {
+      for (let i = start_id; i <= end_id; i++) {
         // 尝试从 SillyTavern.chat 获取
         if (typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat) && SillyTavern.chat[i]) {
           const msg = SillyTavern.chat[i];
@@ -242,7 +242,7 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
               role: msg.is_user ? 'user' : 'assistant',
               message: msg.mes || '',
             });
-    }
+          }
         }
       }
     }
