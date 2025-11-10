@@ -4,8 +4,10 @@
  * ⚠️ 商业化死全家，贩子死全家 ⚠️
  */
 
+import packageJson from '../../package.json';
+
 // 当前版本号（从 package.json 读取）
-export const CURRENT_VERSION = '1.3.6';
+export const CURRENT_VERSION = packageJson.version;
 
 // GitHub 仓库信息
 const GITHUB_REPO = 'mzrodyu/maomaomz';
