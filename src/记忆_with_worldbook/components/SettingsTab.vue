@@ -1923,10 +1923,25 @@ const handle_test_connection = async () => {
 
     window.toastr.info('正在测试连接，请稍候...');
 
-    // 导入规范化函数
-    const { normalizeApiEndpoint } = await import('../settings');
+    // 导入规范化函数和参数过滤函数
+    const { normalizeApiEndpoint, filterApiParams } = await import('../settings');
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
     console.log('📍 规范化的端点:', apiUrl);
+
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model || 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: 'Hello' }],
+      max_tokens: 5,
+      temperature: settings.value.temperature,
+      top_p: settings.value.top_p,
+      presence_penalty: settings.value.presence_penalty,
+      frequency_penalty: settings.value.frequency_penalty,
+    };
+
+    // 根据 API 提供商过滤参数
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+    console.log('🔍 过滤后的参数:', filteredParams);
 
     // 使用 OpenAI 标准格式的连接测试
     const response = await fetch(apiUrl, {
@@ -1935,15 +1950,7 @@ const handle_test_connection = async () => {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model || 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: 'Hello' }],
-        max_tokens: 5,
-        temperature: settings.value.temperature,
-        top_p: settings.value.top_p,
-        presence_penalty: settings.value.presence_penalty,
-        frequency_penalty: settings.value.frequency_penalty,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     if (response.ok) {
