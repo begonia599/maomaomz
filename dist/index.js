@@ -1,4 +1,3 @@
-import'../../../../../scripts/i18n.js';
 /**
 * @vue/shared v3.5.24
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
