@@ -39,56 +39,70 @@ function compareVersions(v1: string, v2: string): number {
  */
 async function fetchLatestVersion(): Promise<{ version: string; url: string; notes: string } | null> {
   try {
+    console.log('🔍 正在从 GitHub API 获取版本信息...');
+    
     // 尝试从 GitHub Releases API 获取
     const response = await fetch(`${GITHUB_API_BASE}/repos/${GITHUB_REPO}/releases/latest`, {
       headers: {
         Accept: 'application/vnd.github.v3+json',
       },
+      // 添加超时控制
+      signal: AbortSignal.timeout(10000), // 10秒超时
     });
 
+    console.log(`📡 GitHub API 响应状态: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      console.warn('⚠️ 无法获取最新版本信息，使用备用方案');
-      // 备用：获取最新的 commit
-      return await fetchLatestCommit();
+      console.warn(`⚠️ GitHub API 请求失败 (${response.status})，尝试使用 jsDelivr CDN...`);
+      // 备用：使用 jsDelivr CDN 获取 package.json
+      return await fetchVersionFromCDN();
     }
 
     const data = await response.json();
+    console.log('✅ 成功获取版本信息:', data.tag_name);
+    
     return {
       version: data.tag_name.replace(/^v/, ''),
       url: data.html_url,
       notes: data.body || '暂无更新说明',
     };
-  } catch (error) {
-    console.error('❌ 获取版本信息失败:', error);
-    return null;
+  } catch (error: any) {
+    console.error('❌ GitHub API 请求失败:', error.message || error);
+    
+    // 如果是网络错误，尝试备用方案
+    console.warn('🔄 尝试使用 jsDelivr CDN 备用方案...');
+    return await fetchVersionFromCDN();
   }
 }
 
 /**
- * 备用方案：获取最新 commit 作为版本
+ * 备用方案：使用 jsDelivr CDN 获取 package.json
  */
-async function fetchLatestCommit(): Promise<{ version: string; url: string; notes: string } | null> {
+async function fetchVersionFromCDN(): Promise<{ version: string; url: string; notes: string } | null> {
   try {
-    const response = await fetch(`${GITHUB_API_BASE}/repos/${GITHUB_REPO}/commits/main`, {
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-      },
+    console.log('🔍 正在从 jsDelivr CDN 获取版本信息...');
+    
+    // 使用 jsDelivr CDN，国内访问更稳定
+    const response = await fetch(`https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@main/package.json`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
+      console.warn(`⚠️ jsDelivr CDN 请求失败 (${response.status})`);
       return null;
     }
 
     const data = await response.json();
-    const shortSha = data.sha.substring(0, 7);
-
+    console.log('✅ 从 CDN 成功获取版本:', data.version);
+    
     return {
-      version: `dev-${shortSha}`,
-      url: data.html_url,
-      notes: data.commit.message,
+      version: data.version,
+      url: `https://github.com/${GITHUB_REPO}/releases/latest`,
+      notes: `最新版本: ${data.version}\n\n请前往 GitHub 查看详细更新日志`,
     };
-  } catch (error) {
-    console.error('❌ 获取最新提交失败:', error);
+  } catch (error: any) {
+    console.error('❌ jsDelivr CDN 请求失败:', error.message || error);
     return null;
   }
 }
@@ -343,12 +357,18 @@ export async function autoCheckUpdates(): Promise<void> {
  * 手动检查更新（强制，显示结果）
  */
 export async function manualCheckUpdates(): Promise<void> {
-  (window as any).toastr?.info('正在检查更新...');
+  console.log('🔍 手动检查更新...');
+  (window as any).toastr?.info('正在检查更新...', '版本检测', { timeOut: 3000 });
 
   const result = await checkForUpdates(true);
 
   if (!result) {
-    (window as any).toastr?.error('❌ 无法获取版本信息，请检查网络连接');
+    console.error('❌ 无法获取版本信息');
+    (window as any).toastr?.error(
+      '❌ 无法获取版本信息\n\n可能原因：\n1. GitHub API 访问受限\n2. 网络连接问题\n3. CDN 访问失败\n\n请稍后重试或查看控制台了解详情',
+      '检查失败',
+      { timeOut: 8000 }
+    );
     return;
   }
 
@@ -361,6 +381,7 @@ export async function manualCheckUpdates(): Promise<void> {
       notes: result.notes,
     });
   } else {
-    (window as any).toastr?.success(`✅ 已是最新版本 v${result.currentVersion}`);
+    console.log(`✅ 已是最新版本: ${result.currentVersion}`);
+    (window as any).toastr?.success(`✅ 已是最新版本 v${result.currentVersion}`, '无需更新');
   }
 }
