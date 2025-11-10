@@ -761,9 +761,9 @@ function handleAdmin(env) {
                                                 \${endpointList.map(([endpoint, count]) => \`
                                                     <div style="color: #666; font-size: 11px; margin-bottom: 4px;">
                                                         🌐 \${endpoint}: \${count}次
-                                                    </div>
+                                </div>
                                                 \`).join('')}
-                                            </div>
+                            </div>
                                         </details>
                                     \` : ''}
                                 </div>

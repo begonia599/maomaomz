@@ -3,24 +3,6 @@
     class="memory-panel-container"
     style="display: flex; flex-direction: column; height: 100%; background: #1a1a1a; color: #e0e0e0"
   >
-    <!-- 顶部警告横幅 -->
-    <div
-      style="
-        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-        color: #fff;
-        text-align: center;
-        padding: 8px 16px;
-        font-weight: 700;
-        font-size: 13px;
-        letter-spacing: 1px;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-        border-bottom: 2px solid #7f1d1d;
-        flex-shrink: 0;
-      "
-    >
-      ⚠️ 商业化死全家，贩子死全家 ⚠️
-    </div>
-
     <!-- 面板头部 -->
     <div
       class="panel-header"
@@ -43,7 +25,7 @@
         >
         <div style="display: flex; flex-direction: column; gap: 4px">
           <span class="panel-title" style="font-size: 16px; font-weight: 600; color: #fff; letter-spacing: 0.5px"
-            >猫猫的小破烂 - 商业化死全家，贩子死全家</span
+            >猫猫的小破烂</span
           >
           <span
             style="

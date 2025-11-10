@@ -173,9 +173,9 @@ function showAuthDialog(): Promise<string | null> {
             授权码每天更新，请前往 Discord 查看
           </span>
         </p>
-        <input 
-          type="text" 
-          id="authCodeInput" 
+        <input
+          type="text"
+          id="authCodeInput"
           placeholder="例如：MEOW-20251111-ABCD"
           style="
             width: 100%;
@@ -195,7 +195,7 @@ function showAuthDialog(): Promise<string | null> {
           "
         />
         <div style="display: flex; gap: 12px;">
-          <button 
+          <button
             id="authSubmitBtn"
             style="
               flex: 1;
@@ -213,7 +213,7 @@ function showAuthDialog(): Promise<string | null> {
           >
             ✅ 验证授权码
           </button>
-          <button 
+          <button
             id="authCancelBtn"
             style="
               padding: 14px 24px;
