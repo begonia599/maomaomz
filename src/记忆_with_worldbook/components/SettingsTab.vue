@@ -2118,10 +2118,12 @@ const handle_generate_table = async () => {
     try {
       const messageRange = `${settings.value.table_start_message_id}-${settings.value.table_end_message_id}`;
       console.log('获取消息范围:', messageRange);
-      
+
       // 使用 TavernHelper.getChatMessages()
-      if (typeof (window as any).TavernHelper !== 'undefined' && 
-          typeof (window as any).TavernHelper.getChatMessages === 'function') {
+      if (
+        typeof (window as any).TavernHelper !== 'undefined' &&
+        typeof (window as any).TavernHelper.getChatMessages === 'function'
+      ) {
         chatMessages = (window as any).TavernHelper.getChatMessages(messageRange);
         console.log('✅ 通过 TavernHelper.getChatMessages() 获取到的消息数量:', chatMessages.length);
       } else {
@@ -2507,7 +2509,7 @@ const handle_hide_messages = async () => {
       if (typeof (window as any).TavernHelper !== 'undefined') {
         const lastMessageId = (window as any).TavernHelper.getLastMessageId?.() ?? 0;
         console.log('最新消息ID:', lastMessageId);
-        
+
         if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
           chatMessages = (window as any).TavernHelper.getChatMessages(`0-${lastMessageId}`);
           console.log('✅ 通过 TavernHelper 获取到的消息数量:', chatMessages.length);
@@ -2618,7 +2620,7 @@ const handle_show_messages = async () => {
       if (typeof (window as any).TavernHelper !== 'undefined') {
         const lastMessageId = (window as any).TavernHelper.getLastMessageId?.() ?? 0;
         console.log('最新消息ID:', lastMessageId);
-        
+
         if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
           chatMessages = (window as any).TavernHelper.getChatMessages(`0-${lastMessageId}`);
           console.log('✅ 通过 TavernHelper 获取到的消息数量:', chatMessages.length);
@@ -2707,7 +2709,7 @@ const handle_refresh_hidden = async (showToast: boolean = false) => {
       if (typeof (window as any).TavernHelper !== 'undefined') {
         const lastMessageId = (window as any).TavernHelper.getLastMessageId?.() ?? 0;
         console.log('最新消息ID:', lastMessageId);
-        
+
         if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
           chatMessages = (window as any).TavernHelper.getChatMessages(`0-${lastMessageId}`);
           console.log('✅ 通过 TavernHelper 获取到的消息数量:', chatMessages.length);

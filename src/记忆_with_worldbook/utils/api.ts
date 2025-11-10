@@ -196,9 +196,11 @@ export async function summarizeMessages(startId: number, endId: number, settings
 
   // 收集消息 - 使用 TavernHelper
   let messages: ChatMessage[] = [];
-  
-  if (typeof (window as any).TavernHelper !== 'undefined' && 
-      typeof (window as any).TavernHelper.getChatMessages === 'function') {
+
+  if (
+    typeof (window as any).TavernHelper !== 'undefined' &&
+    typeof (window as any).TavernHelper.getChatMessages === 'function'
+  ) {
     // 使用范围获取
     const range = `${startId}-${endId}`;
     messages = (window as any).TavernHelper.getChatMessages(range);
