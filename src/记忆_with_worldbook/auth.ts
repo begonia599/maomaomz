@@ -1,5 +1,5 @@
 /**
- * 🔐 授权验证模块
+ * 🔐 授权验证模块 - 简化版（带API端点追踪）
  * 作者: mzrodyu
  * ⚠️ 商业化死全家，贩子死全家 ⚠️
  */
@@ -10,90 +10,44 @@ const AUTH_API_URL = 'https://maomaomz-auth.baobaoyu999727272.workers.dev';
 // LocalStorage 键名
 const STORAGE_KEY = 'maomaomz_auth_code';
 const STORAGE_VERIFIED_KEY = 'maomaomz_auth_verified';
-const STORAGE_DEVICE_ID_KEY = 'maomaomz_device_id';
 
 /**
- * 生成设备唯一标识码
+ * 获取当前使用的 API 端点（用于追踪商业化倒卖）
  */
-function generateDeviceId(): string {
-  // 尝试从 localStorage 获取已有的设备ID
-  const existingId = localStorage.getItem(STORAGE_DEVICE_ID_KEY);
-  if (existingId) {
-    return existingId;
+function getCurrentApiEndpoint(): string {
+  try {
+    // 尝试从 SillyTavern 配置中获取 API 端点
+    const apiUrl = (window as any).api_server || '';
+    const apiType = (window as any).main_api || 'unknown';
+    
+    if (apiUrl) {
+      // 只返回域名部分，不要完整URL（保护隐私）
+      try {
+        const url = new URL(apiUrl);
+        return url.hostname || apiUrl;
+      } catch {
+        return apiUrl;
+      }
+    }
+    
+    // 如果没有，返回API类型
+    return apiType || 'unknown';
+  } catch (error) {
+    console.error('获取API端点失败:', error);
+    return 'unknown';
   }
-
-  // 生成新的设备ID（基于浏览器指纹）
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const txt = 'maomaomz-fingerprint';
-  if (ctx) {
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = '#f60';
-    ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = '#069';
-    ctx.fillText(txt, 2, 15);
-    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-    ctx.fillText(txt, 4, 17);
-  }
-
-  const canvasData = canvas.toDataURL();
-  
-  // 收集浏览器指纹信息
-  const fingerprint = {
-    canvas: canvasData.slice(-50), // 只取最后50个字符
-    userAgent: navigator.userAgent,
-    language: navigator.language,
-    platform: navigator.platform,
-    screenResolution: `${screen.width}x${screen.height}`,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    timestamp: Date.now(),
-  };
-
-  // 生成 hash（简化版）
-  const fingerprintStr = JSON.stringify(fingerprint);
-  let hash = 0;
-  for (let i = 0; i < fingerprintStr.length; i++) {
-    const char = fingerprintStr.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-
-  // 生成设备ID：DEV-时间戳-hash值
-  const deviceId = `DEV-${Date.now().toString(36)}-${Math.abs(hash).toString(36).toUpperCase()}`;
-
-  // 保存到 localStorage
-  localStorage.setItem(STORAGE_DEVICE_ID_KEY, deviceId);
-  
-  console.log('🔑 已生成设备ID:', deviceId);
-  
-  return deviceId;
 }
 
 /**
- * 获取设备信息
- */
-function getDeviceInfo() {
-  return {
-    deviceId: generateDeviceId(),
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    language: navigator.language,
-    screenResolution: `${screen.width}x${screen.height}`,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    timestamp: new Date().toISOString(),
-  };
-}
-
-/**
- * 验证授权码
+ * 验证授权码（带API端点追踪）
  */
 async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: string }> {
   try {
-    const deviceInfo = getDeviceInfo();
+    // 获取当前使用的 API 端点
+    const apiEndpoint = getCurrentApiEndpoint();
     
-    console.log('🔐 正在验证授权码，设备ID:', deviceInfo.deviceId);
+    console.log('🔐 正在验证授权码...');
+    console.log('🌐 API端点:', apiEndpoint);
     
     const response = await fetch(`${AUTH_API_URL}/verify`, {
       method: 'POST',
@@ -102,7 +56,8 @@ async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: 
       },
       body: JSON.stringify({ 
         code: code.trim().toUpperCase(),
-        device: deviceInfo,
+        apiEndpoint: apiEndpoint, // 🔥 发送 API 端点信息，用于抓第三方
+        timestamp: new Date().toISOString(),
       }),
     });
 
