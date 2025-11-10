@@ -60,13 +60,51 @@ $(() => {
             return;
           }
 
-          // 插件环境：使用 SillyTavern.chat.length
+          // 优先使用 TavernHelper 获取最后一条消息ID
           let last_message_id = 0;
-          if (typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
+          
+          // 方式1: TavernHelper.getLastMessageId()
+          if (typeof (window as any).TavernHelper !== 'undefined') {
+            if (typeof (window as any).TavernHelper.getLastMessageId === 'function') {
+              try {
+                last_message_id = (window as any).TavernHelper.getLastMessageId();
+                console.log('✅ 通过 TavernHelper.getLastMessageId() 获取到消息ID:', last_message_id);
+              } catch (error) {
+                console.warn('⚠️ TavernHelper.getLastMessageId() 调用失败:', error);
+                last_message_id = -1;
+              }
+            } else if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
+              // 方式2: TavernHelper.getChatMessages()
+              try {
+                const messages = (window as any).TavernHelper.getChatMessages('0-{{lastMessageId}}');
+                if (Array.isArray(messages) && messages.length > 0) {
+                  last_message_id = messages.length - 1;
+                  console.log('✅ 通过 TavernHelper.getChatMessages() 获取到消息数:', messages.length);
+                }
+              } catch (error) {
+                console.warn('⚠️ TavernHelper.getChatMessages() 调用失败:', error);
+                last_message_id = -1;
+              }
+            }
+          }
+          
+          // 方式3: 降级到 SillyTavern.chat（如果可用）
+          if (last_message_id < 0 && typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
             last_message_id = SillyTavern.chat.length - 1;
-          } else if (typeof getLastMessageId === 'function') {
-            last_message_id = getLastMessageId();
-          } else {
+            console.log('✅ 通过 SillyTavern.chat.length 获取到消息ID:', last_message_id);
+          }
+          
+          // 方式4: 全局 getLastMessageId 函数（如果可用）
+          if (last_message_id < 0 && typeof (window as any).getLastMessageId === 'function') {
+            try {
+              last_message_id = (window as any).getLastMessageId();
+              console.log('✅ 通过 getLastMessageId() 获取到消息ID:', last_message_id);
+            } catch (error) {
+              console.warn('⚠️ getLastMessageId() 调用失败:', error);
+            }
+          }
+          
+          if (last_message_id < 0) {
             console.warn('⚠️ 无法获取最后一条消息ID');
             return;
           }
@@ -249,25 +287,71 @@ $(() => {
               if (hasNewMessage) break;
             }
 
-            if (hasNewMessage) {
-              console.log('📨 检测到新消息节点，延迟检查自动总结...');
-              // 延迟500ms等待消息完全渲染
-              setTimeout(() => {
-                // 插件环境：使用 SillyTavern.chat.length 获取消息数量
-                let currentMessageId = -1;
-                if (typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
-                  currentMessageId = SillyTavern.chat.length - 1;
-                } else if (typeof getLastMessageId === 'function') {
-                  currentMessageId = getLastMessageId();
-                }
-                
-                if (currentMessageId >= 0 && currentMessageId !== lastCheckedMessageId) {
-                  lastCheckedMessageId = currentMessageId;
-                  console.log(`🔄 DOM 监控触发自动总结检查，当前消息ID: ${currentMessageId}`);
-                  checkAutoSummarize();
-                }
-              }, 500);
-            }
+              if (hasNewMessage) {
+                console.log('📨 检测到新消息节点，延迟检查自动总结...');
+                // 延迟500ms等待消息完全渲染
+                setTimeout(() => {
+                  // 优先使用 TavernHelper 获取消息数量
+                  let currentMessageId = -1;
+                  
+                  // 方式1: TavernHelper.getLastMessageId()
+                  if (typeof (window as any).TavernHelper !== 'undefined') {
+                    if (typeof (window as any).TavernHelper.getLastMessageId === 'function') {
+                      try {
+                        currentMessageId = (window as any).TavernHelper.getLastMessageId();
+                        console.log('✅ 通过 TavernHelper.getLastMessageId() 获取到消息ID:', currentMessageId);
+                      } catch (error) {
+                        console.warn('⚠️ TavernHelper.getLastMessageId() 调用失败:', error);
+                      }
+                    } else if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
+                      // 方式2: TavernHelper.getChatMessages()
+                      try {
+                        const messages = (window as any).TavernHelper.getChatMessages('0-{{lastMessageId}}');
+                        if (Array.isArray(messages) && messages.length > 0) {
+                          currentMessageId = messages.length - 1;
+                          console.log('✅ 通过 TavernHelper.getChatMessages() 获取到消息数:', messages.length, '最后ID:', currentMessageId);
+                        }
+                      } catch (error) {
+                        console.warn('⚠️ TavernHelper.getChatMessages() 调用失败:', error);
+                      }
+                    }
+                  }
+                  
+                  // 方式3: 降级到 SillyTavern.chat（如果可用）
+                  if (currentMessageId < 0 && typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
+                    currentMessageId = SillyTavern.chat.length - 1;
+                    console.log('✅ 通过 SillyTavern.chat.length 获取到消息ID:', currentMessageId);
+                  }
+                  
+                  // 方式4: 全局 getLastMessageId 函数（如果可用）
+                  if (currentMessageId < 0 && typeof (window as any).getLastMessageId === 'function') {
+                    try {
+                      currentMessageId = (window as any).getLastMessageId();
+                      console.log('✅ 通过 getLastMessageId() 获取到消息ID:', currentMessageId);
+                    } catch (error) {
+                      console.warn('⚠️ getLastMessageId() 调用失败:', error);
+                    }
+                  }
+                  
+                  console.log('🔍 DOM 监控检查结果:', {
+                    currentMessageId,
+                    lastCheckedMessageId,
+                    '条件满足': currentMessageId >= 0 && currentMessageId !== lastCheckedMessageId,
+                  });
+                  
+                  if (currentMessageId >= 0 && currentMessageId !== lastCheckedMessageId) {
+                    lastCheckedMessageId = currentMessageId;
+                    console.log(`🔄 DOM 监控触发自动总结检查，当前消息ID: ${currentMessageId}`);
+                    checkAutoSummarize();
+                  } else {
+                    if (currentMessageId < 0) {
+                      console.warn('⚠️ 无法获取有效的消息ID，跳过自动总结检查');
+                    } else {
+                      console.log('ℹ️ 消息ID未变化，跳过检查');
+                    }
+                  }
+                }, 500);
+              }
           });
 
           domObserver.observe(chatContainer, {
@@ -287,12 +371,42 @@ $(() => {
       const startPolling = () => {
         setInterval(() => {
           try {
-            // 插件环境：使用 SillyTavern.chat.length 获取消息数量
+            // 优先使用 TavernHelper 获取消息数量
             let currentMessageId = -1;
-            if (typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
+            
+            // 方式1: TavernHelper.getLastMessageId()
+            if (typeof (window as any).TavernHelper !== 'undefined') {
+              if (typeof (window as any).TavernHelper.getLastMessageId === 'function') {
+                try {
+                  currentMessageId = (window as any).TavernHelper.getLastMessageId();
+                } catch (error) {
+                  console.warn('⚠️ 轮询：TavernHelper.getLastMessageId() 调用失败:', error);
+                }
+              } else if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
+                // 方式2: TavernHelper.getChatMessages()
+                try {
+                  const messages = (window as any).TavernHelper.getChatMessages('0-{{lastMessageId}}');
+                  if (Array.isArray(messages) && messages.length > 0) {
+                    currentMessageId = messages.length - 1;
+                  }
+                } catch (error) {
+                  console.warn('⚠️ 轮询：TavernHelper.getChatMessages() 调用失败:', error);
+                }
+              }
+            }
+            
+            // 方式3: 降级到 SillyTavern.chat（如果可用）
+            if (currentMessageId < 0 && typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
               currentMessageId = SillyTavern.chat.length - 1;
-            } else if (typeof getLastMessageId === 'function') {
-              currentMessageId = getLastMessageId();
+            }
+            
+            // 方式4: 全局 getLastMessageId 函数（如果可用）
+            if (currentMessageId < 0 && typeof (window as any).getLastMessageId === 'function') {
+              try {
+                currentMessageId = (window as any).getLastMessageId();
+              } catch (error) {
+                console.warn('⚠️ 轮询：getLastMessageId() 调用失败:', error);
+              }
             }
             
             if (currentMessageId >= 0 && currentMessageId !== lastCheckedMessageId) {
@@ -349,16 +463,54 @@ $(() => {
 
                 // 只有在没有设置过起始楼层时才设置
                 if (!auto_summary_start_id) {
-                  // 插件环境：使用 SillyTavern.chat.length 获取消息数量
+                  // 优先使用 TavernHelper 获取消息数量
                   let last_message_id = 0;
-                  if (typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
-                    last_message_id = SillyTavern.chat.length - 1;
-                  } else if (typeof getLastMessageId === 'function') {
-                    last_message_id = getLastMessageId();
+                  
+                  // 方式1: TavernHelper.getLastMessageId()
+                  if (typeof (window as any).TavernHelper !== 'undefined') {
+                    if (typeof (window as any).TavernHelper.getLastMessageId === 'function') {
+                      try {
+                        last_message_id = (window as any).TavernHelper.getLastMessageId();
+                      } catch (error) {
+                        console.warn('⚠️ TavernHelper.getLastMessageId() 调用失败:', error);
+                        last_message_id = -1;
+                      }
+                    } else if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
+                      try {
+                        const messages = (window as any).TavernHelper.getChatMessages('0-{{lastMessageId}}');
+                        if (Array.isArray(messages) && messages.length > 0) {
+                          last_message_id = messages.length - 1;
+                        }
+                      } catch (error) {
+                        console.warn('⚠️ TavernHelper.getChatMessages() 调用失败:', error);
+                        last_message_id = -1;
+                      }
+                    }
                   }
-                  localStorage.setItem(storageKey, String(last_message_id));
-                  console.log(`✅ 首次开启自动总结，起始楼层设置为: ${last_message_id}`);
-                  window.toastr?.info(`自动总结已开启，将从第 ${last_message_id} 层开始`);
+                  
+                  // 方式2: 降级到 SillyTavern.chat（如果可用）
+                  if (last_message_id < 0 && typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
+                    last_message_id = SillyTavern.chat.length - 1;
+                  }
+                  
+                  // 方式3: 全局 getLastMessageId 函数（如果可用）
+                  if (last_message_id < 0 && typeof (window as any).getLastMessageId === 'function') {
+                    try {
+                      last_message_id = (window as any).getLastMessageId();
+                    } catch (error) {
+                      console.warn('⚠️ getLastMessageId() 调用失败:', error);
+                    }
+                  }
+                  
+                  if (last_message_id >= 0) {
+                    localStorage.setItem(storageKey, String(last_message_id));
+                    console.log(`✅ 首次开启自动总结，起始楼层设置为: ${last_message_id}`);
+                    window.toastr?.info(`自动总结已开启，将从第 ${last_message_id} 层开始`);
+                  } else {
+                    console.warn('⚠️ 无法获取消息ID，起始楼层设置为 0');
+                    localStorage.setItem(storageKey, '0');
+                    window.toastr?.warn('无法获取当前消息数，起始楼层设置为 0');
+                  }
                 } else {
                   console.log(`✅ 自动总结已开启，使用现有起始楼层: ${auto_summary_start_id}`);
                   window.toastr?.info(`自动总结已开启，起始楼层: ${auto_summary_start_id}`);
