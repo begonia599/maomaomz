@@ -36,7 +36,6 @@ export default defineConfig(({ mode }) => ({
         'vue',
         'pinia',
         '@vueuse/core',
-        { from: '@sillytavern/scripts/i18n', imports: ['t'] },
         { from: 'klona', imports: ['klona'] },
         { from: 'vue-final-modal', imports: ['useModal'] },
         { from: 'zod', imports: ['z'] },
