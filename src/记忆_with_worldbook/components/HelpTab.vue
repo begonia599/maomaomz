@@ -40,7 +40,37 @@
       <div style="position: relative; z-index: 1">
         <div style="font-size: 48px; margin-bottom: 10px">🐱</div>
         <h2 style="margin: 0 0 10px 0; color: white; font-size: 24px; font-weight: 600">mzrodyu猫猫的小破烂</h2>
-        <div style="color: rgba(255, 255, 255, 0.9); font-size: 14px" class="version-info">版本 v1.36</div>
+        <div style="color: rgba(255, 255, 255, 0.9); font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
+          <span class="version-info">版本 v{{ currentVersion }}</span>
+          <button
+            @click="checkForUpdates"
+            :disabled="isCheckingUpdate"
+            style="
+              padding: 8px 16px;
+              background: rgba(255, 255, 255, 0.2);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              border-radius: 8px;
+              color: white;
+              cursor: pointer;
+              font-size: 13px;
+              font-weight: 500;
+              transition: all 0.2s;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              backdrop-filter: blur(10px);
+            "
+            :style="{
+              opacity: isCheckingUpdate ? 0.6 : 1,
+              cursor: isCheckingUpdate ? 'not-allowed' : 'pointer',
+            }"
+            @mouseenter="e => !isCheckingUpdate && (e.target.style.background = 'rgba(255, 255, 255, 0.3)')"
+            @mouseleave="e => (e.target.style.background = 'rgba(255, 255, 255, 0.2)')"
+          >
+            <i :class="isCheckingUpdate ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-sync-alt'"></i>
+            {{ isCheckingUpdate ? '检查中...' : '检查更新' }}
+          </button>
+        </div>
 
         <!-- 版权声明 -->
         <div
@@ -367,7 +397,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
+import { CURRENT_VERSION, manualCheckUpdates } from '../versionCheck';
+
+const currentVersion = CURRENT_VERSION;
+const isCheckingUpdate = ref(false);
 
 const expandedSections = reactive({
   usageGuide: true,
@@ -376,6 +410,19 @@ const expandedSections = reactive({
 
 const toggleSection = (section: keyof typeof expandedSections) => {
   expandedSections[section] = !expandedSections[section];
+};
+
+const checkForUpdates = async () => {
+  if (isCheckingUpdate.value) return;
+  
+  isCheckingUpdate.value = true;
+  try {
+    await manualCheckUpdates();
+  } catch (error) {
+    console.error('❌ 检查更新失败:', error);
+  } finally {
+    isCheckingUpdate.value = false;
+  }
 };
 </script>
 
