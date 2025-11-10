@@ -3,30 +3,29 @@ import { klona } from 'klona';
 import { useSettingsStore, useSummaryHistoryStore } from './settings';
 import { getScriptIdSafe, getChatIdSafe, setGlobalScriptId } from './utils';
 import { summarizeMessages } from './总结功能';
-// 先导入授权模块，但不立即导入UI模块
-import { checkAuthorization, isAuthorized } from './auth';
+import { checkAuthorization, isAuthorized, clearAuth } from './auth';
 import { globalPinia } from './globalPinia';
 import TaskManager from './components/TaskManager.vue';
-
-// 🔐 最高优先级：授权验证（在所有UI加载之前）
-let authorizationPassed = false;
+// 直接导入UI模块，不再延迟加载
+import './浮动面板';
+import './添加导航按钮';
 
 $(() => {
-  // 立即进行授权验证，不要延迟
-  (async () => {
-    console.log('🔐 【优先级最高】开始插件授权验证...');
+  setTimeout(async () => {
+    console.log('🐱 猫猫的记忆管理工具开始初始化');
     
+    // 🔐 UI加载后进行授权验证
+    console.log('🔐 开始授权验证...');
     const authorized = await checkAuthorization();
     
     if (!authorized) {
-      console.error('❌ 授权验证失败，插件将不会加载');
-      authorizationPassed = false;
+      console.error('❌ 授权验证失败，插件功能已被禁用');
       
-      // 显示永久错误提示
+      // 显示错误提示
       setTimeout(() => {
         if ((window as any).toastr) {
           (window as any).toastr.error(
-            '❌ 未通过授权验证\n\n插件已被禁用，请刷新页面重新输入授权码\n\n前往 Discord 获取最新授权码',
+            '❌ 未通过授权验证\n\n插件功能已被禁用，请重新输入授权码\n\n前往 Discord 获取最新授权码',
             '授权失败',
             { timeOut: 0, extendedTimeOut: 0 }
           );
@@ -36,16 +35,9 @@ $(() => {
       return;
     }
     
-    authorizationPassed = true;
-    console.log('✅ 授权验证通过，开始加载插件UI和功能...');
+    console.log('✅ 授权验证通过，初始化插件功能...');
     
-    // 授权通过后才加载UI模块
-    await import('./浮动面板');
-    await import('./添加导航按钮');
-    
-    console.log('✅ UI模块加载完成');
-    
-    // 延迟一下确保UI加载完成
+    // 延迟一下确保UI完全加载
     setTimeout(() => {
       // 插件环境：使用固定的ID
       const script_id = 'maomaomz_extension_v1';
@@ -878,16 +870,22 @@ $(() => {
       };
       (window as any).getScriptIdSafe = getScriptIdSafe;
       (window as any).getChatIdSafe = getChatIdSafe;
+      
+      // 暴露授权相关函数
+      (window as any).clearAuth = clearAuth;
+      (window as any).isAuthorized = isAuthorized;
 
       console.log('✅ 全局对象已暴露:', {
         pinia: '✅ Pinia 实例和 Store 函数',
         getScriptIdSafe: '✅ 获取脚本ID',
         getChatIdSafe: '✅ 获取聊天ID',
+        clearAuth: '✅ 清除授权函数',
+        isAuthorized: '✅ 检查授权状态',
       });
 
       window.toastr.success('🐱 猫猫的小破烂已加载 | 授权验证成功');
     }, 200);
-  })(); // 结束 async IIFE
+  }, 300); // 延迟300ms加载，确保DOM准备好
 });
 
 // 全局挂载任务管理器（独立于主面板，不受面板开关影响）

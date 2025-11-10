@@ -384,8 +384,12 @@ export function clearAuthorization(): void {
   localStorage.removeItem(STORAGE_VERIFIED_KEY);
   console.log('🗑️ 授权信息已清除');
   (window as any).toastr?.info('授权信息已清除，刷新页面后需要重新授权');
+  
+  // 移除对话框和遮罩层（如果存在）
+  document.getElementById('maomaomz-auth-overlay')?.remove();
+  document.getElementById('maomaomz-auth-dialog')?.remove();
 }
 
-// 暴露到全局，方便调试
-(window as any).clearAuth = clearAuthorization;
+// 导出别名，方便使用
+export const clearAuth = clearAuthorization;
 
