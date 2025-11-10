@@ -25,7 +25,7 @@ function getCurrentApiEndpoint(): string {
       console.log('🔍 检测到 DOM 元素，获取 value 属性');
       apiUrl = apiUrl.value || '';
     }
-    
+
     // 如果 apiUrl 仍然是对象（但不是 DOM 元素），设为空字符串
     if (typeof apiUrl === 'object') {
       console.warn('⚠️ API端点是对象且无法提取，设为空:', apiUrl);
