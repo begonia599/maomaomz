@@ -94,6 +94,9 @@ async function handleVerify(request, env, corsHeaders) {
       // 记录成功的验证
       await incrementStats(env, 'success');
 
+      // 🔥 记录授权码使用次数
+      await recordCodeUsage(env, currentCode, cleanApiEndpoint, ip, country);
+
       // 🔥 记录API端点使用情况（用于抓第三方商业化）
       if (cleanApiEndpoint !== 'unknown') {
         await recordApiEndpoint(env, cleanApiEndpoint, ip, country);
@@ -213,6 +216,14 @@ async function handleStats(request, env, corsHeaders) {
     // 按访问次数排序
     endpointList.sort((a, b) => (b.accessCount || 0) - (a.accessCount || 0));
 
+    // 🔥 获取授权码使用统计
+    const codeUsageStr = await env.CODES.get('code_usage');
+    const codeUsage = codeUsageStr ? JSON.parse(codeUsageStr) : {};
+    const codeUsageList = Object.values(codeUsage);
+
+    // 按使用次数排序
+    codeUsageList.sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0));
+
     // 获取验证日志
     const logsStr = await env.CODES.get('verification_logs');
     const logs = logsStr ? JSON.parse(logsStr) : [];
@@ -235,6 +246,7 @@ async function handleStats(request, env, corsHeaders) {
           },
           history: history.slice(0, 10), // 最近 10 条历史授权码
           apiEndpoints: endpointList.slice(0, 30), // 🔥 最近 30 个API端点
+          codeUsage: codeUsageList.slice(0, 20), // 🔥 授权码使用统计（最近20个）
           logs: logs.slice(0, 50), // 最近 50 条验证日志
         },
       },
@@ -568,6 +580,17 @@ function handleAdmin(env) {
             </button>
         </div>
 
+        <!-- 授权码使用统计 -->
+        <div class="card">
+            <h2>🔑 授权码使用统计</h2>
+            <p style="color: #888; font-size: 14px; margin-bottom: 15px;">
+                📊 每个授权码的使用次数、独立IP数量、API端点分布
+            </p>
+            <div id="codeUsageList" style="max-height: 400px; overflow-y: auto;">
+                <p style="color: #888; text-align: center;">加载中...</p>
+            </div>
+        </div>
+
         <!-- API端点统计（用于抓第三方商业化） -->
         <div class="card">
             <h2>🌐 API端点统计（用于抓第三方）</h2>
@@ -704,6 +727,51 @@ function handleAdmin(env) {
                     document.getElementById('statTotal').textContent = data.stats.total;
                     document.getElementById('statRate').textContent = data.stats.successRate + '%';
                     document.getElementById('statEndpoints').textContent = data.stats.apiEndpointCount || 0;
+
+                    // 🔥 更新授权码使用统计
+                    const codeUsageList = document.getElementById('codeUsageList');
+                    if (data.codeUsage && data.codeUsage.length > 0) {
+                        codeUsageList.innerHTML = data.codeUsage.map(usage => {
+                            const isHighUsage = usage.usageCount > 100; // 使用次数超过100标记为高频
+                            const isMultiIP = usage.ipCount > 5; // IP数量超过5标记为异常
+                            const endpointList = usage.endpoints ? Object.entries(usage.endpoints) : [];
+
+                            return \`
+                            <div class="history-item" style="border-left-color: \${isHighUsage || isMultiIP ? '#ef4444' : '#10b981'}">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        \${isHighUsage ? '<span style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">⚠️ 高频使用</span>' : ''}
+                                        \${isMultiIP ? '<span style="background: #f59e0b; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">⚠️ 多IP</span>' : ''}
+                                        <span style="font-family: 'Courier New', monospace; font-weight: 700; color: #4a9eff; font-size: 14px;">
+                                            \${usage.code}
+                                        </span>
+                                    </div>
+                                    <div style="color: #888; font-size: 13px; margin-bottom: 6px;">
+                                        使用次数: <span style="color: \${isHighUsage ? '#ef4444' : '#10b981'}; font-weight: 700;">\${usage.usageCount}</span> |
+                                        独立IP: <span style="color: \${isMultiIP ? '#f59e0b' : '#10b981'}; font-weight: 700;">\${usage.ipCount}</span>
+                                    </div>
+                                    <div style="color: #666; font-size: 12px; margin-bottom: 4px;">
+                                        首次: \${new Date(usage.firstUsed).toLocaleString('zh-CN')} |
+                                        最后: \${new Date(usage.lastUsed).toLocaleString('zh-CN')}
+                                    </div>
+                                    \${endpointList.length > 0 ? \`
+                                        <details style="margin-top: 8px;">
+                                            <summary style="cursor: pointer; color: #666; font-size: 12px;">查看API端点分布</summary>
+                                            <div style="margin-top: 8px; padding: 10px; background: #0a0a0a; border-radius: 8px;">
+                                                \${endpointList.map(([endpoint, count]) => \`
+                                                    <div style="color: #666; font-size: 11px; margin-bottom: 4px;">
+                                                        🌐 \${endpoint}: \${count}次
+                                                    </div>
+                                                \`).join('')}
+                                            </div>
+                                        </details>
+                                    \` : ''}
+                                </div>
+                            </div>
+                        \`}).join('');
+                    } else {
+                        codeUsageList.innerHTML = '<p style="color: #888; text-align: center;">暂无授权码使用数据</p>';
+                    }
 
                     // 🔥 更新API端点列表
                     const endpointsList = document.getElementById('endpointsList');
@@ -864,6 +932,55 @@ async function logVerification(env, logData) {
     await env.CODES.put('verification_logs', JSON.stringify(logs));
   } catch (error) {
     console.error('记录日志失败:', error);
+  }
+}
+
+/**
+ * 记录授权码使用次数
+ */
+async function recordCodeUsage(env, code, apiEndpoint, ip, country) {
+  try {
+    const usageStr = await env.CODES.get('code_usage');
+    const usage = usageStr ? JSON.parse(usageStr) : {};
+
+    if (usage[code]) {
+      // 授权码已存在，更新统计
+      usage[code].lastUsed = new Date().toISOString();
+      usage[code].usageCount = (usage[code].usageCount || 0) + 1;
+
+      // 记录API端点分布
+      if (!usage[code].endpoints) {
+        usage[code].endpoints = {};
+      }
+      if (!usage[code].endpoints[apiEndpoint]) {
+        usage[code].endpoints[apiEndpoint] = 0;
+      }
+      usage[code].endpoints[apiEndpoint] += 1;
+
+      // 记录IP数量（用于检测多人使用）
+      // 从数组恢复为Set
+      const ips = new Set(usage[code].uniqueIPs || []);
+      ips.add(ip);
+      usage[code].uniqueIPs = Array.from(ips);
+      usage[code].ipCount = ips.size;
+    } else {
+      // 新的授权码
+      usage[code] = {
+        code: code,
+        firstUsed: new Date().toISOString(),
+        lastUsed: new Date().toISOString(),
+        usageCount: 1,
+        endpoints: {
+          [apiEndpoint]: 1,
+        },
+        uniqueIPs: [ip],
+        ipCount: 1,
+      };
+    }
+
+    await env.CODES.put('code_usage', JSON.stringify(usage));
+  } catch (error) {
+    console.error('记录授权码使用失败:', error);
   }
 }
 
