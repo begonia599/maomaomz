@@ -1,0 +1,367 @@
+/**
+ * 🔄 版本检测模块
+ * 作者: mzrodyu
+ * ⚠️ 商业化死全家，贩子死全家 ⚠️
+ */
+
+// 当前版本号（从 package.json 读取）
+export const CURRENT_VERSION = '1.3.6';
+
+// GitHub 仓库信息
+const GITHUB_REPO = 'mzrodyu/maomaomz';
+const GITHUB_API_BASE = 'https://api.github.com';
+
+// LocalStorage 键名
+const LAST_CHECK_KEY = 'maomaomz_last_version_check';
+const IGNORED_VERSION_KEY = 'maomaomz_ignored_version';
+
+/**
+ * 版本比较
+ * 返回: 1 表示 v1 > v2, -1 表示 v1 < v2, 0 表示相等
+ */
+function compareVersions(v1: string, v2: string): number {
+  const parts1 = v1.replace(/^v/, '').split('.').map(Number);
+  const parts2 = v2.replace(/^v/, '').split('.').map(Number);
+
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const num1 = parts1[i] || 0;
+    const num2 = parts2[i] || 0;
+
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+
+  return 0;
+}
+
+/**
+ * 从 GitHub 获取最新版本
+ */
+async function fetchLatestVersion(): Promise<{ version: string; url: string; notes: string } | null> {
+  try {
+    // 尝试从 GitHub Releases API 获取
+    const response = await fetch(`${GITHUB_API_BASE}/repos/${GITHUB_REPO}/releases/latest`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      console.warn('⚠️ 无法获取最新版本信息，使用备用方案');
+      // 备用：获取最新的 commit
+      return await fetchLatestCommit();
+    }
+
+    const data = await response.json();
+    return {
+      version: data.tag_name.replace(/^v/, ''),
+      url: data.html_url,
+      notes: data.body || '暂无更新说明',
+    };
+  } catch (error) {
+    console.error('❌ 获取版本信息失败:', error);
+    return null;
+  }
+}
+
+/**
+ * 备用方案：获取最新 commit 作为版本
+ */
+async function fetchLatestCommit(): Promise<{ version: string; url: string; notes: string } | null> {
+  try {
+    const response = await fetch(`${GITHUB_API_BASE}/repos/${GITHUB_REPO}/commits/main`, {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const shortSha = data.sha.substring(0, 7);
+
+    return {
+      version: `dev-${shortSha}`,
+      url: data.html_url,
+      notes: data.commit.message,
+    };
+  } catch (error) {
+    console.error('❌ 获取最新提交失败:', error);
+    return null;
+  }
+}
+
+/**
+ * 检查更新
+ * @param force 是否强制检查（忽略检查间隔）
+ */
+export async function checkForUpdates(force: boolean = false): Promise<{
+  hasUpdate: boolean;
+  latestVersion?: string;
+  currentVersion: string;
+  updateUrl?: string;
+  notes?: string;
+} | null> {
+  try {
+    // 检查是否需要跳过（非强制且最近检查过）
+    if (!force) {
+      const lastCheck = localStorage.getItem(LAST_CHECK_KEY);
+      if (lastCheck) {
+        const lastCheckTime = parseInt(lastCheck);
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        if (now - lastCheckTime < oneDay) {
+          console.log('ℹ️ 距离上次检查不到24小时，跳过自动检查');
+          return null;
+        }
+      }
+    }
+
+    console.log('🔍 检查更新中...');
+
+    const latest = await fetchLatestVersion();
+
+    if (!latest) {
+      console.warn('⚠️ 无法获取版本信息');
+      return null;
+    }
+
+    // 保存检查时间
+    localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
+
+    // 比较版本
+    const hasUpdate = compareVersions(latest.version, CURRENT_VERSION) > 0;
+
+    // 检查是否被忽略
+    if (!force) {
+      const ignoredVersion = localStorage.getItem(IGNORED_VERSION_KEY);
+      if (ignoredVersion === latest.version) {
+        console.log(`ℹ️ 版本 ${latest.version} 已被用户忽略`);
+        return null;
+      }
+    }
+
+    return {
+      hasUpdate,
+      latestVersion: latest.version,
+      currentVersion: CURRENT_VERSION,
+      updateUrl: latest.url,
+      notes: latest.notes,
+    };
+  } catch (error) {
+    console.error('❌ 检查更新失败:', error);
+    return null;
+  }
+}
+
+/**
+ * 显示更新对话框
+ */
+export function showUpdateDialog(updateInfo: {
+  latestVersion: string;
+  currentVersion: string;
+  updateUrl: string;
+  notes: string;
+}): void {
+  const dialogHtml = `
+    <div id="maomaomz-update-overlay" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 9999998 !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease-out;
+    ">
+      <div id="maomaomz-update-dialog" style="
+        background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+        border: 3px solid #4a9eff;
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(74, 158, 255, 0.3);
+        z-index: 9999999 !important;
+        animation: slideUp 0.4s ease-out;
+      ">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="font-size: 64px; margin-bottom: 16px;">🎉</div>
+          <h2 style="color: #fff; font-size: 28px; margin-bottom: 12px; font-weight: 700;">
+            发现新版本！
+          </h2>
+          <p style="color: #ccc; font-size: 14px;">
+            是时候更新猫猫的小破烂了~
+          </p>
+        </div>
+
+        <div style="background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4a9eff; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+            <div>
+              <div style="color: #888; font-size: 12px; margin-bottom: 4px;">当前版本</div>
+              <div style="color: #fff; font-size: 20px; font-weight: 600;">v${updateInfo.currentVersion}</div>
+            </div>
+            <div style="color: #4a9eff; font-size: 32px; align-self: center;">→</div>
+            <div>
+              <div style="color: #888; font-size: 12px; margin-bottom: 4px;">最新版本</div>
+              <div style="color: #4a9eff; font-size: 20px; font-weight: 600;">v${updateInfo.latestVersion}</div>
+            </div>
+          </div>
+          
+          <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 16px;">
+            <div style="color: #ccc; font-size: 13px; margin-bottom: 8px; font-weight: 600;">📝 更新内容：</div>
+            <div style="color: #aaa; font-size: 12px; line-height: 1.6; max-height: 150px; overflow-y: auto; white-space: pre-wrap;">
+${updateInfo.notes}
+            </div>
+          </div>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 16px; border-radius: 12px; margin-bottom: 24px; border: 2px solid #7f1d1d;">
+          <div style="color: #fff; font-size: 14px; font-weight: 600; text-align: center; letter-spacing: 1px;">
+            ⚠️ 商业化死全家，贩子死全家 ⚠️
+          </div>
+          <div style="color: #fca5a5; font-size: 12px; text-align: center; margin-top: 8px;">
+            本插件完全免费，禁止倒卖！
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button id="maomaomz-update-now" style="
+            flex: 1;
+            padding: 16px;
+            background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+          " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(74, 158, 255, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(74, 158, 255, 0.3)';">
+            🚀 立即更新
+          </button>
+          <button id="maomaomz-update-later" style="
+            padding: 16px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #aaa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+          " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.color='#fff';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='#aaa';">
+            稍后提醒
+          </button>
+          <button id="maomaomz-update-ignore" style="
+            padding: 16px 24px;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+          " onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.color='#999';" onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.color='#666';">
+            忽略此版本
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <style>
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+    </style>
+  `;
+
+  // 添加到页面
+  document.body.insertAdjacentHTML('beforeend', dialogHtml);
+
+  // 绑定事件
+  document.getElementById('maomaomz-update-now')?.addEventListener('click', () => {
+    // 打开 GitHub 页面
+    window.open(updateInfo.updateUrl, '_blank');
+
+    // 显示更新说明
+    (window as any).toastr?.info(
+      '请在 GitHub 页面下载最新版本，或在插件目录执行 git pull\n\n更新后请刷新页面',
+      '更新指引',
+      { timeOut: 0, extendedTimeOut: 0 }
+    );
+
+    // 关闭对话框
+    document.getElementById('maomaomz-update-overlay')?.remove();
+  });
+
+  document.getElementById('maomaomz-update-later')?.addEventListener('click', () => {
+    // 清除检查时间，下次启动会再次检查
+    localStorage.removeItem(LAST_CHECK_KEY);
+    (window as any).toastr?.info('下次启动时会再次提醒您更新');
+    document.getElementById('maomaomz-update-overlay')?.remove();
+  });
+
+  document.getElementById('maomaomz-update-ignore')?.addEventListener('click', () => {
+    // 标记此版本为已忽略
+    localStorage.setItem(IGNORED_VERSION_KEY, updateInfo.latestVersion);
+    (window as any).toastr?.warning(`已忽略版本 ${updateInfo.latestVersion}，不再提示`);
+    document.getElementById('maomaomz-update-overlay')?.remove();
+  });
+}
+
+/**
+ * 自动检查更新（静默，不强制）
+ */
+export async function autoCheckUpdates(): Promise<void> {
+  const result = await checkForUpdates(false);
+
+  if (result && result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
+    console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
+    showUpdateDialog({
+      latestVersion: result.latestVersion,
+      currentVersion: result.currentVersion,
+      updateUrl: result.updateUrl,
+      notes: result.notes,
+    });
+  }
+}
+
+/**
+ * 手动检查更新（强制，显示结果）
+ */
+export async function manualCheckUpdates(): Promise<void> {
+  (window as any).toastr?.info('正在检查更新...');
+
+  const result = await checkForUpdates(true);
+
+  if (!result) {
+    (window as any).toastr?.error('❌ 无法获取版本信息，请检查网络连接');
+    return;
+  }
+
+  if (result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
+    console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
+    showUpdateDialog({
+      latestVersion: result.latestVersion,
+      currentVersion: result.currentVersion,
+      updateUrl: result.updateUrl,
+      notes: result.notes,
+    });
+  } else {
+    (window as any).toastr?.success(`✅ 已是最新版本 v${result.currentVersion}`);
+  }
+}
+

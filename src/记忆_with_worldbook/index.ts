@@ -4,6 +4,7 @@ import { useSettingsStore, useSummaryHistoryStore } from './settings';
 import { getScriptIdSafe, getChatIdSafe, setGlobalScriptId } from './utils';
 import { summarizeMessages } from './总结功能';
 import { checkAuthorization, isAuthorized, clearAuth } from './auth';
+import { autoCheckUpdates, manualCheckUpdates, CURRENT_VERSION } from './versionCheck';
 import { globalPinia } from './globalPinia';
 import TaskManager from './components/TaskManager.vue';
 // 直接导入UI模块，不再延迟加载
@@ -874,6 +875,10 @@ $(() => {
       // 暴露授权相关函数
       (window as any).clearAuth = clearAuth;
       (window as any).isAuthorized = isAuthorized;
+      
+      // 暴露版本检测函数
+      (window as any).checkUpdate = manualCheckUpdates;
+      (window as any).currentVersion = CURRENT_VERSION;
 
       console.log('✅ 全局对象已暴露:', {
         pinia: '✅ Pinia 实例和 Store 函数',
@@ -881,9 +886,20 @@ $(() => {
         getChatIdSafe: '✅ 获取聊天ID',
         clearAuth: '✅ 清除授权函数',
         isAuthorized: '✅ 检查授权状态',
+        checkUpdate: '✅ 检查更新函数',
+        currentVersion: `✅ 当前版本: ${CURRENT_VERSION}`,
       });
 
-      window.toastr.success('🐱 猫猫的小破烂已加载 | 授权验证成功');
+      console.log(`📦 猫猫的小破烂 v${CURRENT_VERSION} 已加载`);
+      window.toastr.success(`🐱 猫猫的小破烂 v${CURRENT_VERSION} 已加载 | 授权验证成功`);
+      
+      // 🔄 自动检查更新（延迟3秒，避免影响启动速度）
+      setTimeout(() => {
+        console.log('🔍 开始自动检查更新...');
+        autoCheckUpdates().catch(err => {
+          console.warn('⚠️ 自动检查更新失败:', err);
+        });
+      }, 3000);
     }, 200);
   }, 300); // 延迟300ms加载，确保DOM准备好
 });
