@@ -20,16 +20,23 @@ function getCurrentApiEndpoint(): string {
     let apiUrl = (window as any).api_server || '';
     const apiType = (window as any).main_api || 'unknown';
 
-    // 如果 apiUrl 是对象，尝试转换为字符串
+    // 🔥 如果 apiUrl 是 DOM 元素（比如 HTMLSelectElement），获取其 value
+    if (apiUrl && typeof apiUrl === 'object' && 'value' in apiUrl) {
+      console.log('🔍 检测到 DOM 元素，获取 value 属性');
+      apiUrl = apiUrl.value || '';
+    }
+    
+    // 如果 apiUrl 仍然是对象（但不是 DOM 元素），设为空字符串
     if (typeof apiUrl === 'object') {
-      console.warn('API端点是对象，尝试提取字符串:', apiUrl);
+      console.warn('⚠️ API端点是对象且无法提取，设为空:', apiUrl);
       apiUrl = '';
     }
 
-    // 确保是字符串
+    // 确保是字符串并清理
     apiUrl = String(apiUrl || '').trim();
 
-    if (apiUrl && apiUrl !== '' && apiUrl !== '[object Object]') {
+    // 过滤掉无效值
+    if (apiUrl && apiUrl !== '' && apiUrl !== '[object Object]' && apiUrl !== '[object HTMLSelectElement]') {
       // 只返回域名部分，不要完整URL（保护隐私）
       try {
         const url = new URL(apiUrl);
@@ -43,7 +50,7 @@ function getCurrentApiEndpoint(): string {
     // 如果没有有效的URL，返回API类型
     return String(apiType || 'unknown');
   } catch (error) {
-    console.error('获取API端点失败:', error);
+    console.error('❌ 获取API端点失败:', error);
     return 'unknown';
   }
 }
