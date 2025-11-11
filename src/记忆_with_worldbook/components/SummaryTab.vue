@@ -643,10 +643,16 @@ const deleteSummary = (index: number) => {
 // 创建总结世界书
 const createSummaryWorldbook = async () => {
   try {
+    // 检查 TavernHelper 是否可用
+    if (typeof (window as any).TavernHelper === 'undefined') {
+      window.toastr.error('TavernHelper 不可用，请确保在 SillyTavern 环境中运行');
+      return;
+    }
+
     // 获取当前角色卡信息
     let characterName = '未知角色';
     try {
-      const currentCharacter = getCharData('current');
+      const currentCharacter = (window as any).TavernHelper.getCharData('current');
       if (currentCharacter && currentCharacter.name) {
         characterName = currentCharacter.name;
         // 清理角色名中的特殊字符，避免文件名问题
@@ -662,25 +668,16 @@ const createSummaryWorldbook = async () => {
 
     console.log('准备创建世界书:', worldbookName);
 
-    // 检查 TavernHelper 是否可用
-    if (
-      typeof (window as any).TavernHelper === 'undefined' ||
-      typeof (window as any).TavernHelper.getWorldbookNames !== 'function'
-    ) {
-      window.toastr.error('世界书功能不可用，请确保在 SillyTavern 环境中运行');
-      return;
-    }
-
     const existingWorldbooks = (window as any).TavernHelper.getWorldbookNames();
     if (existingWorldbooks.includes(worldbookName)) {
       window.toastr.warning(`世界书 "${worldbookName}" 已存在`);
       return;
     }
 
-    await createWorldbook(worldbookName, []);
+    await (window as any).TavernHelper.createWorldbook(worldbookName, []);
 
     try {
-      await rebindChatWorldbook('current', worldbookName);
+      await (window as any).TavernHelper.rebindChatWorldbook('current', worldbookName);
       window.toastr.success(`已创建总结世界书 "${worldbookName}" 并绑定到当前聊天`);
     } catch (bindError) {
       console.warn('绑定到聊天失败:', bindError);
@@ -696,11 +693,8 @@ const createSummaryWorldbook = async () => {
 const bindToWorldbook = async (content: string, summaryIndex: number) => {
   try {
     // 检查 TavernHelper 是否可用
-    if (
-      typeof (window as any).TavernHelper === 'undefined' ||
-      typeof (window as any).TavernHelper.getWorldbookNames !== 'function'
-    ) {
-      window.toastr.error('世界书功能不可用，请确保在 SillyTavern 环境中运行');
+    if (typeof (window as any).TavernHelper === 'undefined') {
+      window.toastr.error('TavernHelper 不可用，请确保在 SillyTavern 环境中运行');
       return;
     }
 
@@ -759,7 +753,7 @@ const bindToWorldbook = async (content: string, summaryIndex: number) => {
       uid: Date.now(),
     };
 
-    await createWorldbookEntries(selectedWorldbook, [newEntry]);
+    await (window as any).TavernHelper.createWorldbookEntries(selectedWorldbook, [newEntry]);
     window.toastr.success(`总结已绑定到世界书: ${selectedWorldbook}`);
   } catch (error) {
     console.error('绑定到世界书失败:', error);
