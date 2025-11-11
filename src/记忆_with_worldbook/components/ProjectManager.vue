@@ -6166,6 +6166,7 @@ function exportToRegex() {
 
 /**
  * 导出项目为快速回复（QR）格式
+ * QR 只包含触发词，正则脚本包含完整 HTML 代码（节省 token）
  */
 function exportToQR() {
   const proj = currentProject.value;
@@ -6183,12 +6184,12 @@ function exportToQR() {
     }
   }
 
-  // 弹出对话框让用户输入 QR 标签
-  const qrLabel = prompt(
-    `正在导出项目为快速回复（QR）：${proj.name}\n\n请输入 QR 按钮标签：\n例如：🎨 ${proj.name}`,
-    `🎨 ${proj.name}`,
+  // 弹出对话框让用户输入触发词
+  const triggerWord = prompt(
+    `正在导出项目为 QR + 正则：${proj.name}\n\n请输入触发词：\n例如：【${proj.name}】`,
+    `【${proj.name}】`,
   );
-  if (!qrLabel) {
+  if (!triggerWord) {
     toastr.info('已取消导出');
     return;
   }
@@ -6197,23 +6198,42 @@ function exportToQR() {
     // 构建完整的 HTML
     const fullHtml = buildPreviewFromFiles(proj.files);
 
-    // 生成 QR ID (正整数)
-    const qrId = Math.floor(Math.random() * 100000) + 1;
+    // 生成 UUID
+    const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
 
     // 清理 HTML: 去除 \r 和 <!DOCTYPE html>
     let cleanHtml = fullHtml.replace(/\r/g, '');
     cleanHtml = cleanHtml.replace(/^<!DOCTYPE html>\n/, '');
 
-    // 构建 QR 的 message: 直接使用 HTML 代码块（会在聊天中显示为可交互的前端界面）
-    const qrMessage = `\`\`\`html\n\n${cleanHtml}\n\`\`\``;
+    // 1. 构建正则 JSON（包含完整 HTML 代码）
+    const regexJson = {
+      id: uuid,
+      scriptName: proj.name,
+      findRegex: triggerWord.startsWith('/') ? triggerWord : `/${triggerWord}/g`,
+      replaceString: '```html\n\n' + cleanHtml + '\n```',
+      trimStrings: [],
+      placement: [1, 2],
+      disabled: false,
+      markdownOnly: true,
+      promptOnly: false,
+      runOnEdit: true,
+      substituteRegex: 0,
+      minDepth: null,
+      maxDepth: null,
+    };
 
-    // 构建 QR JSON
+    // 2. 构建 QR JSON（只包含触发词，节省 token）
+    const qrId = Math.floor(Math.random() * 100000) + 1;
     const qrJson = {
       id: qrId,
       showLabel: true,
-      label: qrLabel,
+      label: `🎨 ${proj.name}`,
       title: '',
-      message: qrMessage,
+      message: triggerWord, // 只发送触发词，由正则替换为完整 HTML
       contextList: [],
       preventAutoExecute: true, // 防止自动触发 AI 回复
       isHidden: false,
@@ -6227,21 +6247,44 @@ function exportToQR() {
       automationId: '',
     };
 
-    // 创建下载链接
-    const dataStr = JSON.stringify(qrJson, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
+    // 3. 导出正则 JSON
+    const regexDataStr = JSON.stringify(regexJson, null, 4);
+    const regexDataBlob = new Blob([regexDataStr], { type: 'application/json' });
+    const regexUrl = URL.createObjectURL(regexDataBlob);
 
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${proj.name}_qr.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const regexLink = document.createElement('a');
+    regexLink.href = regexUrl;
+    regexLink.download = `${proj.name}_regex.json`;
+    document.body.appendChild(regexLink);
+    regexLink.click();
+    document.body.removeChild(regexLink);
+    URL.revokeObjectURL(regexUrl);
 
+    // 4. 导出 QR JSON
+    const qrDataStr = JSON.stringify(qrJson, null, 2);
+    const qrDataBlob = new Blob([qrDataStr], { type: 'application/json' });
+    const qrUrl = URL.createObjectURL(qrDataBlob);
+
+    const qrLink = document.createElement('a');
+    qrLink.href = qrUrl;
+    qrLink.download = `${proj.name}_qr.json`;
+    document.body.appendChild(qrLink);
+    qrLink.click();
+    document.body.removeChild(qrLink);
+    URL.revokeObjectURL(qrUrl);
+
+    console.log('导出的正则 JSON:', regexJson);
     console.log('导出的 QR JSON:', qrJson);
-    toastr.success(`项目 "${proj.name}" 已导出为快速回复（QR）\n\n请在 SillyTavern 的快速回复设置中导入 JSON 文件`);
+    toastr.success(
+      `项目 "${proj.name}" 已导出为 QR + 正则！\n\n` +
+      `✅ 已下载 2 个文件：\n` +
+      `1. ${proj.name}_regex.json（正则脚本）\n` +
+      `2. ${proj.name}_qr.json（快速回复）\n\n` +
+      `📝 使用方法：\n` +
+      `1. 在 SillyTavern 的正则脚本中导入 regex.json\n` +
+      `2. 在快速回复设置中导入 qr.json\n` +
+      `3. 点击 QR 按钮即可显示前端界面（节省 token）`
+    );
   } catch (error: any) {
     console.error('导出 QR 失败:', error);
     toastr.error(`导出失败: ${error.message}`);
