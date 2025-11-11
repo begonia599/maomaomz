@@ -1525,8 +1525,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue';
 import { normalizeApiEndpoint, useSettingsStore } from '../settings';
-import { getScriptIdSafe, getChatIdSafe } from '../utils';
 import { useTaskStore } from '../taskStore';
+import { getChatIdSafe, getScriptIdSafe } from '../utils';
 import ProgressDialog from './ProgressDialog.vue';
 
 interface ProjectFile {
@@ -3363,7 +3363,7 @@ saveData(myData);
 // 1. 读取最新消息内容
 async function updateStatusFromMessages() {
   // 使用 TavernHelper 获取消息
-  if (typeof (window as any).TavernHelper === 'undefined' || 
+  if (typeof (window as any).TavernHelper === 'undefined' ||
       typeof (window as any).TavernHelper.getChatMessages !== 'function') {
     return; // TavernHelper 不可用，跳过
   }
@@ -3460,7 +3460,7 @@ function convertXmlToHtml(xml: string): string {
 // ===== 3. 监听消息并更新 =====
 async function updateStateBar() {
   // 使用 TavernHelper 获取消息
-  if (typeof (window as any).TavernHelper === 'undefined' || 
+  if (typeof (window as any).TavernHelper === 'undefined' ||
       typeof (window as any).TavernHelper.getChatMessages !== 'function') {
     return; // TavernHelper 不可用，跳过
   }
@@ -6210,15 +6210,16 @@ function exportToQR() {
     cleanHtml = cleanHtml.replace(/^<!DOCTYPE html>\n/, '');
 
     // 1. 构建正则 JSON（包含完整 HTML 代码）
+    // QR 导出的正则需要特殊配置：勾选"快捷命令"（Slash Commands）
     const regexJson = {
       id: uuid,
       scriptName: proj.name,
       findRegex: triggerWord.startsWith('/') ? triggerWord : `/${triggerWord}/g`,
       replaceString: '```html\n\n' + cleanHtml + '\n```',
       trimStrings: [],
-      placement: [0], // 0 = 在用户输入后立即替换，不进入对话
+      placement: [3], // 3 = 快捷命令（Slash Commands）- 勾选"快捷命令"
       disabled: false,
-      markdownOnly: true,
+      markdownOnly: false,
       promptOnly: false,
       runOnEdit: true,
       substituteRegex: 0,
@@ -6227,16 +6228,16 @@ function exportToQR() {
     };
 
     // 2. 构建 QR JSON（只包含触发词，节省 token）
-    // 使用 /sys 命令发送系统消息，不进入对话流，不触发 AI
+    // 使用 /sendas 命令以角色身份发送，触发词会被正则在 placement[3] 快捷命令阶段替换
     const qrId = Math.floor(Math.random() * 100000) + 1;
     const qrJson = {
       id: qrId,
       showLabel: true,
       label: `🎨 ${proj.name}`,
       title: '',
-      message: `/sys ${triggerWord}`, // 使用 /sys 发送系统消息（会被正则替换为HTML），不触发 AI
+      message: `/sendas name={{char}} ${triggerWord}`, // 以角色身份发送触发词，正则会替换为 HTML
       contextList: [],
-      preventAutoExecute: true, // 防止自动执行（参考 Roll.qr.json）
+      preventAutoExecute: true,
       isHidden: false,
       executeOnStartup: false,
       executeOnUser: false,
