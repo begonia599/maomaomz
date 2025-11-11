@@ -456,16 +456,9 @@ $(() => {
             padding: 12px !important;
           }
           
-          /* 移动端：缩小最小化图标 */
+          /* 移动端：隐藏最小化图标 */
           #memoryPanelMinimizeIcon {
-            width: 48px !important;
-            height: 48px !important;
-            top: 15px !important;
-            right: 15px !important;
-          }
-          
-          #memoryPanelMinimizeIcon i {
-            font-size: 22px !important;
+            display: none !important;
           }
         }
       </style>
