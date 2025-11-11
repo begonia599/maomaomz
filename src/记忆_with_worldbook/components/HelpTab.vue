@@ -451,6 +451,13 @@ const renderMarkdown = (text: string): string => {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
+  // 引用块（> 开头的行）- 转义后变成 &gt;
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote-line>$1</blockquote-line>');
+  html = html.replace(/(<blockquote-line>[\s\S]+?<\/blockquote-line>\n?)+/g, (match) => {
+    const content = match.replace(/<blockquote-line>/g, '').replace(/<\/blockquote-line>\n?/g, '<br>');
+    return '<blockquote style="border-left: 4px solid #4a9eff; background: rgba(74, 158, 255, 0.1); padding: 12px 16px; margin: 12px 0; border-radius: 4px; color: #e0e0e0;">' + content + '</blockquote>';
+  });
+
   // 标题（# ## ###）
   html = html.replace(/^### (.+)$/gm, '<h3 style="color: #4a9eff; margin: 15px 0 10px 0; font-size: 16px;">$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h2 style="color: #4a9eff; margin: 20px 0 12px 0; font-size: 18px;">$1</h2>');
@@ -530,6 +537,16 @@ onMounted(() => {
 }
 
 /* Markdown 渲染样式 */
+.markdown-content :deep(blockquote) {
+  border-left: 4px solid #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 4px;
+  color: #e0e0e0;
+  line-height: 1.6;
+}
+
 .markdown-content :deep(h1),
 .markdown-content :deep(h2),
 .markdown-content :deep(h3) {
