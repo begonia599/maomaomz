@@ -6204,8 +6204,8 @@ function exportToQR() {
     let cleanHtml = fullHtml.replace(/\r/g, '');
     cleanHtml = cleanHtml.replace(/^<!DOCTYPE html>\n/, '');
 
-    // 构建 QR 的 message: /pass 包裹 HTML 代码块
-    const qrMessage = `/pass \`\`\`html\n\n${cleanHtml}\n\`\`\``;
+    // 构建 QR 的 message: 直接使用 HTML 代码块（会在聊天中显示为可交互的前端界面）
+    const qrMessage = `\`\`\`html\n\n${cleanHtml}\n\`\`\``;
 
     // 构建 QR JSON
     const qrJson = {
