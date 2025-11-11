@@ -6215,7 +6215,7 @@ function exportToQR() {
       title: '',
       message: qrMessage,
       contextList: [],
-      preventAutoExecute: false,
+      preventAutoExecute: true, // 防止自动触发 AI 回复
       isHidden: false,
       executeOnStartup: false,
       executeOnUser: false,
