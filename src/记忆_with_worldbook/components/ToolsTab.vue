@@ -3713,7 +3713,9 @@ const handleInsertEntry = async () => {
     }
 
     // 使用 TavernHelper.createWorldbookEntries 插入条目
-    await (window as any).TavernHelper.createWorldbookEntries(selectedWorldbook.value, [worldbookEntryOutput.value], { render: 'immediate' });
+    await (window as any).TavernHelper.createWorldbookEntries(selectedWorldbook.value, [worldbookEntryOutput.value], {
+      render: 'immediate',
+    });
 
     window.toastr.success(`✅ 条目已成功插入到「${selectedWorldbook.value}」`);
   } catch (error) {
@@ -4015,18 +4017,21 @@ const saveEditedEntry = async () => {
     }
 
     // 使用 TavernHelper.updateWorldbookWith API 更新条目
-    const updatedWorldbook = await (window as any).TavernHelper.updateWorldbookWith(selectedViewerWorldbook.value, (worldbook: any) => {
-      const entryIndex = worldbook.findIndex((e: any) => e.uid === editingEntryUid.value);
-      if (entryIndex !== -1) {
-        // 更新条目
-        worldbook[entryIndex] = {
-          ...worldbook[entryIndex],
-          ...editingEntry.value,
-          uid: editingEntryUid.value, // 确保 UID 不变
-        };
-      }
-      return worldbook;
-    });
+    const updatedWorldbook = await (window as any).TavernHelper.updateWorldbookWith(
+      selectedViewerWorldbook.value,
+      (worldbook: any) => {
+        const entryIndex = worldbook.findIndex((e: any) => e.uid === editingEntryUid.value);
+        if (entryIndex !== -1) {
+          // 更新条目
+          worldbook[entryIndex] = {
+            ...worldbook[entryIndex],
+            ...editingEntry.value,
+            uid: editingEntryUid.value, // 确保 UID 不变
+          };
+        }
+        return worldbook;
+      },
+    );
 
     // 更新本地数据
     worldbookEntries.value = updatedWorldbook;
