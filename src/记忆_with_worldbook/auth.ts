@@ -23,12 +23,12 @@ function getCurrentApiEndpoint(): string {
     // 🔥 先检查是否是对象类型（在转换为字符串之前）
     if (apiUrl && typeof apiUrl === 'object') {
       console.log('🔍 检测到 API端点是对象类型:', apiUrl);
-      
+
       // 如果是 DOM 元素，尝试获取其 value
       if ('value' in apiUrl) {
         console.log('🔍 从 DOM 元素获取 value 属性');
         apiUrl = apiUrl.value || '';
-      } 
+      }
       // 如果还是对象，转为空字符串
       else {
         console.warn('⚠️ API端点是对象但无 value 属性，设为空');
