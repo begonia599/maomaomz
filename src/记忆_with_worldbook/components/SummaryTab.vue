@@ -663,8 +663,10 @@ const createSummaryWorldbook = async () => {
     console.log('准备创建世界书:', worldbookName);
 
     // 检查 TavernHelper 是否可用
-    if (typeof (window as any).TavernHelper === 'undefined' || 
-        typeof (window as any).TavernHelper.getWorldbookNames !== 'function') {
+    if (
+      typeof (window as any).TavernHelper === 'undefined' ||
+      typeof (window as any).TavernHelper.getWorldbookNames !== 'function'
+    ) {
       window.toastr.error('世界书功能不可用，请确保在 SillyTavern 环境中运行');
       return;
     }
@@ -694,8 +696,10 @@ const createSummaryWorldbook = async () => {
 const bindToWorldbook = async (content: string, summaryIndex: number) => {
   try {
     // 检查 TavernHelper 是否可用
-    if (typeof (window as any).TavernHelper === 'undefined' || 
-        typeof (window as any).TavernHelper.getWorldbookNames !== 'function') {
+    if (
+      typeof (window as any).TavernHelper === 'undefined' ||
+      typeof (window as any).TavernHelper.getWorldbookNames !== 'function'
+    ) {
       window.toastr.error('世界书功能不可用，请确保在 SillyTavern 环境中运行');
       return;
     }
