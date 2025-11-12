@@ -1563,7 +1563,6 @@ import { detectApiProvider, filterApiParams, normalizeApiEndpoint, useSettingsSt
 import { useTaskStore } from '../taskStore';
 import { getChatIdSafe, getScriptIdSafe } from '../utils';
 
-
 interface ProjectFile {
   path: string;
   name: string;
@@ -1628,8 +1627,6 @@ const quickSuggestions = [
 ];
 
 // 进度对话框
-
-
 
 // 任务管理
 const taskStore = useTaskStore();

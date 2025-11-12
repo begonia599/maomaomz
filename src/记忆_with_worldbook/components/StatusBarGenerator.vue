@@ -1788,7 +1788,6 @@ async function modifyXmlWithAI(modifyInstruction: string) {
   isModifyingXml.value = true;
 
   try {
-
     const systemPrompt = `你是一个专业的 XML 解析助手。根据用户的原始 XML 和修改建议，重新解析并生成字段配置。`;
 
     const userPrompt = `# 原始 XML：
@@ -2107,7 +2106,6 @@ async function modifyFieldWithAI(modifyInstruction: string) {
   isModifyingField.value = true;
 
   try {
-
     const systemPrompt = `你是一个专业的状态栏字段设计助手。根据用户的原始描述和修改建议，重新生成字段配置。`;
 
     const userPrompt = `# 原始描述：

@@ -1465,7 +1465,6 @@ import { useSettingsStore, useSummaryHistoryStore } from '../settings';
 import { useTaskStore } from '../taskStore';
 import { getChatIdSafe, getScriptIdSafe } from '../utils';
 
-
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
 const summaryHistoryStore = useSummaryHistoryStore();
@@ -1646,8 +1645,6 @@ const is_summarizing = ref(false);
 const is_generating_table = ref(false);
 
 // 进度对话框
-
-
 
 // 表格列头模板相关
 const headerTemplates = ref<Array<{ name: string; headers: string }>>([]);
