@@ -34,14 +34,16 @@
       }"
       @click="toggleCollapse"
       @mouseenter="
-        e =>
-          (e.currentTarget.style.background =
-            'linear-gradient(135deg, rgba(74, 158, 255, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%)')
+        (e: MouseEvent) => {
+          const target = e.currentTarget as HTMLElement;
+          if (target) target.style.background = 'linear-gradient(135deg, rgba(74, 158, 255, 0.25) 0%, rgba(118, 75, 162, 0.25) 100%)';
+        }
       "
       @mouseleave="
-        e =>
-          (e.currentTarget.style.background =
-            'linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)')
+        (e: MouseEvent) => {
+          const target = e.currentTarget as HTMLElement;
+          if (target) target.style.background = 'linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)';
+        }
       "
     >
       <div :style="{ display: 'flex', alignItems: 'center', gap: '10px' }">
@@ -565,9 +567,11 @@ const formatTaskTime = (task: any) => {
   }
 };
 
+
 // 获取表格数据
 const getTableData = (task: any) => {
-  const scriptId = window.getScriptId?.();
+  // 安全获取 scriptId，避免未定义错误
+  const scriptId = window.getScriptId?.() || 'maomaomz_extension_v1';
   if (!scriptId || !task.result?.chatId) return null;
 
   const storageKey = `${scriptId}_table_${task.result.chatId}`;
