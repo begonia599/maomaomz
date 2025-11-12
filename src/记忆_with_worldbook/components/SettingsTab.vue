@@ -2367,26 +2367,16 @@ const handle_summarize = async () => {
 
     console.log(`总结范围: ${settings.value.start_message_id} - ${settings.value.end_message_id}`);
 
-    // 显示进度对话框
-    showProgress.value = true;
-    progressDialogRef.value?.setProgress(10);
-    progressDialogRef.value?.setMessage('正在准备生成总结...');
-    progressDialogRef.value?.addDetail(
-      `楼层范围: ${settings.value.start_message_id} - ${settings.value.end_message_id}`,
-    );
+    console.log(`开始总结楼层范围: ${settings.value.start_message_id} - ${settings.value.end_message_id}`);
 
-    progressDialogRef.value?.setProgress(30);
-    progressDialogRef.value?.setMessage('正在调用 AI 生成总结...');
-    progressDialogRef.value?.addDetail('这可能需要 10-30 秒，请耐心等待');
+    console.log('正在调用 AI 生成总结...');
 
     // 调用总结功能
     const { summarizeMessages } = await import('../总结功能');
     const summary = await summarizeMessages(settings.value.start_message_id, settings.value.end_message_id);
 
-    progressDialogRef.value?.setProgress(90);
-    progressDialogRef.value?.setMessage('正在保存总结结果...');
-
     console.log('总结完成:', summary);
+    console.log('正在保存总结结果...');
 
     // 保存总结结果（插件环境 - 使用 localStorage）
     const scriptId = getScriptIdSafe();
@@ -2406,21 +2396,13 @@ const handle_summarize = async () => {
     // 通知其他组件更新
     window.dispatchEvent(new CustomEvent('summary-history-updated'));
 
-    progressDialogRef.value?.setProgress(100);
-    progressDialogRef.value?.setMessage('✅ 总结完成！');
-    progressDialogRef.value?.addDetail('总结已保存到历史记录');
-
-    setTimeout(() => {
-      showProgress.value = false;
-      window.toastr.success('总结完成并已保存到历史！');
-      // 标记任务完成
-      if (taskId) {
-        taskStore.completeTask(taskId);
-      }
-    }, 800);
+    window.toastr.success('总结完成并已保存到历史！');
+    // 标记任务完成
+    if (taskId) {
+      taskStore.completeTask(taskId);
+    }
   } catch (error) {
     console.error('总结失败:', error);
-    showProgress.value = false;
     window.toastr.error('总结失败: ' + (error as Error).message);
     // 标记任务失败
     if (taskId) {
@@ -2453,11 +2435,6 @@ const handle_generate_table = async () => {
       window.toastr.warning('请先配置 API 端点和 API Key');
       return;
     }
-
-    // 显示进度对话框
-    showProgress.value = true;
-    progressDialogRef.value?.setProgress(5);
-    progressDialogRef.value?.setMessage('正在准备生成表格...');
 
     // 验证表格参数
     if (!settings.value.table_start_message_id || !settings.value.table_end_message_id) {
@@ -2498,11 +2475,7 @@ const handle_generate_table = async () => {
       return;
     }
 
-    progressDialogRef.value?.setProgress(15);
-    progressDialogRef.value?.setMessage('正在获取聊天消息...');
-    progressDialogRef.value?.addDetail(
-      `楼层范围: ${settings.value.table_start_message_id} - ${settings.value.table_end_message_id}`,
-    );
+    console.log(`楼层范围: ${settings.value.table_start_message_id} - ${settings.value.table_end_message_id}`);
 
     // 获取指定范围的消息
     let chatMessages;
@@ -2601,10 +2574,9 @@ const handle_generate_table = async () => {
         throw new Error('无法获取聊天消息：请确保在支持的聊天环境中使用（如 SillyTavern）\n调试信息已输出到控制台');
       }
 
-      progressDialogRef.value?.addDetail(`获取到 ${chatMessages.length} 条消息`);
+      console.log(`获取到 ${chatMessages.length} 条消息`);
     } catch (error) {
       console.error('获取聊天消息失败:', error);
-      showProgress.value = false;
       window.toastr.error('获取聊天消息失败: ' + (error as Error).message);
       return;
     }
@@ -2672,17 +2644,14 @@ ${messagesText}
     console.log('📋 System Prompt:', systemPrompt);
     console.log('📝 User Prompt:', userPrompt.slice(0, 500) + '...');
 
-    progressDialogRef.value?.setProgress(30);
-    progressDialogRef.value?.setMessage('正在发送请求到 AI 服务器...');
-    progressDialogRef.value?.addDetail(`表格列头: ${headers.join(', ')}`);
+    console.log('正在发送请求到 AI 服务器...');
+    console.log(`表格列头: ${headers.join(', ')}`);
 
     // 导入规范化函数和参数过滤函数
     const { normalizeApiEndpoint, filterApiParams } = await import('../settings');
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
 
-    progressDialogRef.value?.setProgress(40);
-    progressDialogRef.value?.setMessage('等待 AI 分析并生成表格...');
-    progressDialogRef.value?.addDetail('这可能需要 10-30 秒，请耐心等待');
+    console.log('等待 AI 分析并生成表格...');
 
     const requestParams = {
       model: settings.value.model,
@@ -2718,7 +2687,6 @@ ${messagesText}
 
     if (!response.ok) {
       const errorText = await response.text();
-      showProgress.value = false;
       console.error('❌ API请求失败:', response.status, response.statusText);
       console.error('错误详情:', errorText);
       window.toastr.error(
@@ -2729,14 +2697,12 @@ ${messagesText}
       return;
     }
 
-    progressDialogRef.value?.setProgress(70);
-    progressDialogRef.value?.setMessage('正在接收 AI 响应...');
+    console.log('正在接收 AI 响应...');
 
     const result = await response.json();
     console.log('AI响应:', result);
 
     if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      showProgress.value = false;
       console.error('❌ AI响应格式错误:', result);
       window.toastr.error('AI响应格式错误，请检查API是否为OpenAI兼容格式', '', { timeOut: 8000 });
       return;
@@ -2745,8 +2711,7 @@ ${messagesText}
     const aiResponse = result.choices[0].message.content;
     console.log('AI返回内容:', aiResponse);
 
-    progressDialogRef.value?.setProgress(85);
-    progressDialogRef.value?.setMessage('正在解析表格数据...');
+    console.log('正在解析表格数据...');
 
     // 解析AI返回的JSON
     let aiTableData;
@@ -2760,7 +2725,6 @@ ${messagesText}
         (!aiResponse.includes('{') && !aiResponse.includes('['))
       ) {
         // 这是错误信息，不是JSON数据
-        showProgress.value = false;
         window.toastr.error(`API调用失败，请检查API配置！\n\n错误信息：\n${aiResponse.slice(0, 200)}`, '', {
           timeOut: 10000,
         });
@@ -2787,7 +2751,6 @@ ${messagesText}
     } catch (parseError) {
       console.error('解析AI响应失败:', parseError);
       console.log('AI原始响应:', aiResponse);
-      showProgress.value = false;
       window.toastr.error(`AI返回的数据格式不正确！\n\n原始响应：\n${aiResponse.slice(0, 200)}`, '', { timeOut: 8000 });
       return;
     }
@@ -2848,27 +2811,18 @@ ${messagesText}
       localStorage.setItem(storageKey, JSON.stringify(table_history));
       console.log('✅ 表格已保存到 localStorage，chat_id:', chat_id);
 
-      progressDialogRef.value?.setProgress(100);
-      progressDialogRef.value?.setMessage('✅ 表格生成完成！');
-      progressDialogRef.value?.addDetail(`共生成 ${tableData.data.length} 行数据`);
-
-      setTimeout(() => {
-        showProgress.value = false;
-        window.toastr.success(`表格生成成功！共${tableData.data.length}行数据`);
-        // 标记任务完成
-        if (taskId) {
-          taskStore.completeTask(taskId);
-        }
-      }, 800);
+      window.toastr.success(`表格生成成功！共${tableData.data.length}行数据`);
+      // 标记任务完成
+      if (taskId) {
+        taskStore.completeTask(taskId);
+      }
 
       console.log('表格已保存到聊天变量:', table_history);
     } else {
-      showProgress.value = false;
       window.toastr.warning('无法获取聊天ID，表格生成失败');
     }
   } catch (error) {
     console.error('生成表格失败:', error);
-    showProgress.value = false;
     window.toastr.error('生成表格失败: ' + (error as Error).message);
     // 标记任务失败
     if (taskId) {
