@@ -11,7 +11,24 @@ async function fetchWithRetry(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(url, options);
+      // 尝试使用酒馆的代理功能（如果可用）
+      let response: Response;
+
+      // 检查是否有 SillyTavern 的 fetch 代理
+      if (
+        typeof (window as any).SillyTavern !== 'undefined' &&
+        typeof (window as any).SillyTavern.httpRequest === 'function'
+      ) {
+        console.log('🔄 使用酒馆内置代理');
+        try {
+          response = await (window as any).SillyTavern.httpRequest(url, options);
+        } catch (proxyError) {
+          console.log('⚠️ 酒馆代理失败，尝试直接请求:', proxyError);
+          response = await fetch(url, options);
+        }
+      } else {
+        response = await fetch(url, options);
+      }
 
       // 如果是 503 错误（服务过载），进行重试
       if (response.status === 503 && attempt < maxRetries) {
@@ -32,37 +49,6 @@ async function fetchWithRetry(
   }
 
   throw lastError || new Error('请求失败');
-}
-
-// API请求代理函数
-async function fetchWithProxy(url: string, options: RequestInit = {}) {
-  try {
-    const origin = window.location.origin;
-    console.log('🔄 尝试通过酒馆后端代理:', origin);
-
-    const response = await fetch(`${origin}/api/proxy`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(typeof SillyTavern !== 'undefined' && SillyTavern.getRequestHeaders ? SillyTavern.getRequestHeaders() : {}),
-      },
-      body: JSON.stringify({
-        url: url,
-        method: options.method || 'GET',
-        headers: options.headers || {},
-      }),
-    });
-
-    if (response.ok) {
-      console.log('✅ 成功通过酒馆后端代理');
-      return response;
-    }
-    console.log('⚠️ 酒馆代理不可用，尝试直接请求');
-  } catch (error) {
-    console.log('⚠️ 酒馆代理失败，尝试直接请求:', error);
-  }
-
-  return fetch(url, options);
 }
 
 // 规范化API端点
