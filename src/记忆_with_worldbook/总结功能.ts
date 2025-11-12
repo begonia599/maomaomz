@@ -1,4 +1,4 @@
-import { useSettingsStore, normalizeApiEndpoint } from './settings';
+import { useSettingsStore, normalizeApiEndpoint, detectApiProvider } from './settings';
 
 /**
  * 通过酒馆后端代理请求（绕过 CORS）
@@ -354,7 +354,13 @@ ${messages.map(msg => `[${msg.role}]: ${msg.message}`).join('\n\n')}
     } else if (response.status === 401) {
       userFriendlyMessage = `API 认证失败 (401)：请检查 API 密钥是否正确。`;
     } else if (response.status === 400) {
-      userFriendlyMessage = `API 请求参数错误 (400)：${errorMessage}`;
+      // 检查是否是 Gemini API，提供更具体的提示
+      const provider = detectApiProvider(settings.api_endpoint);
+      if (provider === 'gemini') {
+        userFriendlyMessage = `API 请求参数错误 (400)：${errorMessage}\n\n💡 提示：检测到您使用的是 Google Gemini API。\n请确保：\n1. API 端点格式正确（例如：https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent）\n2. 模型名称正确（例如：gemini-pro）\n3. API Key 有效且已启用 Generative Language API`;
+      } else {
+        userFriendlyMessage = `API 请求参数错误 (400)：${errorMessage}\n\n请检查：\n1. API 端点格式是否正确\n2. 模型名称是否正确\n3. 请求参数是否有效`;
+      }
     }
 
     console.error('❌ API 请求失败详情:', {

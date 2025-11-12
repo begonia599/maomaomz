@@ -1101,9 +1101,9 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed, onMounted, ref, watch } from 'vue';
-import { normalizeApiEndpoint, useSettingsStore } from '../settings';
-import { copyToClipboard, getScriptIdSafe } from '../utils';
+import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { useTaskStore } from '../taskStore';
+import { copyToClipboard, getScriptIdSafe } from '../utils';
 import AIModifyDialog from './AIModifyDialog.vue';
 import ProgressDialog from './ProgressDialog.vue';
 
@@ -1318,7 +1318,7 @@ const worldbookContent = computed(() => {
     }
 
     // 统一正则表达式的转义格式（将双重转义转为单次转义）
-    let normalizedRegex = regex
+    const normalizedRegex = regex
       .replace(/\\\\/g, '\\') // \\ -> \
       .replace(/\\\|/g, '|') // \| -> |
       .replace(/\\\(/g, '(') // \( -> (
@@ -1351,7 +1351,7 @@ const worldbookContent = computed(() => {
       // 如果是字段部分（包含捕获组）
       else if (part.trim().length > 0 && !part.match(/<-[^>]+->/)) {
         // 统计这一段总共有多少个捕获组
-        const allCaptures = part.match(/\([^\)]+\)/g) || [];
+        const allCaptures = part.match(/\([^)]+\)/g) || [];
         const totalCount = allCaptures.length;
         console.log(`🔢 部分内容 (前100字符): "${part.substring(0, 100)}"`);
         console.log(`🔢 匹配到的捕获组:`, allCaptures);
@@ -1614,27 +1614,33 @@ ${xmlInput.value.trim()}
     progressDialogRef.value?.setMessage('等待 AI 解析 XML 结构...');
     taskStore.updateTaskProgress(taskId, 40, `调用AI (${settings.value.model})`);
 
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    };
+
+    // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-        max_tokens: 2000,
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     if (!response.ok) {
@@ -1775,25 +1781,33 @@ ${modifyInstruction}
     progressDialogRef.value?.setMessage('正在调用 AI 修改...');
 
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    };
+
+    // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: 2000,
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     if (!response.ok) {
-      throw new Error(`API 错误: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`API 错误: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
     progressDialogRef.value?.setProgress(70);
@@ -1942,6 +1956,26 @@ ${aiFieldDescription.value.trim()}
     progressDialogRef.value?.setMessage('等待 AI 设计字段...');
     taskStore.updateTaskProgress(taskId, 40, `调用AI (${settings.value.model})`);
 
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+      max_tokens: 3000,
+      temperature: 0.8,
+    };
+
+    // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+
     // 调用 AI API
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -1949,21 +1983,7 @@ ${aiFieldDescription.value.trim()}
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-        max_tokens: 3000,
-        temperature: 0.8,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     if (!response.ok) {
@@ -2117,25 +2137,33 @@ ${modifyInstruction}
     progressDialogRef.value?.setMessage('正在调用 AI 修改...');
 
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      max_tokens: 2000,
+      temperature: 0.7,
+    };
+
+    // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        max_tokens: 2000,
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     if (!response.ok) {
-      throw new Error(`API 错误: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`API 错误: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
     progressDialogRef.value?.setProgress(70);
@@ -2533,21 +2561,28 @@ ${currentFiles}
     taskStore.updateTaskProgress(taskId, 20, '发送请求到AI');
 
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: settings.value.temperature || 0.7,
+      max_tokens: settings.value.max_tokens || 65500,
+    };
+
+    // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: settings.value.temperature || 0.7,
-        max_tokens: settings.value.max_tokens || 65500,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     // 阶段3: 等待响应
@@ -2557,7 +2592,8 @@ ${currentFiles}
     taskStore.updateTaskProgress(taskId, 50, `等待AI响应 (${settings.value.model})`);
 
     if (!response.ok) {
-      throw new Error(`API 错误: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`API 错误: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
     const data = await response.json();
@@ -2707,25 +2743,32 @@ FILE_END
     progressDialogRef.value?.setMessage('等待 AI 修改代码...');
     progressDialogRef.value?.addDetail('这可能需要 10-30 秒，请耐心等待');
 
+    // 准备请求参数
+    const requestParams = {
+      model: settings.value.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 65500,
+    };
+
+    // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
+    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${settings.value.api_key}`,
       },
-      body: JSON.stringify({
-        model: settings.value.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 65500,
-      }),
+      body: JSON.stringify(filteredParams),
     });
 
     if (!response.ok) {
-      throw new Error(`API 错误: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`API 错误: ${response.status} ${response.statusText}\n${errorText}`);
     }
 
     // 阶段3: 接收响应

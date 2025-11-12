@@ -69,8 +69,13 @@ export function normalizeApiEndpoint(endpoint: string, path: string = '/chat/com
 export function detectApiProvider(endpoint: string): 'gemini' | 'openai' | 'unknown' {
   const trimmed = endpoint.trim().toLowerCase();
 
-  // Gemini API 特征
-  if (trimmed.includes('generativelanguage.googleapis.com')) {
+  // Gemini API 特征 - 支持多种 Google API 端点格式
+  if (
+    trimmed.includes('generativelanguage.googleapis.com') ||
+    trimmed.includes('googleai.com') ||
+    (trimmed.includes('googleapis.com') && (trimmed.includes('gemini') || trimmed.includes('generative'))) ||
+    trimmed.includes('gemini')
+  ) {
     return 'gemini';
   }
 
