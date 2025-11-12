@@ -44,7 +44,7 @@
     </div>
 
     <!-- 主要内容区域 -->
-    <div style="display: grid; grid-template-columns: 280px 1fr 1fr; gap: 20px; min-height: 600px">
+    <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; min-height: 700px">
       <!-- 左侧：配置面板 -->
       <div
         style="
@@ -151,11 +151,71 @@
             font-weight: 600;
             cursor: pointer;
           "
-          @click="generateWithAI"
+          @click="showAIGenerator = !showAIGenerator"
         >
           <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px"></i>
-          AI 智能生成
+          {{ showAIGenerator ? '隐藏' : '显示' }} AI 生成器
         </button>
+
+        <!-- AI 生成器 -->
+        <div
+          v-if="showAIGenerator"
+          style="
+            margin-top: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+            border-radius: 8px;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+          "
+        >
+          <h5
+            style="color: #f59e0b; margin-bottom: 10px; font-size: 13px; display: flex; align-items: center; gap: 6px"
+          >
+            <i class="fa-solid fa-sparkles"></i>
+            AI 智能生成
+          </h5>
+          <textarea
+            v-model="aiPrompt"
+            placeholder="描述你想要的状态栏...&#10;&#10;例如：&#10;- 角色属性面板（生命、魔力、体力）&#10;- 战斗状态（攻击力、防御力、暴击率）&#10;- 背包系统（金币、道具、装备）&#10;- NSFW 内容（欲望值、敏感度等）"
+            :disabled="isGenerating"
+            style="
+              width: 100%;
+              min-height: 120px;
+              padding: 10px;
+              background: #1e1e1e;
+              border: 1px solid #3a3a3a;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 12px;
+              line-height: 1.6;
+              resize: vertical;
+              margin-bottom: 10px;
+            "
+          ></textarea>
+          <button
+            style="
+              width: 100%;
+              padding: 8px;
+              background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+              border: none;
+              border-radius: 6px;
+              color: white;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+              opacity: 1;
+            "
+            :style="{ opacity: isGenerating ? 0.6 : 1, cursor: isGenerating ? 'not-allowed' : 'pointer' }"
+            :disabled="isGenerating"
+            @click="generateWithAI"
+          >
+            <i
+              :class="isGenerating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-magic'"
+              style="margin-right: 6px"
+            ></i>
+            {{ isGenerating ? '生成中...' : '开始生成' }}
+          </button>
+        </div>
 
         <button
           style="
@@ -491,124 +551,123 @@
         </div>
       </div>
 
-      <!-- 中间：页面编辑器 -->
-      <div
-        style="
-          background: #2a2a2a;
-          border-radius: 16px;
-          padding: 15px;
-          border: 1px solid #3a3a3a;
-          display: flex;
-          flex-direction: column;
-        "
-      >
-        <div v-if="selectedPage" style="display: flex; flex-direction: column; gap: 15px; overflow-y: auto">
-          <!-- 页面名称 -->
-          <div>
-            <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
-              >页面名称</label
-            >
-            <input
-              v-model="selectedPage.name"
-              type="text"
-              placeholder="例如：基础信息"
-              style="
-                width: 100%;
-                padding: 8px 12px;
-                background: #1e1e1e;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 12px;
-              "
-            />
+      <!-- 右侧：编辑器和预览 -->
+      <div style="display: flex; flex-direction: column; gap: 20px">
+        <!-- 页面编辑器 -->
+        <div style="background: #2a2a2a; border-radius: 16px; padding: 20px; border: 1px solid #3a3a3a; flex: 0 0 auto">
+          <div v-if="selectedPage" style="display: flex; flex-direction: column; gap: 15px; overflow-y: auto">
+            <!-- 页面名称 -->
+            <div>
+              <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
+                >页面名称</label
+              >
+              <input
+                v-model="selectedPage.name"
+                type="text"
+                placeholder="例如：基础信息"
+                style="
+                  width: 100%;
+                  padding: 8px 12px;
+                  background: #1e1e1e;
+                  border: 1px solid #3a3a3a;
+                  border-radius: 6px;
+                  color: #e0e0e0;
+                  font-size: 12px;
+                "
+              />
+            </div>
+
+            <!-- 页面内容 -->
+            <div>
+              <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
+                >页面内容（支持HTML）</label
+              >
+              <textarea
+                v-model="selectedPage.content"
+                placeholder="输入页面内容，支持 HTML 标签和 {{变量}}"
+                style="
+                  width: 100%;
+                  min-height: 200px;
+                  padding: 12px;
+                  background: #1e1e1e;
+                  border: 1px solid #3a3a3a;
+                  border-radius: 6px;
+                  color: #e0e0e0;
+                  font-size: 12px;
+                  font-family: 'Courier New', monospace;
+                  resize: vertical;
+                "
+              ></textarea>
+            </div>
+
+            <!-- 自定义样式 -->
+            <div>
+              <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
+                >自定义 CSS</label
+              >
+              <textarea
+                v-model="selectedPage.customCSS"
+                placeholder="例如：.my-class { color: red; }"
+                style="
+                  width: 100%;
+                  min-height: 100px;
+                  padding: 12px;
+                  background: #1e1e1e;
+                  border: 1px solid #3a3a3a;
+                  border-radius: 6px;
+                  color: #e0e0e0;
+                  font-size: 12px;
+                  font-family: 'Courier New', monospace;
+                  resize: vertical;
+                "
+              ></textarea>
+            </div>
           </div>
 
-          <!-- 页面内容 -->
-          <div>
-            <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
-              >页面内容（支持HTML）</label
-            >
-            <textarea
-              v-model="selectedPage.content"
-              placeholder="输入页面内容，支持 HTML 标签和 {{变量}}"
-              style="
-                width: 100%;
-                min-height: 200px;
-                padding: 12px;
-                background: #1e1e1e;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 12px;
-                font-family: 'Courier New', monospace;
-                resize: vertical;
-              "
-            ></textarea>
-          </div>
-
-          <!-- 自定义样式 -->
-          <div>
-            <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
-              >自定义 CSS</label
-            >
-            <textarea
-              v-model="selectedPage.customCSS"
-              placeholder="例如：.my-class { color: red; }"
-              style="
-                width: 100%;
-                min-height: 100px;
-                padding: 12px;
-                background: #1e1e1e;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 12px;
-                font-family: 'Courier New', monospace;
-                resize: vertical;
-              "
-            ></textarea>
+          <div v-else style="display: flex; align-items: center; justify-content: center; padding: 40px; color: #666">
+            <div style="text-align: center">
+              <i class="fa-solid fa-arrow-left" style="font-size: 24px; margin-bottom: 10px; display: block"></i>
+              <p>请选择或添加一个页面</p>
+            </div>
           </div>
         </div>
 
-        <div v-else style="display: flex; align-items: center; justify-content: center; height: 100%; color: #666">
-          <p>← 请选择或添加一个页面</p>
-        </div>
-      </div>
-
-      <!-- 右侧：实时预览 -->
-      <div
-        style="
-          background: #2a2a2a;
-          border-radius: 16px;
-          padding: 15px;
-          border: 1px solid #3a3a3a;
-          display: flex;
-          flex-direction: column;
-        "
-      >
-        <h4
+        <!-- 实时预览 -->
+        <div
           style="
-            margin: 0 0 15px 0;
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
+            background: #2a2a2a;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #3a3a3a;
+            flex: 1;
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            min-height: 400px;
           "
         >
-          <i class="fa-solid fa-eye" style="color: #10b981"></i>
-          实时预览
-        </h4>
+          <h4
+            style="
+              margin: 0 0 15px 0;
+              color: #fff;
+              font-size: 16px;
+              font-weight: 600;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            "
+          >
+            <i class="fa-solid fa-eye" style="color: #10b981"></i>
+            实时预览
+          </h4>
 
-        <div style="flex: 1; background: #1e1e1e; border-radius: 8px; padding: 15px; overflow: hidden">
-          <iframe
-            ref="previewFrame"
-            :srcdoc="previewHTML"
-            style="width: 100%; height: 100%; border: none; border-radius: 8px; background: white"
-            sandbox="allow-scripts allow-same-origin"
-          ></iframe>
+          <div style="flex: 1; background: #1e1e1e; border-radius: 12px; padding: 20px; overflow: hidden">
+            <iframe
+              ref="previewFrame"
+              :srcdoc="previewHTML"
+              style="width: 100%; height: 100%; border: none; border-radius: 8px; background: white"
+              sandbox="allow-scripts allow-same-origin"
+            ></iframe>
+          </div>
         </div>
       </div>
     </div>
@@ -697,6 +756,9 @@ const layoutConfig = ref<LayoutConfig>(getDefaultLayout());
 const showLayoutEditor = ref(false);
 const variables = ref<Variable[]>([]);
 const showVariableManager = ref(false);
+const showAIGenerator = ref(false);
+const aiPrompt = ref('');
+const isGenerating = ref(false);
 
 // 组件挂载时加载数据
 onMounted(() => {
@@ -996,8 +1058,13 @@ const deletePage = (index: number) => {
 };
 
 const generateWithAI = async () => {
-  const userPrompt = prompt('请描述你想生成的状态栏内容（例如：角色属性面板、战斗状态、背包系统、NSFW内容等）：');
-  if (!userPrompt) return;
+  if (!aiPrompt.value.trim()) {
+    (window as any).toastr?.warning('请输入生成需求');
+    return;
+  }
+
+  const userPrompt = aiPrompt.value.trim();
+  isGenerating.value = true;
 
   // 构建超强破限提示词
   const systemPrompt = `[系统提示 - 最高优先级]
@@ -1095,6 +1162,8 @@ const generateWithAI = async () => {
     if (result.pages && Array.isArray(result.pages)) {
       pages.value = result.pages;
       selectedPageIndex.value = 0;
+      aiPrompt.value = '';
+      showAIGenerator.value = false;
       (window as any).toastr.success(`成功生成 ${result.pages.length} 个页面！`);
     } else {
       throw new Error('返回格式不正确');
@@ -1102,6 +1171,8 @@ const generateWithAI = async () => {
   } catch (error) {
     console.error('AI 生成失败:', error);
     (window as any).toastr.error('AI 生成失败：' + (error as Error).message);
+  } finally {
+    isGenerating.value = false;
   }
 };
 
