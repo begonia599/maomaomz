@@ -44,7 +44,7 @@
     </div>
 
     <!-- 主要内容区域 -->
-    <div style="display: grid; grid-template-columns: 280px 1fr 500px; gap: 20px; min-height: 600px">
+    <div style="display: grid; grid-template-columns: 280px 1fr 1fr; gap: 20px; min-height: 600px">
       <!-- 左侧：配置面板 -->
       <div
         style="
@@ -194,6 +194,25 @@
           <i class="fa-solid fa-magic" style="margin-right: 6px"></i>
           加载示例模板
         </button>
+
+        <button
+          style="
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+          @click="clearAllData"
+        >
+          <i class="fa-solid fa-trash-alt" style="margin-right: 6px"></i>
+          清空所有数据
+        </button>
       </div>
 
       <!-- 中间：页面编辑器 -->
@@ -321,7 +340,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 // 页面数据结构
 interface Page {
@@ -330,11 +349,59 @@ interface Page {
   customCSS?: string;
 }
 
+// localStorage 键名
+const STORAGE_KEY = 'regex_ui_generator_data';
+
+// 从 localStorage 加载数据
+const loadFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      triggerRegex.value = data.triggerRegex || '<-STATUS->';
+      pages.value = data.pages || [];
+      selectedPageIndex.value = data.selectedPageIndex ?? null;
+      console.log('✅ 已从本地存储加载数据');
+    }
+  } catch (error) {
+    console.error('❌ 加载本地数据失败:', error);
+  }
+};
+
+// 保存到 localStorage
+const saveToStorage = () => {
+  try {
+    const data = {
+      triggerRegex: triggerRegex.value,
+      pages: pages.value,
+      selectedPageIndex: selectedPageIndex.value,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.log('💾 数据已保存到本地存储');
+  } catch (error) {
+    console.error('❌ 保存本地数据失败:', error);
+  }
+};
+
 // 状态
 const triggerRegex = ref('<-STATUS->');
 const pages = ref<Page[]>([]);
 const selectedPageIndex = ref<number | null>(null);
 const previewFrame = ref<HTMLIFrameElement | null>(null);
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadFromStorage();
+});
+
+// 监听数据变化，自动保存
+watch(
+  [triggerRegex, pages, selectedPageIndex],
+  () => {
+    saveToStorage();
+  },
+  { deep: true },
+);
 
 // 计算属性
 const selectedPage = computed(() => {
@@ -407,28 +474,36 @@ const previewHTML = computed(() => {
         }
         .tabs {
           display: flex;
+          gap: 8px;
           background: #f8f9fa;
-          border-bottom: 2px solid #e9ecef;
+          padding: 12px;
+          border-radius: 12px 12px 0 0;
+          flex-wrap: wrap;
         }
         .tab {
-          flex: 1;
-          padding: 12px 20px;
+          padding: 10px 20px;
           text-align: center;
           cursor: pointer;
-          background: transparent;
-          border: none;
+          background: white;
+          border: 2px solid #e9ecef;
+          border-radius: 8px;
           font-size: 14px;
           font-weight: 500;
           color: #6c757d;
           transition: all 0.3s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .tab:hover {
-          background: rgba(74, 158, 255, 0.1);
+          background: #f8f9ff;
+          border-color: #4a9eff;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(74, 158, 255, 0.2);
         }
         .tab.active {
-          background: white;
-          color: #4a9eff;
-          border-bottom: 2px solid #4a9eff;
+          background: linear-gradient(135deg, #4a9eff 0%, #5ab0ff 100%);
+          color: white;
+          border-color: #4a9eff;
+          box-shadow: 0 4px 12px rgba(74, 158, 255, 0.4);
         }
         .page-content {
           padding: 20px;
@@ -694,5 +769,16 @@ const loadTemplate = () => {
     },
   ];
   selectedPageIndex.value = 0;
+};
+
+const clearAllData = () => {
+  if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+    triggerRegex.value = '<-STATUS->';
+    pages.value = [];
+    selectedPageIndex.value = null;
+    localStorage.removeItem(STORAGE_KEY);
+    (window as any).toastr?.success('✅ 所有数据已清空');
+    console.log('🗑️ 所有数据已清空');
+  }
 };
 </script>
