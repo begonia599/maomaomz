@@ -2519,7 +2519,10 @@ const handle_generate_table = async () => {
         console.log('✅ 通过 TavernHelper.getChatMessages() 获取到的消息数量:', chatMessages.length);
 
         // 如果从0开始获取不到消息，尝试从1开始
-        if (settings.value.table_start_message_id === 0 && (!Array.isArray(chatMessages) || chatMessages.length === 0)) {
+        if (
+          settings.value.table_start_message_id === 0 &&
+          (!Array.isArray(chatMessages) || chatMessages.length === 0)
+        ) {
           console.log('⚠️ 从0开始未获取到消息，尝试从1开始...');
           const newRange = `1-${settings.value.table_end_message_id}`;
           chatMessages = (window as any).TavernHelper.getChatMessages(newRange);
