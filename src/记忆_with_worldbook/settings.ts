@@ -179,8 +179,10 @@ export function filterApiParams(params: any, endpoint: string): any {
       filtered.temperature = params.temperature;
     }
     if (params.max_tokens !== undefined) {
-      const safeMax = Math.min(params.max_tokens, 4000);
-      filtered.max_tokens = safeMax;
+      // Gemini 2.5 Pro 支持最多 8192 输出 token
+      // Gemini 2.0 Flash 支持最多 8192 输出 token
+      // 不再强制限制为 4000
+      filtered.max_tokens = params.max_tokens;
     }
 
     // 清理流式参数，Gemini 当前不支持 OpenAI 风格的 stream
