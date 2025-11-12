@@ -266,7 +266,17 @@
           "
         >
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px">
-            <label style="display: flex; align-items: center; gap: 8px; color: #4a9eff; font-size: 14px; font-weight: 600; margin: 0">
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #4a9eff;
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0;
+              "
+            >
               <i class="fa-solid fa-bookmark"></i>
               API 模板管理
             </label>
@@ -315,7 +325,9 @@
                 <div style="color: #e0e0e0; font-size: 13px; font-weight: 500; margin-bottom: 4px">
                   {{ template.name }}
                 </div>
-                <div style="color: #888; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+                <div
+                  style="color: #888; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+                >
                   {{ template.endpoint }} • {{ template.model }}
                 </div>
               </div>
