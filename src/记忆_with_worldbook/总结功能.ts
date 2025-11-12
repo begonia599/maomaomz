@@ -227,9 +227,22 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
       typeof (window as any).TavernHelper.getChatMessages === 'function'
     ) {
       const range = `${start_id}-${end_id}`;
+      console.log('📋 获取消息范围:', range);
       const msgs = (window as any).TavernHelper.getChatMessages(range);
       if (Array.isArray(msgs) && msgs.length > 0) {
         messages.push(...msgs);
+        console.log('✅ 获取到消息数量:', msgs.length);
+      }
+
+      // 如果从0开始获取不到消息，尝试从1开始
+      if (start_id === 0 && (!Array.isArray(msgs) || msgs.length === 0)) {
+        console.log('⚠️ 从0开始未获取到消息，尝试从1开始...');
+        const newRange = `1-${end_id}`;
+        const newMsgs = (window as any).TavernHelper.getChatMessages(newRange);
+        if (Array.isArray(newMsgs) && newMsgs.length > 0) {
+          messages.push(...newMsgs);
+          console.log(`✅ 修改范围后(${newRange})获取到消息数量:`, newMsgs.length);
+        }
       }
     } else {
       // 降级方案：遍历每个楼层（如果可用）
