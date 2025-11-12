@@ -11,24 +11,8 @@ async function fetchWithRetry(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // 尝试使用酒馆的代理功能（如果可用）
-      let response: Response;
-
-      // 检查是否有 SillyTavern 的 fetch 代理
-      if (
-        typeof (window as any).SillyTavern !== 'undefined' &&
-        typeof (window as any).SillyTavern.httpRequest === 'function'
-      ) {
-        console.log('🔄 使用酒馆内置代理');
-        try {
-          response = await (window as any).SillyTavern.httpRequest(url, options);
-        } catch (proxyError) {
-          console.log('⚠️ 酒馆代理失败，尝试直接请求:', proxyError);
-          response = await fetch(url, options);
-        }
-      } else {
-        response = await fetch(url, options);
-      }
+      // 直接使用 fetch，不尝试代理（因为浏览器插件环境中 CORS 由服务器控制）
+      const response = await fetch(url, options);
 
       // 如果是 503 错误（服务过载），进行重试
       if (response.status === 503 && attempt < maxRetries) {
@@ -40,6 +24,16 @@ async function fetchWithRetry(
       return response;
     } catch (error) {
       lastError = error as Error;
+
+      // 如果是 CORS 错误，给出更友好的提示
+      if (lastError.message.includes('Failed to fetch') || lastError.message.includes('CORS')) {
+        console.error('❌ CORS 错误：API 服务器未配置 CORS 头');
+        console.error('💡 解决方案：');
+        console.error('   1. 在 API 服务器配置中启用 CORS');
+        console.error('   2. 或使用支持 CORS 的 API 端点');
+        console.error('   3. 或在酒馆主界面配置相同的 API（推荐）');
+      }
+
       if (attempt < maxRetries) {
         console.warn(`⚠️ 请求失败，${retryDelay / 1000}秒后进行第 ${attempt + 1}/${maxRetries} 次重试...`, error);
         await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
