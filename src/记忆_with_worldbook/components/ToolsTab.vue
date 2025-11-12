@@ -3367,7 +3367,7 @@ const generateWithStreaming = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-        throw new Error(`API 请求失败 (${response.status}): ${errorText}`);
+      throw new Error(`API 请求失败 (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
