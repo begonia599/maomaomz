@@ -2551,7 +2551,7 @@ const handle_generate_table = async () => {
           if (chat[i] && chat[i].mes) {
             chatMessages.push({
               role: chat[i].is_user ? 'user' : 'assistant',
-              message: chat[i].mes
+              message: chat[i].mes,
             });
           }
         }
@@ -2571,7 +2571,7 @@ const handle_generate_table = async () => {
           if (chat[i] && chat[i].mes) {
             chatMessages.push({
               role: chat[i].is_user ? 'user' : 'assistant',
-              message: chat[i].mes
+              message: chat[i].mes,
             });
           }
         }
