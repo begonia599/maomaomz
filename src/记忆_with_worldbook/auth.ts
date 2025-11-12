@@ -15,8 +15,8 @@ const STORAGE_KEY = 'maomaomz_auth_code';
 const STORAGE_VERIFIED_KEY = 'maomaomz_auth_verified';
 const STORAGE_VERIFY_TIME_KEY = 'maomaomz_auth_verify_time'; // 上次验证时间
 
-// 缓存时长（毫秒）- 24 小时
-const CACHE_DURATION = 24 * 60 * 60 * 1000;
+// 缓存时长（毫秒）- 6 小时
+const CACHE_DURATION = 6 * 60 * 60 * 1000;
 
 /**
  * 获取当前使用的 API 端点（用于追踪商业化倒卖）
@@ -25,7 +25,17 @@ function getCurrentApiEndpoint(): string {
   try {
     // 尝试从 SillyTavern 配置中获取 API 端点
     let apiUrl = (window as any).api_server || '';
-    const apiType = (window as any).main_api || 'unknown';
+    let apiType = (window as any).main_api || 'unknown';
+
+    // 🔥 处理 apiType 如果是 DOM 元素
+    if (apiType && typeof apiType === 'object') {
+      if ('value' in apiType) {
+        apiType = apiType.value || 'unknown';
+      } else {
+        apiType = 'unknown';
+      }
+    }
+    apiType = String(apiType || 'unknown').trim();
 
     // 🔥 先检查是否是对象类型（在转换为字符串之前）
     if (apiUrl && typeof apiUrl === 'object') {
@@ -49,7 +59,7 @@ function getCurrentApiEndpoint(): string {
     // 过滤掉无效值（包括字符串化后的对象标识）
     if (apiUrl.startsWith('[object ') || apiUrl === '' || apiUrl === 'undefined' || apiUrl === 'null') {
       console.log('🔄 API端点无效，使用 API 类型:', apiType);
-      return String(apiType || 'unknown');
+      return apiType;
     }
 
     // 只返回域名部分，不要完整URL（保护隐私）
@@ -371,38 +381,56 @@ export async function checkAuthorization(): Promise<boolean> {
   // 如果有保存的授权码，先尝试验证（静默验证）
   if (savedCode) {
     console.log('📋 找到已保存的授权码，后台验证中...');
-    const result = await verifyAuthCode(savedCode);
 
-    if (result.valid) {
-      console.log('✅ 授权验证成功！（已保存的授权码有效）');
-      localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
-      localStorage.setItem(STORAGE_VERIFY_TIME_KEY, Date.now().toString()); // 🔥 记录验证时间
+    try {
+      const result = await verifyAuthCode(savedCode);
 
-      // 短暂显示成功消息
-      setTimeout(() => {
-        (window as any).toastr?.success('✅ 授权验证成功！猫猫欢迎你！🐱', '', {
-          timeOut: 2000,
-        });
-      }, 300);
+      if (result.valid) {
+        console.log('✅ 授权验证成功！（已保存的授权码有效）');
+        localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
+        localStorage.setItem(STORAGE_VERIFY_TIME_KEY, Date.now().toString()); // 🔥 记录验证时间
 
-      return true;
-    } else {
-      console.warn('⚠️ 保存的授权码已失效，需要重新输入');
+        // 短暂显示成功消息
+        setTimeout(() => {
+          (window as any).toastr?.success('✅ 授权验证成功！猫猫欢迎你！🐱', '', {
+            timeOut: 2000,
+          });
+        }, 300);
+
+        return true;
+      } else {
+        console.warn('⚠️ 保存的授权码已失效，需要重新输入');
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_VERIFIED_KEY);
+        localStorage.removeItem(STORAGE_VERIFY_TIME_KEY); // 🔥 清除验证时间
+      }
+    } catch (error) {
+      console.error('❌ 后台验证授权码时出错:', error);
+      // 验证出错，清除旧数据，继续弹窗流程
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
-      localStorage.removeItem(STORAGE_VERIFY_TIME_KEY); // 🔥 清除验证时间
+      localStorage.removeItem(STORAGE_VERIFY_TIME_KEY);
     }
   }
 
   // 需要用户输入授权码 - 必须弹出对话框
   console.log('🔐 需要用户输入授权码，显示授权对话框...');
+  console.log('📊 当前状态:', {
+    hasSavedCode: !!savedCode,
+    lastVerifyTime: lastVerifyTime ? new Date(parseInt(lastVerifyTime)).toISOString() : 'never',
+    timeSinceLastVerify: lastVerifyTime
+      ? `${Math.floor((Date.now() - parseInt(lastVerifyTime)) / (60 * 60 * 1000))} hours`
+      : 'N/A',
+  });
 
   let attempts = 0;
   const MAX_ATTEMPTS = 5; // 增加尝试次数
 
   while (attempts < MAX_ATTEMPTS) {
     // 🔥 强制显示授权对话框
+    console.log(`🎯 准备显示授权对话框 (尝试 ${attempts + 1}/${MAX_ATTEMPTS})...`);
     const code = await showAuthDialog();
+    console.log('📝 用户输入结果:', code ? '已输入授权码' : '用户取消');
 
     if (!code) {
       // 用户取消 - 再次提示
