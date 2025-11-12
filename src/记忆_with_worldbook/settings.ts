@@ -2,27 +2,9 @@ import { klona } from 'klona';
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { getChatIdSafe, getScriptIdSafe } from './utils';
-
-// 安全导入 zod
-let z: any;
-try {
-  z = require('zod');
-} catch (e) {
-  console.warn('zod 不可用，使用备用方案');
-  // 简单的备用验证函数
-  z = {
-    object: (obj: any) => ({
-      parse: (data: any) => data,
-      default: (def: any) => ({ parse: (data: any) => data || def }),
-    }),
-    string: () => ({ default: (def: string) => ({ parse: (data: any) => data || def }) }),
-    number: () => ({ default: (def: number) => ({ parse: (data: any) => data || def }) }),
-    boolean: () => ({ default: (def: boolean) => ({ parse: (data: any) => data || def }) }),
-    array: (schema: any) => ({
-      default: (def: any[]) => ({ parse: (data: any) => (Array.isArray(data) ? data : def) }),
-    }),
-  };
-}
+// 使用标准的 ES 模块导入，而不是 require
+// 这样确保 zod 在全局作用域中可用，避免与其他插件冲突
+import { z } from 'zod';
 
 const Settings = z
   .object({

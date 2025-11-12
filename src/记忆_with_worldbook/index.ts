@@ -10,6 +10,16 @@ import TaskManager from './components/TaskManager.vue';
 // 直接导入UI模块，不再延迟加载
 import './浮动面板';
 import './添加导航按钮';
+// 导入 zod 并立即暴露到全局作用域，避免与其他插件（如 QuickReply）冲突
+// 这必须在其他插件初始化之前执行
+import { z } from 'zod';
+
+// 确保 zod 在全局作用域中可用，避免与其他插件（如 QuickReply）冲突
+// 在插件初始化之前就暴露，确保其他插件可以访问
+if (typeof window !== 'undefined' && typeof (window as any).z === 'undefined') {
+  (window as any).z = z;
+  console.log('✅ zod 已暴露到全局作用域，避免插件冲突');
+}
 
 $(() => {
   setTimeout(async () => {
