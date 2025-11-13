@@ -1327,19 +1327,18 @@ FILE_END
 
     taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
 
-    // 清理可能的 markdown 代码块标记和其他干扰字符
+    // 输出原始内容的前 500 字符用于调试
+    console.log('📥 AI 原始返回内容（前500字符）:', content.substring(0, 500));
+
+    // 清理可能的 markdown 代码块标记
     content = content
+      .replace(/```html\n?/g, '')
+      .replace(/```css\n?/g, '')
+      .replace(/```javascript\n?/g, '')
+      .replace(/```js\n?/g, '')
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
-      .replace(/^[^{[]*/, '') // 移除开头的非JSON字符
-      .replace(/[^}\]]*$/, '') // 移除结尾的非JSON字符
       .trim();
-
-    // 尝试修复常见的JSON错误
-    content = content
-      .replace(/,(\s*[}\]])/g, '$1') // 移除多余的逗号
-      .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // 给没有引号的键加上引号
-      .replace(/:\s*'([^']*)'/g, ': "$1"'); // 将单引号改为双引号
 
     // 解析三个文件格式（使用和 StatusBarGenerator 相同的正则）
     const files: { path: string; content: string }[] = [];
@@ -1361,11 +1360,24 @@ FILE_END
       // 尝试提取 HTML (从 <details> 开始，匹配完整标签)
       const htmlMatch = content.match(/<details[\s\S]*?<\/details>/i);
 
-      // 尝试提取 CSS (匹配所有 CSS 规则)
+      // 尝试提取 CSS (多种模式)
       let cssMatch = content.match(/\.[\w-]+\s*\{[\s\S]*?\}(?:\s*\.[\w-]+\s*\{[\s\S]*?\})*/);
       // 如果没找到，尝试匹配从注释开始的 CSS
       if (!cssMatch) {
         cssMatch = content.match(/\/\*[\s\S]*?\*\/[\s\S]*?(?:\.[\w-]+\s*\{[\s\S]*?\})+/);
+      }
+      // 如果还没找到，尝试匹配 CSS 变量定义（:root 或 --var）
+      if (!cssMatch) {
+        cssMatch = content.match(/(?::root\s*\{[\s\S]*?\}|--[\w-]+:\s*[^;]+;[\s\S]*)/);
+      }
+      // 如果还没找到，检查是否整个内容看起来像 CSS（包含多个 { } 对）
+      if (!cssMatch && content.includes('{') && content.includes('}')) {
+        const braceCount = (content.match(/\{/g) || []).length;
+        if (braceCount >= 3) {
+          // 看起来像 CSS，直接使用整个内容
+          cssMatch = [content];
+          console.log('🎨 检测到类似 CSS 的内容，使用全部内容');
+        }
       }
 
       // 尝试提取 JS (从 (function 开始，匹配完整的立即执行函数)
@@ -1384,12 +1396,50 @@ FILE_END
       }
     }
 
-    // 如果还是只有 2 个文件（缺少 HTML），尝试生成默认 HTML 结构
-    if (files.length === 2 && !files.find(f => f.path === 'index.html')) {
-      console.log('⚠️ 缺少 HTML 文件，尝试生成默认结构...');
+    // 如果文件数量不足 3 个，尝试补全缺失的文件
+    if (files.length < 3) {
+      console.log(`⚠️ 文件数量不足（当前 ${files.length} 个），尝试补全...`);
 
-      // 生成一个基础的 HTML 结构
-      const defaultHtml = `<details>
+      // 检查缺少哪些文件
+      const hasHTML = files.some(f => f.path === 'index.html');
+      const hasCSS = files.some(f => f.path === 'style.css');
+      const hasJS = files.some(f => f.path === 'script.js');
+
+      // 特殊处理：如果只有一个文件，尝试识别它的类型
+      if (files.length === 1) {
+        const singleFile = files[0];
+        const fileContent = singleFile.content;
+
+        // 检查是否是 CSS
+        const looksLikeCSS =
+          fileContent.includes('{') &&
+          fileContent.includes('}') &&
+          (fileContent.includes(':') || fileContent.includes('--'));
+        // 检查是否是 HTML
+        const looksLikeHTML = fileContent.includes('<') && fileContent.includes('>');
+        // 检查是否是 JS
+        const looksLikeJS = fileContent.includes('function') || fileContent.includes('=>');
+
+        if (looksLikeCSS && !looksLikeHTML && !looksLikeJS) {
+          singleFile.path = 'style.css';
+          console.log('✅ 将唯一文件识别为 CSS');
+        } else if (looksLikeHTML) {
+          singleFile.path = 'index.html';
+          console.log('✅ 将唯一文件识别为 HTML');
+        } else if (looksLikeJS) {
+          singleFile.path = 'script.js';
+          console.log('✅ 将唯一文件识别为 JS');
+        }
+      }
+
+      // 重新检查（因为可能已经重新识别了文件类型）
+      const hasHTML2 = files.some(f => f.path === 'index.html');
+      const hasCSS2 = files.some(f => f.path === 'style.css');
+      const hasJS2 = files.some(f => f.path === 'script.js');
+
+      // 补全 HTML
+      if (!hasHTML2) {
+        const defaultHtml = `<details>
 <summary>状态栏</summary>
 <div class="status-container">
   <div class="page-tabs">
@@ -1408,9 +1458,41 @@ FILE_END
   </div>
 </div>
 </details>`;
+        files.push({ path: 'index.html', content: defaultHtml });
+        console.log('✅ 已添加默认 HTML 结构');
+      }
 
-      files.unshift({ path: 'index.html', content: defaultHtml });
-      console.log('✅ 已添加默认 HTML 结构');
+      // 补全 CSS
+      if (!hasCSS2) {
+        const defaultCSS = `.status-container { padding: 20px; background: #f5f5f5; border-radius: 8px; }
+.page-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+.page-tab { padding: 10px 20px; cursor: pointer; background: white; border: 2px solid #e0e0e0; border-radius: 6px; }
+.page-tab.active { background: #4a9eff; color: white; border-color: #4a9eff; }
+.page-content { padding: 20px; background: white; border-radius: 8px; }
+.page { display: none; }
+.page.active { display: block; }`;
+        files.push({ path: 'style.css', content: defaultCSS });
+        console.log('✅ 已添加默认 CSS');
+      }
+
+      // 补全 JS
+      if (!hasJS2) {
+        const defaultJS = `(function() {
+  document.querySelectorAll('.page-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const pageIndex = this.getAttribute('data-page');
+      document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelector('.page[data-page-id="' + pageIndex + '"]').classList.add('active');
+    });
+  });
+})();`;
+        files.push({ path: 'script.js', content: defaultJS });
+        console.log('✅ 已添加默认 JS');
+      }
+
+      console.log(`✅ 补全后文件数量: ${files.length}`);
     }
 
     // 调试：输出 AI 返回的原始内容（前500字符）
@@ -1423,53 +1505,59 @@ FILE_END
       );
     }
 
-    if (files.length === 3) {
-      // 找到三个文件：index.html, style.css, script.js
-      const htmlFile = files.find(f => f.path === 'index.html');
-      const cssFile = files.find(f => f.path === 'style.css');
-      const jsFile = files.find(f => f.path === 'script.js');
+    // 确保有三个文件
+    const htmlFile = files.find(f => f.path === 'index.html');
+    const cssFile = files.find(f => f.path === 'style.css');
+    const jsFile = files.find(f => f.path === 'script.js');
 
-      if (htmlFile && cssFile && jsFile) {
-        // 创建一个页面，包含三个文件的内容
-        pages.value = [
-          {
-            name: '翻页状态栏',
-            content: htmlFile.content,
-            customCSS: cssFile.content,
-            script: jsFile.content,
-          },
-        ];
-        selectedPageIndex.value = 0;
+    if (htmlFile && cssFile && jsFile) {
+      // 创建一个页面，包含三个文件的内容
+      pages.value = [
+        {
+          name: '翻页状态栏',
+          content: htmlFile.content,
+          customCSS: cssFile.content,
+          script: jsFile.content,
+        },
+      ];
+      selectedPageIndex.value = 0;
 
-        // 从HTML中提取占位符（$1, $2, $3等）
-        const placeholders = new Set<string>();
-        const placeholderRegex = /\$(\d+)/g;
-        let placeholderMatch;
-        while ((placeholderMatch = placeholderRegex.exec(htmlFile.content)) !== null) {
-          placeholders.add(placeholderMatch[1]);
-        }
-
-        // 生成变量列表
-        variables.value = Array.from(placeholders)
-          .sort((a, b) => parseInt(a) - parseInt(b))
-          .map(num => ({
-            name: `field${num}`,
-            defaultValue: '',
-            description: `字段${num}`,
-          }));
-
-        aiPrompt.value = '';
-        showAIGenerator.value = false;
-
-        taskStore.completeTask(taskId, `成功生成翻页状态栏，包含 ${placeholders.size} 个字段`);
-        (window as any).toastr.success(`成功生成翻页状态栏，包含 ${placeholders.size} 个字段！`);
-      } else {
-        throw new Error('缺少必要的文件（index.html, style.css, script.js）');
+      // 从HTML中提取占位符（$1, $2, $3等）
+      const placeholders = new Set<string>();
+      const placeholderRegex = /\$(\d+)/g;
+      let placeholderMatch;
+      while ((placeholderMatch = placeholderRegex.exec(htmlFile.content)) !== null) {
+        placeholders.add(placeholderMatch[1]);
       }
+
+      // 生成变量列表
+      variables.value = Array.from(placeholders)
+        .sort((a, b) => parseInt(a) - parseInt(b))
+        .map(num => ({
+          name: `field${num}`,
+          defaultValue: '',
+          description: `字段${num}`,
+        }));
+
+      aiPrompt.value = '';
+      showAIGenerator.value = false;
+
+      const successMsg =
+        placeholders.size > 0
+          ? `成功生成翻页状态栏，包含 ${placeholders.size} 个字段`
+          : '成功生成翻页状态栏（使用默认模板）';
+
+      taskStore.completeTask(taskId, successMsg);
+      (window as any).toastr.success(`✨ ${successMsg}！`);
     } else {
       // 提供更详细的错误信息
+      const missingFiles = [];
+      if (!htmlFile) missingFiles.push('index.html');
+      if (!cssFile) missingFiles.push('style.css');
+      if (!jsFile) missingFiles.push('script.js');
+
       const errorDetails = `
-文件数量不正确，期望3个文件，实际${files.length}个
+缺少必要的文件: ${missingFiles.join(', ')}
 
 AI 返回内容预览（前300字符）:
 ${content.substring(0, 300)}
