@@ -147,11 +147,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { minimizeMemoryPanel } from '../浮动面板';
 import GreetingsTab from './GreetingsTab.vue';
 import HelpTab from './HelpTab.vue';
 import MvuBetaTab from './MvuBetaTab.vue';
+import PreferencesTab from './PreferencesTab.vue';
 import ProjectManager from './ProjectManager.vue';
 import RegexUIGenerator from './RegexUIGenerator.vue';
 import SettingsTab from './SettingsTab.vue';
@@ -159,9 +160,6 @@ import StatusBarGenerator from './StatusBarGenerator.vue';
 import SummaryTab from './SummaryTab.vue';
 import TableTab from './TableTab.vue';
 import ToolsTab from './ToolsTab.vue';
-
-// 动态导入PreferencesTab避免被tree-shaking
-const PreferencesTab = defineAsyncComponent(() => import('./PreferencesTab.vue'));
 
 // 标签页配置
 const tabs = [
