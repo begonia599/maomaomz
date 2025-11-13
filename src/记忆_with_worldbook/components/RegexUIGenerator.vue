@@ -137,20 +137,21 @@
           </h5>
           <textarea
             v-model="aiPrompt"
-            placeholder="描述你想要的状态栏，AI会自动生成HTML、样式和变量...&#10;&#10;例如：&#10;- 学神手册风格的角色面板&#10;- 赛博朋克风格的战斗状态栏&#10;- 可爱粉色系的NSFW状态栏&#10;- 游戏RPG风格的属性面板"
+            placeholder="✨ 完全自由！想要什么样式就描述什么样式，AI 会为你创造！&#10;&#10;🎨 任意形状：圆形、椭圆、方形、六边形、不规则形状、波浪边框&#10;🎭 任意风格：学神手册、粉色可爱、赛博朋克、游戏UI、便签本、科幻面板&#10;🌈 任意配色：深色/浅色/渐变/霓虹/复古/梦幻&#10;💫 任意动画：淡入淡出、滑动、旋转、脉动、悬停特效&#10;📐 任意布局：网格、卡片堆叠、环形、自由排列&#10;&#10;💡 示例：&#10;- 学神手册风格，绿色卡片，左边圆形头像，右边4个标签页&#10;- 粉色椭圆形，HP和LUST进度条，渐变背景&#10;- 赛博朋克，霓虹蓝色边框，扫描线动画&#10;&#10;⚠️ 形状、颜色、布局完全自由！"
             :disabled="isGenerating"
             style="
               width: 100%;
-              min-height: 100px;
-              padding: 10px;
-              background: #1e1e1e;
-              border: 1px solid #3a3a3a;
-              border-radius: 6px;
+              min-height: 160px;
+              padding: 14px;
+              background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
+              border: 3px solid #f59e0b;
+              border-radius: 10px;
               color: #e0e0e0;
               font-size: 12px;
-              line-height: 1.6;
+              line-height: 1.7;
               resize: vertical;
-              margin-bottom: 10px;
+              margin-bottom: 12px;
+              box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
             "
           ></textarea>
           <button
@@ -667,32 +668,50 @@
         <!-- 实时预览 -->
         <div
           style="
-            background: #2a2a2a;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
             border-radius: 16px;
             padding: 20px;
-            border: 1px solid #3a3a3a;
+            border: 2px solid #10b981;
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-height: 400px;
+            min-height: 500px;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
           "
         >
           <h4
             style="
-              margin: 0 0 15px 0;
+              margin: 0 0 16px 0;
               color: #fff;
               font-size: 16px;
-              font-weight: 600;
+              font-weight: 700;
               display: flex;
               align-items: center;
-              gap: 8px;
+              gap: 10px;
+              padding: 12px 16px;
+              background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%);
+              border-radius: 10px;
+              border: 1px solid rgba(16, 185, 129, 0.3);
             "
           >
-            <i class="fa-solid fa-eye" style="color: #10b981"></i>
-            实时预览
+            <i class="fa-solid fa-eye" style="color: #10b981; font-size: 18px"></i>
+            ✨ 实时预览 - 完全自由的创意展示
+            <span style="margin-left: auto; font-size: 11px; color: #888; font-weight: 400">
+              任意形状 · 任意风格 · 任意布局
+            </span>
           </h4>
 
-          <div style="flex: 1; background: #1e1e1e; border-radius: 12px; padding: 20px; overflow: hidden">
+          <div
+            style="
+              flex: 1;
+              background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
+              border-radius: 12px;
+              padding: 30px;
+              overflow: hidden;
+              border: 2px solid #3a3a3a;
+              box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+            "
+          >
             <iframe
               ref="previewFrame"
               :srcdoc="previewHTML"
