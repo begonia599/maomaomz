@@ -147,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { minimizeMemoryPanel } from '../浮动面板';
 import GreetingsTab from './GreetingsTab.vue';
 import HelpTab from './HelpTab.vue';
@@ -163,6 +163,7 @@ import ToolsTab from './ToolsTab.vue';
 // 标签页配置
 const tabs = [
   { key: 'settings', label: '设置', icon: 'fa-solid fa-cog' },
+  { key: 'preferences', label: '偏好', icon: 'fa-solid fa-sliders' },
   { key: 'summary', label: '历史总结', icon: 'fa-solid fa-list' },
   { key: 'table', label: '表格', icon: 'fa-solid fa-table' },
   { key: 'greetings', label: '开场白', icon: 'fa-solid fa-comments' },
@@ -175,12 +176,23 @@ const tabs = [
 ];
 
 const activeTab = ref<
-  'settings' | 'summary' | 'table' | 'greetings' | 'status' | 'regex' | 'project' | 'tools' | 'mvu' | 'help'
+  | 'settings'
+  | 'preferences'
+  | 'summary'
+  | 'table'
+  | 'greetings'
+  | 'status'
+  | 'regex'
+  | 'project'
+  | 'tools'
+  | 'mvu'
+  | 'help'
 >('settings');
 
 // 组件映射
 const componentMap = {
   settings: SettingsTab,
+  preferences: PreferencesTab,
   summary: SummaryTab,
   table: TableTab,
   greetings: GreetingsTab,

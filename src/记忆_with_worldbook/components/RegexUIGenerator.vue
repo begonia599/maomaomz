@@ -1183,28 +1183,65 @@ const generateWithAI = async () => {
 
     taskStore.updateTaskProgress(taskId, 20, '正在连接 AI...');
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.api_key}`,
-      },
-      body: JSON.stringify({
-        model: settings.model,
-        messages: [
-          {
-            role: 'user',
-            content: systemPrompt,
-          },
-        ],
-        max_tokens: settings.max_tokens || 2000,
-        temperature: 0.8,
-      }),
-    });
+    // 自动重试机制（针对503等临时错误）
+    let response;
+    let lastError;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2秒
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API 请求失败: ${response.status} - ${error}`);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 1) {
+          taskStore.updateTaskProgress(taskId, 20 + attempt * 5, `第 ${attempt} 次重试...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt)); // 递增延迟
+        }
+
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${settings.api_key}`,
+          },
+          body: JSON.stringify({
+            model: settings.model,
+            messages: [
+              {
+                role: 'user',
+                content: systemPrompt,
+              },
+            ],
+            max_tokens: settings.max_tokens || 2000,
+            temperature: 0.8,
+          }),
+        });
+
+        if (response.ok) {
+          break; // 成功，跳出重试循环
+        }
+
+        const errorText = await response.text();
+        lastError = errorText;
+
+        // 503 (服务过载) 或 429 (请求过多) 可以重试
+        if (response.status === 503 || response.status === 429) {
+          if (attempt < maxRetries) {
+            console.log(`⚠️ API返回 ${response.status}，将在 ${retryDelay * attempt}ms 后重试...`);
+            continue;
+          }
+        }
+
+        // 其他错误直接抛出
+        throw new Error(`API 请求失败 (${response.status}): ${errorText}`);
+      } catch (err) {
+        lastError = err;
+        if (attempt === maxRetries) {
+          throw err;
+        }
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`API 请求失败，已重试 ${maxRetries} 次: ${lastError}`);
     }
 
     taskStore.updateTaskProgress(taskId, 60, '正在接收 AI 响应...');
@@ -1322,28 +1359,63 @@ ${selectedPage.value.content}
 
     taskStore.updateTaskProgress(taskId, 20, '正在连接 AI...');
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.api_key}`,
-      },
-      body: JSON.stringify({
-        model: settings.model,
-        messages: [
-          {
-            role: 'user',
-            content: systemPrompt,
-          },
-        ],
-        max_tokens: settings.max_tokens || 1500,
-        temperature: 0.7,
-      }),
-    });
+    // 自动重试机制（针对503等临时错误）
+    let response;
+    let lastError;
+    const maxRetries = 3;
+    const retryDelay = 2000;
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API 请求失败: ${response.status} - ${error}`);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (attempt > 1) {
+          taskStore.updateTaskProgress(taskId, 20 + attempt * 5, `第 ${attempt} 次重试...`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+        }
+
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${settings.api_key}`,
+          },
+          body: JSON.stringify({
+            model: settings.model,
+            messages: [
+              {
+                role: 'user',
+                content: systemPrompt,
+              },
+            ],
+            max_tokens: settings.max_tokens || 1500,
+            temperature: 0.7,
+          }),
+        });
+
+        if (response.ok) {
+          break;
+        }
+
+        const errorText = await response.text();
+        lastError = errorText;
+
+        if (response.status === 503 || response.status === 429) {
+          if (attempt < maxRetries) {
+            console.log(`⚠️ API返回 ${response.status}，将在 ${retryDelay * attempt}ms 后重试...`);
+            continue;
+          }
+        }
+
+        throw new Error(`API 请求失败 (${response.status}): ${errorText}`);
+      } catch (err) {
+        lastError = err;
+        if (attempt === maxRetries) {
+          throw err;
+        }
+      }
+    }
+
+    if (!response || !response.ok) {
+      throw new Error(`API 请求失败，已重试 ${maxRetries} 次: ${lastError}`);
     }
 
     taskStore.updateTaskProgress(taskId, 60, '正在接收 AI 响应...');
