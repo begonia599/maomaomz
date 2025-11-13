@@ -1020,28 +1020,8 @@ const previewHTML = computed(() => {
   const customCSS = pages.value.map(p => p.customCSS || '').join('\n');
   const config = layoutConfig.value;
 
-  // 生成翻页按钮HTML
-  const generateTabsHTML = () => {
-    if (config.tabPosition === 'custom' && config.customTabHTML) {
-      return config.customTabHTML;
-    }
-
-    const tabsHTML = pages.value
-      .map(
-        (page, index) => `
-      <button class="tab ${index === 0 ? 'active' : ''}" onclick="switchPage(${index})">
-        ${page.name}
-      </button>
-    `,
-      )
-      .join('');
-
-    return `<div class="tabs" style="${config.tabContainerStyle}">${tabsHTML}</div>`;
-  };
-
-  // 根据位置生成不同的布局
+  // 根据位置生成不同的布局（AI生成的内容已经包含翻页按钮，不需要额外生成）
   const getLayoutHTML = () => {
-    const tabsHTML = generateTabsHTML();
     const contentHTML = pages.value
       .map((page, index) => {
         // 使用测试数据替换变量
@@ -1054,118 +1034,13 @@ const previewHTML = computed(() => {
       })
       .join('');
 
-    switch (config.tabPosition) {
-      case 'top':
-        return `${tabsHTML}<div class="page-content">${contentHTML}</div>`;
-      case 'bottom':
-        return `<div class="page-content">${contentHTML}</div>${tabsHTML}`;
-      case 'left':
-        return `<div style="display: flex;">${tabsHTML}<div class="page-content" style="flex: 1;">${contentHTML}</div></div>`;
-      case 'right':
-        return `<div style="display: flex;"><div class="page-content" style="flex: 1;">${contentHTML}</div>${tabsHTML}</div>`;
-      case 'custom':
-        return `${tabsHTML}<div class="page-content">${contentHTML}</div>`;
-      default:
-        return `${tabsHTML}<div class="page-content">${contentHTML}</div>`;
-    }
+    // 直接返回内容，AI生成的HTML已经包含了翻页按钮
+    return `<div class="page-content">${contentHTML}</div>`;
   };
 
-  // 生成按钮样式
+  // AI生成的内容已经包含所有样式，不需要额外的按钮样式
   const getTabStyles = () => {
-    const baseStyles = `
-      .tabs {
-        display: flex;
-        gap: 8px;
-        background: #f8f9fa;
-        padding: 12px;
-        flex-wrap: wrap;
-      }
-    `;
-
-    switch (config.tabStyle) {
-      case 'pills':
-        return (
-          baseStyles +
-          `
-        .tab {
-          padding: 8px 16px;
-          cursor: pointer;
-          background: #e9ecef;
-          border: none;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 500;
-          color: #495057;
-          transition: all 0.3s;
-        }
-        .tab:hover {
-          background: #dee2e6;
-          transform: scale(1.05);
-        }
-        .tab.active {
-          background: linear-gradient(135deg, #4a9eff 0%, #5ab0ff 100%);
-          color: white;
-          box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
-        }
-      `
-        );
-      case 'minimal':
-        return (
-          baseStyles +
-          `
-        .tab {
-          padding: 8px 16px;
-          cursor: pointer;
-          background: transparent;
-          border: none;
-          border-bottom: 2px solid transparent;
-          font-size: 14px;
-          font-weight: 500;
-          color: #6c757d;
-          transition: all 0.3s;
-        }
-        .tab:hover {
-          color: #4a9eff;
-          border-bottom-color: #4a9eff;
-        }
-        .tab.active {
-          color: #4a9eff;
-          border-bottom-color: #4a9eff;
-          font-weight: 600;
-        }
-      `
-        );
-      default:
-        return (
-          baseStyles +
-          `
-        .tab {
-          padding: 10px 20px;
-          cursor: pointer;
-          background: white;
-          border: 2px solid #e9ecef;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
-          color: #6c757d;
-          transition: all 0.3s;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .tab:hover {
-          background: #f8f9ff;
-          border-color: #4a9eff;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(74, 158, 255, 0.2);
-        }
-        .tab.active {
-          background: linear-gradient(135deg, #4a9eff 0%, #5ab0ff 100%);
-          color: white;
-          border-color: #4a9eff;
-          box-shadow: 0 4px 12px rgba(74, 158, 255, 0.4);
-        }
-      `
-        );
-    }
+    return ''; // 返回空字符串，AI生成的HTML会包含所有必要的内联样式
   };
 
   return (
@@ -1219,11 +1094,31 @@ const previewHTML = computed(() => {
       </div>
       <script type="text/javascript">
         function switchPage(index) {
-          document.querySelectorAll('.tab').forEach((tab, i) => {
-            tab.classList.toggle('active', i === index);
+          console.log('Switching to page:', index);
+          const tabs = document.querySelectorAll('.tab');
+          const pages = document.querySelectorAll('.page');
+
+          tabs.forEach((tab, i) => {
+            if (i === index) {
+              tab.classList.add('active');
+            } else {
+              tab.classList.remove('active');
+            }
           });
-          document.querySelectorAll('.page').forEach((page, i) => {
-            page.classList.toggle('active', i === index);
+
+          pages.forEach((page, i) => {
+            if (i === index) {
+              page.classList.add('active');
+            } else {
+              page.classList.remove('active');
+            }
+          });
+        }
+
+        // 确保DOM加载完成后初始化
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function() {
+            console.log('Preview loaded');
           });
         }
       <` +
