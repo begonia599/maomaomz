@@ -1513,6 +1513,105 @@ const exportRegex = () => {
     return;
   }
 
+  // 生成完整的HTML片段（包含翻页按钮、样式和脚本）
+  const customCSS = pages.value.map(p => p.customCSS || '').join('\n');
+
+  // 生成翻页按钮HTML
+  const tabsHTML = pages.value
+    .map(
+      (page, index) => `
+    <button class="statusbar-tab ${index === 0 ? 'active' : ''}" onclick="switchStatusbarPage(${index})" style="padding: 8px 16px; cursor: pointer; background: ${index === 0 ? 'linear-gradient(135deg, #4a9eff 0%, #5ab0ff 100%)' : 'white'}; border: 2px solid ${index === 0 ? '#4a9eff' : '#e9ecef'}; border-radius: 8px; font-size: 14px; font-weight: 500; color: ${index === 0 ? 'white' : '#6c757d'}; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin: 4px;">
+      ${page.name}
+    </button>
+  `,
+    )
+    .join('');
+
+  // 生成页面内容HTML
+  const pagesHTML = pages.value
+    .map(
+      (page, index) => `
+    <div class="statusbar-page ${index === 0 ? 'active' : ''}" id="statusbar-page-${index}" style="display: ${index === 0 ? 'block' : 'none'}; animation: fadeIn 0.3s;">
+      ${page.content}
+    </div>
+  `,
+    )
+    .join('');
+
+  // 完整的HTML片段
+  const scriptTag = 'script';
+  const htmlFragment = `<style>
+  .statusbar-container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    padding: 20px;
+  }
+  .statusbar-tabs {
+    display: flex;
+    gap: 8px;
+    background: #f8f9fa;
+    padding: 12px;
+    flex-wrap: wrap;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .statusbar-tab:hover {
+    background: #f8f9ff !important;
+    border-color: #4a9eff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(74, 158, 255, 0.2) !important;
+  }
+  .statusbar-page-content {
+    min-height: 200px;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  ${customCSS}
+</style>
+
+<div class="statusbar-container">
+  <div class="statusbar-tabs">
+    ${tabsHTML}
+  </div>
+  <div class="statusbar-page-content">
+    ${pagesHTML}
+  </div>
+</div>
+
+<${scriptTag}>
+  function switchStatusbarPage(index) {
+    document.querySelectorAll('.statusbar-tab').forEach((tab, i) => {
+      if (i === index) {
+        tab.classList.add('active');
+        tab.style.background = 'linear-gradient(135deg, #4a9eff 0%, #5ab0ff 100%)';
+        tab.style.color = 'white';
+        tab.style.borderColor = '#4a9eff';
+      } else {
+        tab.classList.remove('active');
+        tab.style.background = 'white';
+        tab.style.color = '#6c757d';
+        tab.style.borderColor = '#e9ecef';
+      }
+    });
+    document.querySelectorAll('.statusbar-page').forEach((page, i) => {
+      if (i === index) {
+        page.classList.add('active');
+        page.style.display = 'block';
+      } else {
+        page.classList.remove('active');
+        page.style.display = 'none';
+      }
+    });
+  }
+</${scriptTag}>
+`;
+
   // 生成唯一ID
   const uuid = `regex-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -1521,7 +1620,7 @@ const exportRegex = () => {
     id: uuid,
     scriptName: '翻页状态栏',
     findRegex: triggerRegex.value,
-    replaceString: previewHTML.value,
+    replaceString: htmlFragment,
     trimStrings: [],
     placement: [2], // 2 = AI回复前
     disabled: false,
