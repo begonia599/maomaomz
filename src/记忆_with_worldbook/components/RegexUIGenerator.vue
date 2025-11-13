@@ -614,33 +614,12 @@
 
             <!-- 自定义样式 -->
             <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-                <label style="color: #c0c0c0; font-size: 12px; font-weight: 600">自定义 CSS</label>
-                <button
-                  style="
-                    padding: 4px 12px;
-                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                    border: none;
-                    border-radius: 4px;
-                    color: white;
-                    font-size: 11px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                  "
-                  :style="{ opacity: isGeneratingCSS ? 0.6 : 1, cursor: isGeneratingCSS ? 'not-allowed' : 'pointer' }"
-                  :disabled="isGeneratingCSS"
-                  @click="generateCSSWithAI"
-                >
-                  <i :class="isGeneratingCSS ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-wand-magic-sparkles'"></i>
-                  {{ isGeneratingCSS ? '生成中...' : 'AI优化样式' }}
-                </button>
-              </div>
+              <label style="display: block; margin-bottom: 8px; color: #c0c0c0; font-size: 12px; font-weight: 600"
+                >自定义 CSS（高级）</label
+              >
               <textarea
                 v-model="selectedPage.customCSS"
-                placeholder="例如：.my-class { color: red; }&#10;&#10;点击上方 'AI优化样式' 按钮，让AI自动生成美观的CSS样式！"
+                placeholder="例如：.my-class { color: red; }&#10;&#10;AI生成时会自动包含样式，一般不需要手动修改"
                 style="
                   width: 100%;
                   min-height: 100px;
