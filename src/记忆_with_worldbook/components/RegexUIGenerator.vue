@@ -1145,6 +1145,8 @@ const generateWithAI = async () => {
 🎯 任务：
 根据用户描述，生成可翻页的状态栏代码（三个独立文件）。
 
+⚠️ 【重要】必须严格按照以下格式输出，不要添加任何额外的说明文字或代码块标记：
+
 FILE_START: index.html
 <details>
 <summary> 状态栏标题 </summary>
@@ -1259,7 +1261,7 @@ FILE_END
                 content: systemPrompt,
               },
             ],
-            max_tokens: settings.max_tokens || 2000,
+            max_tokens: settings.max_tokens || 4000, // 增加到 4000 以确保完整响应
             temperature: 0.8,
           }),
         });
@@ -1326,6 +1328,34 @@ FILE_END
       });
     }
 
+    // 如果没有找到文件，尝试从代码块中提取
+    if (files.length === 0) {
+      console.log('⚠️ 未找到 FILE_START/FILE_END 标记，尝试从代码块提取...');
+
+      // 尝试提取 HTML (从 <details> 或 <div> 开始)
+      const htmlMatch = content.match(/<details[\s\S]*?<\/details>|<div class="status-container"[\s\S]*?<\/div>/);
+      // 尝试提取 CSS (从 .status-container 或 /* 开始)
+      const cssMatch = content.match(/\/\*[\s\S]*?\*\/[\s\S]*?\.[\w-]+\s*\{[\s\S]*?\}|\.status-container[\s\S]*?\}/);
+      // 尝试提取 JS (从 (function 或 document 开始)
+      const jsMatch = content.match(/\(function\(\)[\s\S]*?\}\)\(\);?|document\.querySelector[\s\S]*?;/);
+
+      if (htmlMatch) files.push({ path: 'index.html', content: htmlMatch[0].trim() });
+      if (cssMatch) files.push({ path: 'style.css', content: cssMatch[0].trim() });
+      if (jsMatch) files.push({ path: 'script.js', content: jsMatch[0].trim() });
+
+      console.log(`📦 从代码块提取到 ${files.length} 个文件`);
+    }
+
+    // 调试：输出 AI 返回的原始内容（前500字符）
+    console.log('🔍 AI 返回内容预览:', content.substring(0, 500));
+    console.log('📦 解析到的文件数量:', files.length);
+    if (files.length > 0) {
+      console.log(
+        '📄 文件列表:',
+        files.map(f => f.path),
+      );
+    }
+
     if (files.length === 3) {
       // 找到三个文件：index.html, style.css, script.js
       const htmlFile = files.find(f => f.path === 'index.html');
@@ -1370,7 +1400,24 @@ FILE_END
         throw new Error('缺少必要的文件（index.html, style.css, script.js）');
       }
     } else {
-      throw new Error(`文件数量不正确，期望3个文件，实际${files.length}个`);
+      // 提供更详细的错误信息
+      const errorDetails = `
+文件数量不正确，期望3个文件，实际${files.length}个
+
+AI 返回内容预览（前300字符）:
+${content.substring(0, 300)}
+
+请检查：
+1. API 配置是否正确
+2. max_tokens 是否足够大（建议 2000+）
+3. AI 模型是否支持长文本生成
+4. 尝试简化生成需求
+
+已找到的文件: ${files.map(f => f.path).join(', ') || '无'}
+      `.trim();
+
+      console.error('❌ 文件解析失败:', errorDetails);
+      throw new Error(errorDetails);
     }
   } catch (error) {
     console.error('AI 生成失败:', error);
