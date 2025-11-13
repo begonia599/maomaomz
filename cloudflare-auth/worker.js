@@ -93,6 +93,10 @@ export default {
         return await handleGetTemplates(request, env, corsHeaders);
       } else if (path === '/update-templates') {
         return await handleUpdateTemplates(request, env, corsHeaders);
+      } else if (path === '/get-regex-templates') {
+        return await handleGetRegexTemplates(request, env, corsHeaders);
+      } else if (path === '/update-regex-templates') {
+        return await handleUpdateRegexTemplates(request, env, corsHeaders);
       } else if (path === '/admin' || path === '/') {
         return handleAdmin(env);
       } else {
@@ -825,6 +829,28 @@ function handleAdmin(env) {
                 </button>
             </div>
         </div>
+
+        <!-- 正则模板管理 -->
+        <div class="card">
+            <h2 onclick="toggleCard('regex-templates')">
+                <span class="card-header">📖 正则模板管理（翻页状态栏）</span>
+                <span class="collapse-icon" id="regex-templates-icon">▼</span>
+            </h2>
+            <div class="card-content" id="regex-templates-content">
+                <p style="color: #888; font-size: 14px; margin-bottom: 15px;">
+                    🎨 管理翻页状态栏生成器的模板，用户可以从云端加载这些模板
+                </p>
+                <div id="regexTemplatesList" style="margin-bottom: 20px;">
+                    <p style="color: #888; text-align: center;">加载中...</p>
+                </div>
+                <button class="button" onclick="addRegexTemplate()" style="width: 100%; margin-bottom: 10px;">
+                    ➕ 添加新模板
+                </button>
+                <button class="button" onclick="saveRegexTemplates()" style="width: 100%;">
+                    💾 保存正则模板配置
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -862,7 +888,7 @@ function handleAdmin(env) {
 
         // 恢复卡片折叠状态
         function restoreCardStates() {
-            const cardIds = ['plugin-info', 'update-code', 'current-code', 'stats', 'code-usage', 'api-endpoints', 'logs', 'history', 'templates'];
+            const cardIds = ['plugin-info', 'update-code', 'current-code', 'stats', 'code-usage', 'api-endpoints', 'logs', 'history', 'templates', 'regex-templates'];
             cardIds.forEach(function(cardId) {
                 const state = localStorage.getItem('card-' + cardId);
                 if (state === 'collapsed') {
@@ -1406,6 +1432,171 @@ function handleAdmin(env) {
                 showAlert('Save failed: ' + error.message, 'error');
             }
         }
+
+        // ========== 正则模板管理 ==========
+        var currentRegexTemplates = [];
+
+        // 加载正则模板
+        async function loadRegexTemplates() {
+            try {
+                const response = await fetch('/get-regex-templates');
+                const result = await response.json();
+
+                if (result.success) {
+                    currentRegexTemplates = result.data.templates || [];
+                    renderRegexTemplates();
+                } else {
+                    document.getElementById('regexTemplatesList').innerHTML =
+                        '<p style="color: #ef4444; text-align: center;">加载失败</p>';
+                }
+            } catch (error) {
+                console.error('加载正则模板失败:', error);
+                document.getElementById('regexTemplatesList').innerHTML =
+                    '<p style="color: #ef4444; text-align: center;">加载失败：' + error.message + '</p>';
+            }
+        }
+
+        // 渲染正则模板列表
+        function renderRegexTemplates() {
+            if (currentRegexTemplates.length === 0) {
+                document.getElementById('regexTemplatesList').innerHTML =
+                    '<p style="color: #888; text-align: center;">暂无模板，点击下方按钮添加</p>';
+                return;
+            }
+
+            var listHtml = currentRegexTemplates.map(function(template, index) {
+                var borderColor = template.enabled ? '#ec4899' : '#6b7280';
+                var checkedAttr = template.enabled ? 'checked' : '';
+                var tags = (template.tags || []).join(', ');
+
+                return '<div style="background: #1a1a1a; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid ' + borderColor + ';">' +
+                    '<div style="display: flex; gap: 10px; margin-bottom: 10px;">' +
+                        '<input type="text" id="regex-template-icon-' + index + '" value="' + (template.icon || '📄') + '" ' +
+                               'style="width: 60px; padding: 8px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e0e0e0; font-size: 20px; text-align: center;" ' +
+                               'placeholder="📄" />' +
+                        '<input type="text" id="regex-template-name-' + index + '" value="' + (template.name || '') + '" ' +
+                               'style="flex: 1; padding: 8px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e0e0e0; font-size: 14px;" ' +
+                               'placeholder="模板名称" />' +
+                    '</div>' +
+                    '<div style="margin-bottom: 10px;">' +
+                        '<textarea id="regex-template-desc-' + index + '" ' +
+                                  'style="width: 100%; min-height: 60px; padding: 8px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e0e0e0; font-size: 13px; resize: vertical;" ' +
+                                  'placeholder="模板描述">' + (template.description || '') + '</textarea>' +
+                    '</div>' +
+                    '<div style="margin-bottom: 10px;">' +
+                        '<input type="text" id="regex-template-tags-' + index + '" value="' + tags + '" ' +
+                               'style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e0e0e0; font-size: 12px;" ' +
+                               'placeholder="标签（用逗号分隔，如：可爱,粉色,进度条）" />' +
+                    '</div>' +
+                    '<div style="margin-bottom: 10px;">' +
+                        '<label style="display: block; color: #888; font-size: 12px; margin-bottom: 4px;">触发正则:</label>' +
+                        '<input type="text" id="regex-template-trigger-' + index + '" value="' + (template.triggerRegex || '<-STATUS->') + '" ' +
+                               'style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #4a9eff; font-size: 12px; font-family: monospace;" ' +
+                               'placeholder="<-STATUS->" />' +
+                    '</div>' +
+                    '<div style="margin-bottom: 10px;">' +
+                        '<label style="display: block; color: #888; font-size: 12px; margin-bottom: 4px;">主题:</label>' +
+                        '<select id="regex-template-theme-' + index + '" ' +
+                                'style="width: 100%; padding: 8px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 6px; color: #e0e0e0; font-size: 12px;">' +
+                            '<option value="默认蓝"' + (template.theme === '默认蓝' ? ' selected' : '') + '>默认蓝</option>' +
+                            '<option value="粉色可爱"' + (template.theme === '粉色可爱' ? ' selected' : '') + '>粉色可爱</option>' +
+                            '<option value="赛博朋克"' + (template.theme === '赛博朋克' ? ' selected' : '') + '>赛博朋克</option>' +
+                            '<option value="紫色梦幻"' + (template.theme === '紫色梦幻' ? ' selected' : '') + '>紫色梦幻</option>' +
+                            '<option value="绿色自然"' + (template.theme === '绿色自然' ? ' selected' : '') + '>绿色自然</option>' +
+                            '<option value="橙色活力"' + (template.theme === '橙色活力' ? ' selected' : '') + '>橙色活力</option>' +
+                            '<option value="深色模式"' + (template.theme === '深色模式' ? ' selected' : '') + '>深色模式</option>' +
+                            '<option value="红色热情"' + (template.theme === '红色热情' ? ' selected' : '') + '>红色热情</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                        '<label style="display: flex; align-items: center; cursor: pointer;">' +
+                            '<input type="checkbox" id="regex-template-enabled-' + index + '" ' + checkedAttr + ' ' +
+                                   'style="margin-right: 8px; width: 18px; height: 18px; cursor: pointer;" />' +
+                            '<span style="color: #888; font-size: 13px;">启用</span>' +
+                        '</label>' +
+                        '<button onclick="removeRegexTemplate(' + index + ')" ' +
+                                'style="padding: 6px 12px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">删除</button>' +
+                    '</div>' +
+                    '<div style="margin-top: 10px; padding: 8px; background: #0a0a0a; border-radius: 6px;">' +
+                        '<p style="color: #888; font-size: 11px; margin: 0;">💡 提示：页面和变量数据需要在前端生成器中配置后导出JSON，然后手动添加到这里</p>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            document.getElementById('regexTemplatesList').innerHTML = listHtml;
+        }
+
+        // 添加新正则模板
+        function addRegexTemplate() {
+            currentRegexTemplates.push({
+                id: 'regex-template-' + Date.now(),
+                name: '新模板',
+                icon: '📄',
+                description: '模板描述',
+                pages: [],
+                variables: [],
+                theme: '默认蓝',
+                triggerRegex: '<-STATUS->',
+                tags: [],
+                enabled: true
+            });
+            renderRegexTemplates();
+        }
+
+        // 删除正则模板
+        function removeRegexTemplate(index) {
+            if (confirm('确定要删除这个模板吗？')) {
+                currentRegexTemplates.splice(index, 1);
+                renderRegexTemplates();
+            }
+        }
+
+        // 保存正则模板配置
+        async function saveRegexTemplates() {
+            try {
+                var templates = currentRegexTemplates.map(function(template, index) {
+                    var tagsStr = document.getElementById('regex-template-tags-' + index).value.trim();
+                    var tags = tagsStr ? tagsStr.split(',').map(t => t.trim()).filter(t => t) : [];
+
+                    return {
+                        id: template.id,
+                        name: document.getElementById('regex-template-name-' + index).value.trim(),
+                        icon: document.getElementById('regex-template-icon-' + index).value.trim(),
+                        description: document.getElementById('regex-template-desc-' + index).value.trim(),
+                        pages: template.pages || [],
+                        variables: template.variables || [],
+                        theme: document.getElementById('regex-template-theme-' + index).value,
+                        triggerRegex: document.getElementById('regex-template-trigger-' + index).value.trim(),
+                        tags: tags,
+                        enabled: document.getElementById('regex-template-enabled-' + index).checked
+                    };
+                });
+
+                var response = await fetch('/update-regex-templates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ templates: templates })
+                });
+
+                var result = await response.json();
+
+                if (result.success) {
+                    showAlert('正则模板保存成功！', 'success');
+                    currentRegexTemplates = result.data.templates;
+                    renderRegexTemplates();
+                } else {
+                    showAlert('保存失败', 'error');
+                }
+            } catch (error) {
+                console.error('保存正则模板失败:', error);
+                showAlert('保存失败: ' + error.message, 'error');
+            }
+        }
+
+        // 页面加载时也加载正则模板
+        window.addEventListener('load', function() {
+            loadRegexTemplates();
+        });
     </script>
 </body>
 </html>`;
@@ -1725,6 +1916,84 @@ async function handleUpdateTemplates(request, env, corsHeaders) {
     );
   } catch (error) {
     console.error('更新项目模板失败:', error);
+    return jsonResponse({ success: false, error: error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 获取正则模板列表（翻页状态栏生成器用）
+ */
+async function handleGetRegexTemplates(request, env, corsHeaders) {
+  try {
+    const templatesStr = await redisGet('regex_templates');
+    const templates = templatesStr
+      ? JSON.parse(templatesStr)
+      : {
+          templates: [],
+          lastUpdated: new Date().toISOString(),
+        };
+
+    return jsonResponse(
+      {
+        success: true,
+        data: templates,
+      },
+      200,
+      corsHeaders,
+    );
+  } catch (error) {
+    console.error('获取正则模板失败:', error);
+    return jsonResponse({ success: false, error: error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 更新正则模板（仅管理员）
+ */
+async function handleUpdateRegexTemplates(request, env, corsHeaders) {
+  try {
+    const { templates } = await request.json();
+
+    if (!templates || !Array.isArray(templates)) {
+      return jsonResponse(
+        {
+          success: false,
+          message: '模板列表格式错误',
+        },
+        400,
+        corsHeaders,
+      );
+    }
+
+    const templateData = {
+      templates: templates.map(t => ({
+        id: t.id,
+        name: t.name,
+        icon: t.icon || '📄',
+        description: t.description,
+        pages: t.pages || [],
+        variables: t.variables || [],
+        theme: t.theme,
+        triggerRegex: t.triggerRegex,
+        tags: t.tags || [],
+        enabled: t.enabled !== false,
+      })),
+      lastUpdated: new Date().toISOString(),
+    };
+
+    await redisSet('regex_templates', JSON.stringify(templateData));
+
+    return jsonResponse(
+      {
+        success: true,
+        message: '✅ 正则模板已更新',
+        data: templateData,
+      },
+      200,
+      corsHeaders,
+    );
+  } catch (error) {
+    console.error('更新正则模板失败:', error);
     return jsonResponse({ success: false, error: error.message }, 500, corsHeaders);
   }
 }
