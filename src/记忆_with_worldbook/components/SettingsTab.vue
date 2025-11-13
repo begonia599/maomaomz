@@ -1,122 +1,5 @@
 <template>
   <div class="settings-tab" style="padding: 25px !important; background: #1a1a1a !important">
-    <!-- 界面偏好 -->
-    <div
-      class="config-section"
-      style="padding: 20px 25px !important; border-bottom: 1px solid #3a3a3a; margin-bottom: 5px"
-    >
-      <div
-        style="
-          cursor: pointer;
-          user-select: none;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 20px 28px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
-          border-radius: 18px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        "
-        @click="toggleSection('preferences')"
-        @mouseenter="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(42, 42, 42, 0.98) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(42, 42, 42, 0.98) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'translateX(4px) scale(1.005)';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '3px solid rgba(139, 92, 246, 0.6)';
-        "
-        @mouseleave="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'none';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '1px solid rgba(255, 255, 255, 0.06)';
-        "
-      >
-        <h3
-          style="
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 0;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-          "
-        >
-          <i class="fa-solid fa-sliders" style="color: #8b5cf6; font-size: 18px"></i>
-          界面偏好
-        </h3>
-        <i
-          :class="expandedSections['preferences'] ? 'fa-chevron-up' : 'fa-chevron-down'"
-          class="fa-solid"
-          style="color: rgba(255, 255, 255, 0.6); font-size: 14px; transition: transform 0.3s"
-        ></i>
-      </div>
-
-      <div v-show="expandedSections['preferences']" style="padding: 0 10px">
-        <!-- 自动弹出面板 -->
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: #2a2a2a;
-            border-radius: 8px;
-            margin-bottom: 12px;
-          "
-        >
-          <div style="flex: 1">
-            <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">刷新时自动弹出面板</div>
-            <div style="color: #888; font-size: 12px">页面刷新后自动显示猫猫的小破烂面板</div>
-          </div>
-          <label class="toggle-switch">
-            <input v-model="preferences.autoShowPanel" type="checkbox" @change="savePreferences" />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        <!-- 显示任务中心 -->
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: #2a2a2a;
-            border-radius: 8px;
-            margin-bottom: 12px;
-          "
-        >
-          <div style="flex: 1">
-            <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示任务中心</div>
-            <div style="color: #888; font-size: 12px">在界面右下角显示任务进度和状态</div>
-          </div>
-          <label class="toggle-switch">
-            <input v-model="preferences.showTaskManager" type="checkbox" @change="savePreferences" />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-    </div>
-
     <!-- API 配置 -->
     <div
       class="config-section"
@@ -1602,64 +1485,6 @@ const toggleSection = (section: string) => {
   expandedSections.value[section] = !expandedSections.value[section];
 };
 
-// 偏好设置
-interface Preferences {
-  autoShowPanel: boolean;
-  showTaskManager: boolean;
-}
-
-const defaultPreferences: Preferences = {
-  autoShowPanel: true,
-  showTaskManager: true,
-};
-
-const preferences = ref<Preferences>({ ...defaultPreferences });
-const PREFERENCES_KEY = 'maomaomz_preferences';
-
-// 加载偏好设置
-const loadPreferences = () => {
-  try {
-    const saved = localStorage.getItem(PREFERENCES_KEY);
-    if (saved) {
-      Object.assign(preferences.value, JSON.parse(saved));
-      applyPreferences();
-    }
-  } catch (error) {
-    console.error('❌ 加载偏好设置失败:', error);
-  }
-};
-
-// 保存偏好设置
-const savePreferences = () => {
-  try {
-    localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences.value));
-    (window as any).toastr?.success('偏好设置已保存');
-    applyPreferences();
-  } catch (error) {
-    console.error('❌ 保存偏好设置失败:', error);
-    (window as any).toastr?.error('保存失败');
-  }
-};
-
-// 应用偏好设置
-const applyPreferences = () => {
-  try {
-    (window as any).maomaomzPreferences = preferences.value;
-    setTimeout(() => {
-      try {
-        const taskManager = document.querySelector('.task-manager-container') as HTMLElement;
-        if (taskManager) {
-          taskManager.style.display = preferences.value.showTaskManager ? 'block' : 'none';
-        }
-      } catch (err) {
-        console.warn('任务管理器DOM未找到:', err);
-      }
-    }, 100);
-  } catch (error) {
-    console.error('❌ 应用偏好设置失败:', error);
-  }
-};
-
 // API 模板管理
 interface ApiTemplate {
   id: string;
@@ -2072,7 +1897,6 @@ onMounted(() => {
   loadHiddenMessages();
   loadHeaderTemplates();
   loadGenerationStatus();
-  loadPreferences(); // 加载偏好设置
 });
 
 // 测试按钮处理函数
