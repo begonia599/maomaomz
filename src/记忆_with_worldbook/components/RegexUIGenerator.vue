@@ -988,13 +988,23 @@ const previewHTML = computed(() => {
   }
 
   const customCSS = pages.value.map(p => p.customCSS || '').join('\n');
+  const customJS = pages.value.map(p => p.script || '').join('\n');
   const config = layoutConfig.value;
 
-  // 根据位置生成不同的布局（AI生成的内容已经包含翻页按钮，不需要额外生成）
+  // 检查是否是 AI 生成的完整 HTML（包含 <details> 标签）
+  const isAIGeneratedHTML = pages.value.length === 1 && pages.value[0].content.includes('<details');
+
+  // 根据位置生成不同的布局
   const getLayoutHTML = () => {
+    // 如果是 AI 生成的完整 HTML，直接使用
+    if (isAIGeneratedHTML) {
+      const processedContent = replaceVariablesWithTestData(pages.value[0].content);
+      return processedContent;
+    }
+
+    // 否则使用传统的多页面布局
     const contentHTML = pages.value
       .map((page, index) => {
-        // 使用测试数据替换变量
         const processedContent = replaceVariablesWithTestData(page.content);
         return `
       <div class="page ${index === 0 ? 'active' : ''}" id="page-${index}">
@@ -1004,7 +1014,6 @@ const previewHTML = computed(() => {
       })
       .join('');
 
-    // 直接返回内容，AI生成的HTML已经包含了翻页按钮
     return `<div class="page-content">${contentHTML}</div>`;
   };
 
@@ -1063,6 +1072,10 @@ const previewHTML = computed(() => {
         ${getLayoutHTML()}
       </div>
       <script type="text/javascript">
+        // AI 生成的自定义 JS
+        ${customJS}
+
+        // 默认的翻页函数（兼容手动创建的页面）
         function switchPage(index) {
           console.log('Switching to page:', index);
           const tabs = document.querySelectorAll('.tab');
