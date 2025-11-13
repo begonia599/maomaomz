@@ -1310,14 +1310,29 @@ const generateWithAI = async () => {
 
     taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
 
-    // 清理可能的 markdown 代码块标记
+    // 清理可能的 markdown 代码块标记和其他干扰字符
     content = content
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
+      .replace(/^[^{[]*/, '') // 移除开头的非JSON字符
+      .replace(/[^}\]]*$/, '') // 移除结尾的非JSON字符
       .trim();
 
+    // 尝试修复常见的JSON错误
+    content = content
+      .replace(/,(\s*[}\]])/g, '$1') // 移除多余的逗号
+      .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // 给没有引号的键加上引号
+      .replace(/:\s*'([^']*)'/g, ': "$1"'); // 将单引号改为双引号
+
     // 解析 JSON
-    const result = JSON.parse(content);
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch (parseError) {
+      // 如果解析失败，显示详细错误信息
+      console.error('JSON解析失败，原始内容:', content);
+      throw new Error(`JSON解析失败: ${(parseError as Error).message}\n\n原始内容:\n${content.substring(0, 500)}...`);
+    }
 
     if (result.pages && Array.isArray(result.pages)) {
       pages.value = result.pages;
