@@ -1152,59 +1152,23 @@ const generateWithAI = async () => {
   const cssExample = '.status-container { } .page { display: none; } .page.active { display: block; }';
   const jsExample = '(function() { /* 翻页逻辑 */ })();';
 
-  const systemPrompt = `你必须生成3个完整的文件。每个文件用 FILE_START 和 FILE_END 包裹。
+  const systemPrompt = `生成翻页状态栏代码。用户需求：${userPrompt}
 
-用户需求：${userPrompt}
-
-严格按照以下格式输出，不要有任何其他内容：
+必须输出3个文件，格式如下：
 
 FILE_START: index.html
-<details>
-<summary>状态栏</summary>
-<div class="status-container">
-  <div class="page-tabs">
-    <button class="page-tab active" data-page="0">页面1</button>
-    <button class="page-tab" data-page="1">页面2</button>
-  </div>
-  <div class="page-content">
-    <div class="page active" data-page-id="0">
-      <div>字段1: $1</div>
-      <div>字段2: $2</div>
-    </div>
-    <div class="page" data-page-id="1">
-      <div>字段3: $3</div>
-      <div>字段4: $4</div>
-    </div>
-  </div>
-</div>
-</details>
+[HTML代码：details标签包裹，包含翻页按钮和页面内容，使用$1,$2等占位符]
 FILE_END
 
 FILE_START: style.css
-.status-container { display: flex; }
-.page-tabs { display: flex; flex-direction: column; }
-.page-tab { padding: 10px; cursor: pointer; }
-.page-tab.active { background: #4a9eff; }
-.page-content { flex: 1; }
-.page { display: none; }
-.page.active { display: block; }
+[CSS代码：根据用户需求设计样式]
 FILE_END
 
 FILE_START: script.js
-(function() {
-  document.querySelectorAll('.page-tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-      const pageIndex = this.getAttribute('data-page');
-      document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
-      this.classList.add('active');
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelector('.page[data-page-id="' + pageIndex + '"]').classList.add('active');
-    });
-  });
-})();
+[JS代码：立即执行函数，实现翻页交互]
 FILE_END
 
-现在根据用户需求生成3个文件，必须包含完整的 HTML、CSS 和 JS：`;
+立即开始输出，第一行必须是 FILE_START: index.html`;
 
   try {
     taskStore.updateTaskProgress(taskId, 10, '正在准备...');
