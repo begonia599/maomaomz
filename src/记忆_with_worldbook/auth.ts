@@ -394,10 +394,6 @@ export async function checkAuthorization(): Promise<boolean> {
   console.log('🔐 需要用户输入授权码，显示授权对话框...');
   console.log('📊 当前状态:', {
     hasSavedCode: !!savedCode,
-    lastVerifyTime: lastVerifyTime ? new Date(parseInt(lastVerifyTime)).toISOString() : 'never',
-    timeSinceLastVerify: lastVerifyTime
-      ? `${Math.floor((Date.now() - parseInt(lastVerifyTime)) / (60 * 60 * 1000))} hours`
-      : 'N/A',
   });
 
   let attempts = 0;
