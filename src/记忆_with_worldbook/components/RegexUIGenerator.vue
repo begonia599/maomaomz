@@ -308,7 +308,7 @@
               @click="showVariableManager = !showVariableManager"
             >
               <i class="fa-solid fa-code" style="margin-right: 4px"></i>
-              {{ showVariableManager ? '隐藏' : '显示' }}变量管理
+              {{ showVariableManager ? '隐藏' : '显示' }}变量管理（高级）
             </button>
 
             <button
@@ -679,12 +679,10 @@
             box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
           "
         >
-          <h4
+          <!-- 预览标题和控制 -->
+          <div
             style="
               margin: 0 0 16px 0;
-              color: #fff;
-              font-size: 16px;
-              font-weight: 700;
               display: flex;
               align-items: center;
               gap: 10px;
@@ -695,11 +693,30 @@
             "
           >
             <i class="fa-solid fa-eye" style="color: #10b981; font-size: 18px"></i>
-            ✨ 实时预览 - 完全自由的创意展示
-            <span style="margin-left: auto; font-size: 11px; color: #888; font-weight: 400">
-              任意形状 · 任意风格 · 任意布局
-            </span>
-          </h4>
+            <span style="color: #fff; font-size: 16px; font-weight: 700">实时预览</span>
+
+            <!-- 预览模式切换 -->
+            <div style="margin-left: auto; display: flex; gap: 6px">
+              <button
+                v-for="mode in previewModes"
+                :key="mode.name"
+                :style="{
+                  padding: '6px 12px',
+                  background: previewMode === mode.name ? '#10b981' : '#2a2a2a',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: previewMode === mode.name ? 'white' : '#888',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }"
+                @click="previewMode = mode.name"
+              >
+                <i :class="mode.icon" style="margin-right: 4px"></i>
+                {{ mode.name }}
+              </button>
+            </div>
+          </div>
 
           <div
             style="
@@ -920,6 +937,15 @@ const showCloudTemplates = ref(false);
 const cloudTemplates = ref<any[]>([]);
 const isLoadingTemplates = ref(false);
 
+// 预览增强
+const previewMode = ref('桌面');
+
+const previewModes = [
+  { name: '桌面', icon: 'fa-solid fa-desktop', width: '100%' },
+  { name: '平板', icon: 'fa-solid fa-tablet', width: '768px' },
+  { name: '手机', icon: 'fa-solid fa-mobile', width: '375px' },
+];
+
 // 组件挂载时加载数据
 onMounted(() => {
   loadFromStorage();
@@ -941,6 +967,42 @@ const selectedPage = computed(() => {
   }
   return null;
 });
+
+// 替换内容中的变量为默认值（用于预览）
+const replaceVariablesWithTestData = (content: string): string => {
+  let result = content;
+
+  // 遍历所有变量，自动使用默认值或生成示例值
+  variables.value.forEach(variable => {
+    const varName = variable.name;
+    let displayValue = variable.defaultValue;
+
+    // 如果没有默认值，根据类型生成示例值
+    if (!displayValue) {
+      switch (variable.type) {
+        case 'number':
+          displayValue = '100';
+          break;
+        case 'progress':
+          displayValue = '75';
+          break;
+        case 'icon':
+          displayValue = '❤️';
+          break;
+        case 'image':
+          displayValue = 'https://via.placeholder.com/150';
+          break;
+        default:
+          displayValue = `示例${varName}`;
+      }
+    }
+
+    const regex = new RegExp(`\\{\\{${varName}\\}\\}`, 'g');
+    result = result.replace(regex, displayValue);
+  });
+
+  return result;
+};
 
 // 生成预览 HTML
 const previewHTML = computed(() => {
@@ -1002,13 +1064,15 @@ const previewHTML = computed(() => {
   const getLayoutHTML = () => {
     const tabsHTML = generateTabsHTML();
     const contentHTML = pages.value
-      .map(
-        (page, index) => `
+      .map((page, index) => {
+        // 使用测试数据替换变量
+        const processedContent = replaceVariablesWithTestData(page.content);
+        return `
       <div class="page ${index === 0 ? 'active' : ''}" id="page-${index}">
-        ${page.content}
+        ${processedContent}
       </div>
-    `,
-      )
+    `;
+      })
       .join('');
 
     switch (config.tabPosition) {
@@ -2201,10 +2265,6 @@ const loadCloudTemplate = (template: any) => {
       unit: v.unit,
       color: v.color,
     }));
-  }
-
-  if (template.theme) {
-    selectedTheme.value = template.theme;
   }
 
   if (template.triggerRegex) {
