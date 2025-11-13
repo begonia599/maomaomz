@@ -790,6 +790,45 @@
           <div v-else style="color: #fbbf24; font-size: 12px; padding: 8px 0">⚠️ 暂无字段，请点击"添加字段"按钮</div>
         </div>
 
+        <!-- 快速风格选择 -->
+        <div style="margin-bottom: 12px">
+          <div
+            style="
+              color: #a78bfa;
+              font-size: 12px;
+              font-weight: 600;
+              margin-bottom: 8px;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            "
+          >
+            <i class="fa-solid fa-palette"></i>
+            快速选择风格（点击自动填充）
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px">
+            <button
+              v-for="style in quickStyles"
+              :key="style.name"
+              style="
+                padding: 6px 12px;
+                background: rgba(139, 92, 246, 0.15);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                border-radius: 6px;
+                color: #a78bfa;
+                font-size: 11px;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              @click="aiPrompt = style.prompt"
+              @mouseenter="$event.currentTarget.style.background = 'rgba(139, 92, 246, 0.25)'"
+              @mouseleave="$event.currentTarget.style.background = 'rgba(139, 92, 246, 0.15)'"
+            >
+              {{ style.icon }} {{ style.name }}
+            </button>
+          </div>
+        </div>
+
         <textarea
           v-model="aiPrompt"
           placeholder="🎨 自由描述你想要的状态栏样式，AI 会为你创造独特的设计！&#10;&#10;💡 创意示例：&#10;• 便签本风格：纸张纹理、手写字体、图钉装饰&#10;• 圆形卡片：环形布局、旋转动画、渐变边框&#10;• 赛博朋克：霓虹边框、扫描线、故障艺术效果&#10;• 游戏RPG：血条样式、技能图标、等级徽章&#10;• 科幻面板：全息投影、数据流动画、六边形网格&#10;• 可爱风格：圆润边角、柔和配色、弹跳动画&#10;• 极简风格：大量留白、细线条、优雅排版&#10;• 不规则形状：六边形、菱形、波浪边框&#10;&#10;✨ 你也可以：&#10;• 指定颜色主题（深色/浅色/渐变/霓虹）&#10;• 要求特定动画（淡入/滑动/旋转/脉动）&#10;• 设计独特布局（网格/卡片堆叠/环形/自由排列）&#10;• 添加装饰元素（图标/边框/阴影/发光效果）&#10;&#10;⚠️ 注意：&#10;• AI 会基于上方配置的字段生成代码&#10;• 完全自由发挥，创造独一无二的设计！"
@@ -1290,6 +1329,18 @@ const showAiModifyDialog = ref(false); // 显示AI修改对话框
 const isModifyingAi = ref(false); // AI修改中
 const showIconPickerFor = ref<number | null>(null);
 const aiDialogRef = ref<HTMLElement | null>(null); // AI对话框引用
+
+// 快速风格选项
+const quickStyles = [
+  { name: '便签本', icon: '📝', prompt: '便签本风格，带纸张纹理、手写字体、图钉装饰、阴影效果' },
+  { name: '圆形卡片', icon: '⭕', prompt: '圆形卡片布局，环形排列字段，带旋转动画和渐变边框' },
+  { name: '赛博朋克', icon: '🌃', prompt: '赛博朋克风格，霓虹边框、扫描线效果、故障艺术、发光文字' },
+  { name: '游戏RPG', icon: '🎮', prompt: '游戏RPG风格，血条样式、技能图标、等级徽章、装备槽' },
+  { name: '科幻面板', icon: '🚀', prompt: '科幻面板，全息投影效果、数据流动画、六边形网格、发光边框' },
+  { name: '可爱风', icon: '🎀', prompt: '可爱风格，圆润边角、粉色系配色、小装饰图标、弹跳动画' },
+  { name: '极简', icon: '⚪', prompt: '极简风格，大量留白、细线条、单色调、优雅排版' },
+  { name: '手绘风', icon: '✏️', prompt: '手绘风格，波浪边框、涂鸦效果、不规则形状、彩色线条' },
+];
 
 // XML解析相关
 const originalXmlInput = ref(''); // 原始XML输入
