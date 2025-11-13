@@ -458,20 +458,36 @@
         </div>
 
         <!-- 状态栏预览 -->
-        <div style="background: #2a2a2a; border-radius: 12px; padding: 15px; border: 1px solid #3a3a3a; flex: 1">
+        <div
+          style="
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid #4a9eff;
+            flex: 1;
+            box-shadow: 0 8px 24px rgba(74, 158, 255, 0.2);
+          "
+        >
           <h4
             style="
-              margin: 0 0 12px 0;
+              margin: 0 0 16px 0;
               color: #fff;
-              font-size: 14px;
-              font-weight: 600;
+              font-size: 16px;
+              font-weight: 700;
               display: flex;
               align-items: center;
-              gap: 8px;
+              gap: 10px;
+              padding: 12px 16px;
+              background: linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+              border-radius: 10px;
+              border: 1px solid rgba(74, 158, 255, 0.3);
             "
           >
-            <i class="fa-solid fa-eye" style="color: #4a9eff"></i>
-            实时预览
+            <i class="fa-solid fa-eye" style="color: #4a9eff; font-size: 18px"></i>
+            ✨ 实时预览 - 完全自由的创意展示
+            <span style="margin-left: auto; font-size: 11px; color: #888; font-weight: 400">
+              任意形状 · 任意风格 · 任意布局
+            </span>
           </h4>
           <!-- eslint-disable-next-line vue/no-v-html -->
           <!-- Note: v-html is used here for previewing user-generated code.
@@ -481,12 +497,13 @@
                3. The preview content is isolated from the main application -->
           <div
             style="
-              background: #1e1e1e;
-              border-radius: 8px;
-              padding: 20px;
-              min-height: 400px;
-              border: 1px solid #3a3a3a;
+              background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
+              border-radius: 12px;
+              padding: 30px;
+              min-height: 500px;
+              border: 2px solid #3a3a3a;
               overflow: auto;
+              box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
             "
             v-html="previewHtml"
           ></div>
@@ -792,19 +809,20 @@
 
         <textarea
           v-model="aiPrompt"
-          placeholder="🎨 自由描述你想要的状态栏样式，AI 会为你创造独特的设计！&#10;&#10;💡 创意示例：&#10;• 便签本风格：纸张纹理、手写字体、图钉装饰&#10;• 圆形卡片：环形布局、旋转动画、渐变边框&#10;• 赛博朋克：霓虹边框、扫描线、故障艺术效果&#10;• 游戏RPG：血条样式、技能图标、等级徽章&#10;• 科幻面板：全息投影、数据流动画、六边形网格&#10;• 可爱风格：圆润边角、柔和配色、弹跳动画&#10;• 极简风格：大量留白、细线条、优雅排版&#10;• 不规则形状：六边形、菱形、波浪边框&#10;&#10;✨ 你也可以：&#10;• 指定颜色主题（深色/浅色/渐变/霓虹）&#10;• 要求特定动画（淡入/滑动/旋转/脉动）&#10;• 设计独特布局（网格/卡片堆叠/环形/自由排列）&#10;• 添加装饰元素（图标/边框/阴影/发光效果）&#10;&#10;⚠️ 注意：&#10;• AI 会基于上方配置的字段生成代码&#10;• 完全自由发挥，创造独一无二的设计！"
+          placeholder='✨ 完全自由！想要什么样式就描述什么样式，AI 会为你创造！&#10;&#10;🎨 任意形状：&#10;• 圆形、椭圆、方形、圆角矩形、六边形、菱形、不规则形状&#10;• 波浪边框、手绘边框、发光边框、3D 立体效果&#10;&#10;🎭 任意风格：&#10;• 学神手册：绿色卡片、圆形头像、右侧标签页、时间天气&#10;• 粉色可爱：椭圆形状、渐变背景、进度条、柔和配色&#10;• 赛博朋克：霓虹边框、扫描线、故障效果、数字雨&#10;• 游戏 UI：血条、魔法条、技能图标、等级徽章&#10;• 便签本：纸张纹理、手写字体、图钉、撕裂边缘&#10;• 科幻面板：全息投影、数据流、六边形网格、发光线条&#10;&#10;🌈 任意配色：&#10;• 深色/浅色/渐变/霓虹/复古/梦幻/极简/高对比&#10;&#10;💫 任意动画：&#10;• 淡入淡出、滑动、旋转、缩放、脉动、粒子效果、悬停特效&#10;&#10;📐 任意布局：&#10;• 网格、卡片堆叠、环形、自由排列、左右分栏、上下分层&#10;&#10;💡 示例描述：&#10;• "学神手册风格，绿色卡片，左边圆形头像，右边4个标签页"&#10;• "粉色椭圆形，HP和LUST进度条，渐变背景"&#10;• "赛博朋克，霓虹蓝色边框，扫描线动画，数字雨背景"&#10;&#10;⚠️ 提示：AI 会基于上方字段生成代码，形状、颜色、布局完全自由！'
           style="
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             background: linear-gradient(135deg, #1e1e1e 0%, #252525 100%);
-            border: 2px solid #8b5cf6;
-            border-radius: 8px;
+            border: 3px solid #8b5cf6;
+            border-radius: 12px;
             color: #e0e0e0;
             font-size: 13px;
-            min-height: 180px;
+            min-height: 220px;
             margin-bottom: 16px;
             resize: vertical;
-            line-height: 1.6;
+            line-height: 1.7;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
           "
         ></textarea>
         <div style="display: flex; gap: 10px; justify-content: flex-end">
