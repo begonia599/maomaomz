@@ -486,12 +486,13 @@ $(() => {
     console.log('🚀🚀🚀 开始创建面板容器 - 时间戳:', new Date().toISOString());
 
     // 检查偏好设置
-    let shouldAutoShow = true;
+    let shouldAutoShow = true; // 默认自动显示
     try {
       const prefsStr = localStorage.getItem('maomaomz_preferences');
       if (prefsStr) {
         const prefs = JSON.parse(prefsStr);
-        shouldAutoShow = prefs.autoShowPanel !== false; // 默认true
+        // 如果设置中明确指定了 autoShowPanel，使用该值；否则默认 true
+        shouldAutoShow = prefs.autoShowPanel !== undefined ? prefs.autoShowPanel : true;
       }
     } catch (e) {
       console.warn('读取偏好设置失败:', e);
