@@ -301,6 +301,24 @@
             style="
               width: 100%;
               padding: 8px;
+              background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+              border: none;
+              border-radius: 6px;
+              color: white;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+            @click="showCloudTemplates = true"
+          >
+            <i class="fa-solid fa-cloud" style="margin-right: 4px"></i>
+            云端模板
+          </button>
+
+          <button
+            style="
+              width: 100%;
+              padding: 8px;
               background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
               border: none;
               border-radius: 6px;
@@ -783,6 +801,106 @@
       </div>
     </div>
   </div>
+
+  <!-- 云端模板对话框 -->
+  <div
+    v-if="showCloudTemplates"
+    style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    "
+    @click.self="showCloudTemplates = false"
+  >
+    <div
+      style="
+        background: #1e1e1e;
+        border-radius: 16px;
+        padding: 30px;
+        max-width: 800px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      "
+    >
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
+        <h3 style="color: #ec4899; margin: 0; font-size: 20px">
+          <i class="fa-solid fa-cloud" style="margin-right: 8px"></i>
+          云端模板库
+        </h3>
+        <button
+          style="
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+          "
+          @click="showCloudTemplates = false"
+        >
+          ×
+        </button>
+      </div>
+
+      <div v-if="isLoadingTemplates" style="text-align: center; padding: 40px; color: #888">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 16px"></i>
+        <p>加载中...</p>
+      </div>
+
+      <div v-else-if="cloudTemplates.length === 0" style="text-align: center; padding: 40px; color: #888">
+        <i class="fa-solid fa-inbox" style="font-size: 32px; margin-bottom: 16px"></i>
+        <p>暂无云端模板</p>
+      </div>
+
+      <div v-else style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px">
+        <div
+          v-for="template in cloudTemplates"
+          :key="template.id"
+          style="
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+          "
+          @click="loadCloudTemplate(template)"
+          @mouseenter="e => (e.currentTarget.style.borderColor = '#ec4899')"
+          @mouseleave="e => (e.currentTarget.style.borderColor = 'transparent')"
+        >
+          <div style="font-size: 32px; margin-bottom: 12px">{{ template.icon || '📄' }}</div>
+          <h4 style="color: #fff; margin: 0 0 8px 0; font-size: 16px">{{ template.name }}</h4>
+          <p style="color: #888; margin: 0; font-size: 13px; line-height: 1.5">{{ template.description }}</p>
+          <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
+            <span
+              v-for="tag in template.tags"
+              :key="tag"
+              style="
+                padding: 4px 8px;
+                background: rgba(236, 72, 153, 0.2);
+                color: #ec4899;
+                border-radius: 4px;
+                font-size: 11px;
+              "
+            >
+              {{ tag }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -877,6 +995,9 @@ const aiPrompt = ref('');
 const isGenerating = ref(false);
 const isGeneratingCSS = ref(false);
 const selectedTheme = ref('默认蓝');
+const showCloudTemplates = ref(false);
+const cloudTemplates = ref<any[]>([]);
+const isLoadingTemplates = ref(false);
 
 // 主题系统
 interface Theme {
@@ -2348,6 +2469,72 @@ const applyTheme = (theme: Theme) => {
 
   (window as any).toastr?.success(`✅ 已应用"${theme.name}"主题`);
 };
+
+// 加载云端模板列表
+const loadCloudTemplatesList = async () => {
+  isLoadingTemplates.value = true;
+  try {
+    const AUTH_API_URL = 'https://maomaomz-auth.baobaoyu999727272.workers.dev';
+    const response = await fetch(`${AUTH_API_URL}/get-regex-templates`);
+    const result = await response.json();
+
+    if (result.success && result.data && result.data.templates) {
+      cloudTemplates.value = result.data.templates.filter((t: any) => t.enabled !== false);
+    } else {
+      cloudTemplates.value = [];
+    }
+  } catch (error) {
+    console.error('加载云端模板失败:', error);
+    (window as any).toastr?.error('加载云端模板失败');
+    cloudTemplates.value = [];
+  } finally {
+    isLoadingTemplates.value = false;
+  }
+};
+
+// 使用云端模板
+const loadCloudTemplate = (template: any) => {
+  if (template.pages && Array.isArray(template.pages)) {
+    pages.value = template.pages.map((p: any) => ({
+      name: p.name || '未命名页面',
+      content: p.content || '',
+      customCSS: p.customCSS || '',
+    }));
+  }
+
+  if (template.variables && Array.isArray(template.variables)) {
+    variables.value = template.variables.map((v: any) => ({
+      name: v.name || '',
+      defaultValue: v.defaultValue || '',
+      description: v.description || '',
+      type: v.type || 'text',
+      min: v.min,
+      max: v.max,
+      unit: v.unit,
+      color: v.color,
+    }));
+  }
+
+  if (template.theme) {
+    selectedTheme.value = template.theme;
+  }
+
+  if (template.triggerRegex) {
+    triggerRegex.value = template.triggerRegex;
+  }
+
+  selectedPageIndex.value = pages.value.length > 0 ? 0 : null;
+  showCloudTemplates.value = false;
+
+  (window as any).toastr?.success(`✅ 已加载模板"${template.name}"`);
+};
+
+// 监听云端模板对话框打开，自动加载列表
+watch(showCloudTemplates, newVal => {
+  if (newVal) {
+    loadCloudTemplatesList();
+  }
+});
 
 // 导出世界书条目
 const exportWorldbookEntry = () => {
