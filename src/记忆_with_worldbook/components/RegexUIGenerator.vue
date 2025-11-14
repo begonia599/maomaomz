@@ -320,17 +320,13 @@
           <span style="color: #fff; font-size: 14px; font-weight: 600">实时预览</span>
         </div>
 
-        <div
-          style="
-            flex: 1;
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            overflow: auto;
-            border: 2px solid #3a3a3a;
-          "
-        >
-          <div v-if="generatedHTML" v-html="previewHTML"></div>
+        <div style="flex: 1; background: #fff; border-radius: 12px; overflow: hidden; border: 2px solid #3a3a3a">
+          <iframe
+            v-if="generatedHTML"
+            :srcdoc="previewHTML"
+            style="width: 100%; height: 100%; border: none"
+            sandbox="allow-scripts allow-same-origin"
+          ></iframe>
           <div
             v-else
             style="
@@ -340,6 +336,7 @@
               height: 100%;
               color: #999;
               text-align: center;
+              padding: 20px;
             "
           >
             <div>
@@ -506,7 +503,32 @@ const showWorldbookDialog = ref(false);
 // 预览 HTML
 const previewHTML = computed(() => {
   if (!generatedHTML.value) return '';
-  return generatedHTML.value;
+
+  // 返回完整的 HTML 文档，确保 JavaScript 可以执行
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  ${generatedHTML.value}
+</body>
+</html>
+  `;
 });
 
 // 检测变量
