@@ -430,10 +430,17 @@ function switchPage(index) {
   * 悬停：渐变背景，transform: scale(1.05)，阴影增强，transition 0.3s
   * 激活：渐变背景，发光边框，font-weight: 700，box-shadow 发光
 
-- **字段项样式**：
-  * 每个字段项：背景 rgba(255,255,255,0.05)，圆角 8px，padding 12px 16px
-  * 标签和值：清晰的视觉分隔，合适的字体大小和颜色
-  * 字段项之间：margin-bottom: 12px
+- **字段项样式 - 必须使用卡片式设计**：
+  * **禁止**：简单的文本行（label: value）这种简陋设计
+  * **必须**：每个字段项都是一个独立的卡片
+  * 卡片样式：
+    - 背景：半透明背景 rgba(255,255,255,0.05) 或 rgba(0,0,0,0.2)，可以有渐变
+    - 边框：1px solid rgba(255,255,255,0.1) 或发光边框
+    - 圆角：10-12px（不能太小）
+    - 内边距：14px 18px（充足的间距）
+    - 阴影：box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)
+  * 标签和值：清晰的视觉分隔，标签较小字体（14px），值较大字体（16px），可以使用分隔线
+  * 字段项之间：margin-bottom: 14-16px（充足的间距）
 
 - **动画效果**：
   * 所有交互：transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)
@@ -445,10 +452,11 @@ function switchPage(index) {
 2. 生成 2-4 个页面，每个页面显示不同字段
 3. **CSS 样式必须非常美观、现代、专业，绝对不能简陋或丑陋**
 4. 翻页按钮必须设计精美，有明显的激活和悬停状态
-5. 必须使用渐变、阴影、发光、圆角等现代设计元素
-6. 直接输出完整的 HTML 代码，不要添加任何解释文字
-7. 不要使用 \`\`\`html 代码块标记
-8. **重点：生成的UI必须非常美观，符合现代UI设计标准，绝对不能简陋！**`;
+5. **字段项必须使用卡片式设计，禁止简单的文本行（label: value）**
+6. 必须使用渐变、阴影、发光、圆角等现代设计元素
+7. 直接输出完整的 HTML 代码，不要添加任何解释文字
+8. 不要使用 \`\`\`html 代码块标记
+9. **重点：生成的UI必须非常美观、精致，适合在聊天界面中展示，每个元素都要精心设计，绝对不能简陋！**`;
 
   try {
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
@@ -459,14 +467,85 @@ function switchPage(index) {
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: `用户需求：${aiPrompt.value.trim()}\n\n请根据以上用户需求生成一个非常美观、现代、专业的翻页状态栏。\n\n【重要原则】：
+          content: `用户需求：${aiPrompt.value.trim()}\n\n请根据以上用户需求生成一个**非常美观、现代、专业、精致**的翻页状态栏。这个状态栏会在聊天界面中显示，必须足够美观，不能简陋或丑陋！\n\n【重要原则】：
 - **完全按照用户的具体需求来设计**，不要使用固定的样式模板
 - 如果用户要求"手册"、"卡片"、"浅色"等风格，就按用户要求设计
 - 如果用户要求"深色"、"科技"、"游戏"等风格，就按用户要求设计
 - 标签页按钮的位置（左侧/右侧/顶部）、样式、颜色都要根据用户需求灵活调整
 - **核心是翻页功能，样式完全由用户需求决定，不要抄袭任何固定样式**
 
-【必须遵循的设计要求】：\n1. **配色**：必须使用渐变配色，不能使用纯色。深色主题使用深灰渐变配合彩色强调，浅色主题使用柔和浅色渐变。\n2. **间距**：容器 padding 20-30px，字段项间距 12-16px，所有元素都要有充足的留白。\n3. **圆角**：容器 16-20px，按钮 10-12px，字段项 8-10px。\n4. **阴影**：必须添加多层阴影（外阴影 + 内阴影），按钮悬停时阴影增强。\n5. **发光**：激活的标签页要有发光效果，重要字段可以有文字发光。\n6. **动画**：所有交互都要有平滑的过渡动画（0.3s cubic-bezier），页面切换要有淡入淡出效果。\n7. **标签页按钮**：默认半透明背景+边框，悬停时渐变背景+放大+阴影增强，激活时渐变背景+发光边框+加粗。\n8. **字段项**：每个字段项要有半透明背景、圆角、合适的 padding，标签和值要有清晰的视觉分隔。\n9. **图标**：标签页按钮和字段标签前要添加合适的 Font Awesome 图标。\n10. **玻璃态效果**：可以使用 backdrop-filter: blur 和半透明背景增加现代感。\n\n【绝对禁止】：\n- 不能使用纯色背景（必须用渐变）\n- 不能没有阴影和发光效果\n- 不能间距太小或没有间距\n- 不能没有圆角\n- 不能没有动画效果\n- 不能简陋或丑陋的设计\n\n现在直接输出完整的 HTML 代码（不要添加任何解释文字）：`,
+【必须遵循的设计要求 - 必须非常美观】：
+
+1. **配色**：
+   - 必须使用精心设计的渐变配色，绝对不能使用纯色
+   - 深色主题：使用深灰渐变（如 #1a1a1a → #2d2d2d → #3a3a3a），配合彩色强调色（如蓝色 #3b82f6, 紫色 #8b5cf6）
+   - 浅色主题：使用柔和的浅色渐变（如 #f8f9fa → #ffffff），配合深色文字
+   - 所有背景必须使用 linear-gradient 或 radial-gradient
+
+2. **容器设计**：
+   - 容器必须有渐变背景，不能是纯色
+   - 必须添加多层阴影：box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)
+   - 圆角：16-20px
+   - 内边距：20-30px
+   - 边框：可以使用发光边框或渐变边框增加层次
+
+3. **标签页按钮 - 必须精美**：
+   - **默认状态**：半透明背景 rgba(255,255,255,0.1)，1px 边框 rgba(主色, 0.3)，圆角 12px，padding 12px 24px
+   - **悬停状态**：渐变背景 linear-gradient(135deg, 主色1, 主色2)，transform: scale(1.05)，阴影增强 box-shadow: 0 4px 16px rgba(主色, 0.4)
+   - **激活状态**：渐变背景，发光边框 box-shadow: 0 0 20px rgba(主色, 0.6), inset 0 0 10px rgba(主色, 0.2)，font-weight: 700，颜色对比明显
+   - 必须有平滑的过渡动画：transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+
+4. **字段项 - 必须使用卡片式设计**：
+   - **禁止**：简单的文本行（label: value）这种简陋设计
+   - **必须**：每个字段项都是一个独立的卡片
+   - 卡片样式：
+     * 背景：半透明背景 rgba(255,255,255,0.05) 或 rgba(0,0,0,0.2)，可以有渐变
+     * 边框：1px solid rgba(255,255,255,0.1) 或发光边框
+     * 圆角：10-12px
+     * 内边距：14px 18px
+     * 阴影：box-shadow: 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)
+     * 字段项之间间距：14-16px
+   - 标签和值的视觉分隔：
+     * 标签：左侧，较小字体（14px），半透明白色或灰色，font-weight: 600
+     * 值：右侧或下方，较大字体（16px），高对比度颜色，font-weight: 500
+     * 可以使用分隔线或不同的背景色来区分
+
+5. **视觉层次**：
+   - 使用不同的字体大小和粗细区分重要性
+   - 使用颜色对比突出关键信息
+   - 合理使用图标和装饰元素
+   - 重要信息可以使用发光效果：text-shadow: 0 0 10px rgba(主色, 0.5)
+
+6. **动画效果**：
+   - 所有交互：transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+   - 页面切换：opacity + transform 淡入淡出动画
+   - 悬停效果：scale、shadow、color 变化
+   - 字段项悬停：可以轻微放大或阴影增强
+
+7. **图标和装饰**：
+   - 标签页按钮前必须添加 Font Awesome 图标
+   - 字段标签前可以添加小图标增强视觉识别
+   - 可以使用装饰性元素（如渐变线条、图案等）
+
+8. **玻璃态效果**（可选但推荐）：
+   - backdrop-filter: blur(10px) saturate(180%)
+   - 配合半透明背景增加现代感
+
+【绝对禁止 - 这些会导致UI丑陋】：
+- ❌ 禁止使用纯色背景（必须用渐变）
+- ❌ 禁止字段项只是简单的文本行（必须使用卡片式设计）
+- ❌ 禁止没有阴影和发光效果
+- ❌ 禁止间距太小或没有间距
+- ❌ 禁止没有圆角
+- ❌ 禁止没有动画效果
+- ❌ 禁止简陋、扁平、丑陋的设计
+- ❌ 禁止标签页激活状态不明显
+- ❌ 禁止字段项没有视觉层次
+
+【重点强调】：
+生成的UI必须**非常美观、精致、现代**，适合在聊天界面中展示。每个元素都要精心设计，不能有任何简陋或丑陋的部分。字段项必须是卡片式设计，不能是简单的文本行！
+
+现在直接输出完整的 HTML 代码（不要添加任何解释文字）：`,
         },
       ],
       max_tokens: Math.min(settings.value.max_tokens, 8192),
@@ -524,15 +603,23 @@ const exportRegex = () => {
 
   const uuid = `regex-pageable-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+  // 清理HTML：去除Windows的\r，标准化换行符（和普通状态栏生成器保持一致）
+  const cleanReplaceString = generatedHTML.value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+
   const regexData = {
     id: uuid,
     scriptName: '翻页状态栏',
     findRegex: triggerRegex.value,
-    replaceString: generatedHTML.value,
+    replaceString: cleanReplaceString,
     trimStrings: [],
     placement: [2], // AI回复前
     disabled: false,
+    markdownOnly: true, // 重要：仅在Markdown中生效，让HTML正确渲染
+    promptOnly: false,
     runOnEdit: true,
+    substituteRegex: 0,
+    minDepth: null,
+    maxDepth: null,
   };
 
   const jsonStr = JSON.stringify(regexData, null, 2);
