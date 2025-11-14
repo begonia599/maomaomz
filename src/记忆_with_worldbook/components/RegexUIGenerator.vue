@@ -64,6 +64,25 @@
           class="action-button"
           style="
             padding: 8px 16px;
+            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+          "
+          @click.stop="showTemplateLibrary"
+        >
+          <i class="fa-solid fa-palette" style="margin-right: 6px; pointer-events: none"></i>
+          模板库
+        </button>
+        <button
+          class="action-button"
+          style="
+            padding: 8px 16px;
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             border: none;
             border-radius: 8px;
@@ -348,6 +367,111 @@
       </div>
     </div>
 
+    <!-- 模板库对话框 -->
+    <div
+      v-if="showTemplateDialog"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      "
+      @click.self="showTemplateDialog = false"
+    >
+      <div
+        style="
+          background: #1e1e1e;
+          border-radius: 16px;
+          padding: 30px;
+          max-width: 900px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        "
+      >
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px">
+          <h3 style="color: #a855f7; margin: 0; font-size: 20px">
+            <i class="fa-solid fa-palette" style="margin-right: 8px"></i>
+            精美模板库
+          </h3>
+          <button
+            style="
+              background: none;
+              border: none;
+              color: #888;
+              font-size: 24px;
+              cursor: pointer;
+              padding: 0;
+              width: 32px;
+              height: 32px;
+            "
+            @click="showTemplateDialog = false"
+          >
+            ×
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px">
+          <div
+            v-for="template in templates"
+            :key="template.id"
+            style="
+              background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+              border-radius: 12px;
+              padding: 20px;
+              border: 2px solid #3a3a3a;
+              cursor: pointer;
+              transition: all 0.3s ease;
+            "
+            @click="loadTemplate(template)"
+            @mouseenter="e => (e.currentTarget.style.borderColor = '#a855f7')"
+            @mouseleave="e => (e.currentTarget.style.borderColor = '#3a3a3a')"
+          >
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px">
+              <div
+                style="
+                  width: 40px;
+                  height: 40px;
+                  border-radius: 8px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 20px;
+                "
+                :style="{ background: template.color }"
+              >
+                {{ template.icon }}
+              </div>
+              <h4 style="color: #fff; margin: 0; font-size: 16px">{{ template.name }}</h4>
+            </div>
+            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0">{{ template.description }}</p>
+            <div style="margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap">
+              <span
+                v-for="tag in template.tags"
+                :key="tag"
+                style="
+                  background: rgba(168, 85, 247, 0.2);
+                  color: #a855f7;
+                  padding: 4px 8px;
+                  border-radius: 4px;
+                  font-size: 11px;
+                "
+              >
+                {{ tag }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 世界书说明对话框 -->
     <div
       v-if="showWorldbookDialog"
@@ -499,6 +623,7 @@ const aiPrompt = ref('');
 const isGenerating = ref(false);
 const generatedHTML = ref('');
 const showWorldbookDialog = ref(false);
+const showTemplateDialog = ref(false);
 
 // localStorage 键名
 const STORAGE_KEY = 'pageable_statusbar_generator_data';
@@ -667,26 +792,33 @@ const generateWithAI = async () => {
   const taskId = taskStore.createTask('ui_generate', `AI 生成翻页状态栏: ${aiPrompt.value.substring(0, 30)}...`);
 
   const scriptTag = 'script';
-  const systemPrompt = `你是一位顶尖的 UI/UX 设计师，专门为 SillyTavern 创建精美的翻页状态栏。
+  const systemPrompt = `你是一位顶尖的 UI/UX 设计师，专门为 SillyTavern 创建**极致精美**的翻页状态栏。你的设计必须达到专业级水准，让用户惊艳。
 
-## 核心要求
+## 🎯 核心要求
 直接输出完整的 HTML 代码，包含 <style>、HTML 结构和 <${scriptTag}> 标签。不要任何解释文字，不要代码块标记。
 
-## 必须的 HTML 结构
-\`\`\`
+## 📐 必须的 HTML 结构
+\`\`\`html
 <details open>
 <summary>✨ 状态栏标题</summary>
 <div class="status-container">
   <div class="page-tabs">
-    <button class="page-tab active" onclick="switchPage(0)">标签1</button>
-    <button class="page-tab" onclick="switchPage(1)">标签2</button>
+    <button class="page-tab active" onclick="switchPage(0)">📋 标签1</button>
+    <button class="page-tab" onclick="switchPage(1)">💫 标签2</button>
+    <button class="page-tab" onclick="switchPage(2)">🎯 标签3</button>
   </div>
   <div class="page-content">
     <div class="page active" data-page="0">
-      <!-- 字段内容 -->
+      <div class="field-row">
+        <span class="field-label">🏷️ 字段名:</span>
+        <span class="field-value">$1</span>
+      </div>
     </div>
     <div class="page" data-page="1">
-      <!-- 字段内容 -->
+      <!-- 第二页内容 -->
+    </div>
+    <div class="page" data-page="2">
+      <!-- 第三页内容 -->
     </div>
   </div>
 </div>
@@ -704,34 +836,212 @@ function switchPage(index) {
 </${scriptTag}>
 \`\`\`
 
-## 设计原则（重要！）
-1. **现代美学**：使用渐变、阴影、圆角、毛玻璃效果
-2. **配色和谐**：主色 + 辅助色 + 中性色，避免纯黑纯白
-3. **视觉层次**：卡片式布局，清晰的间距和对齐
-4. **交互反馈**：悬停效果、过渡动画、激活状态
-5. **图标点缀**：使用 emoji 或 Unicode 符号增加趣味性
+## 🎨 设计原则（必须遵守！）
+1. **视觉冲击力**：
+   - 使用多层渐变背景（至少2层）
+   - 添加精致的 box-shadow（多层阴影叠加）
+   - 使用 backdrop-filter: blur() 实现毛玻璃效果
+   - 圆角要大胆（border-radius: 16px-24px）
 
-## CSS 样式要求
-- summary: 大标题，渐变背景，圆角，阴影，居中对齐
-- .status-container: 卡片容器，背景色，内边距，圆角
-- .page-tabs: 标签栏，flex 布局，间距均匀
-- .page-tab: 按钮样式，圆角，过渡效果，悬停变色
-- .page-tab.active: 激活状态，明显的视觉区分
-- .page-content: 内容区域，适当内边距
-- .page: 隐藏非激活页面 (display: none)
-- .page.active: 显示激活页面 (display: block)
-- 字段显示：使用 flex 或 grid 布局，标签和值分开，对齐美观
+2. **配色专业度**：
+   - 主色：选择饱和度适中的主题色
+   - 辅助色：与主色形成对比但和谐
+   - 背景：使用半透明渐变，避免纯色
+   - 文字：确保对比度足够（WCAG AA 标准）
+   - 强调色：用于高亮重要信息
 
-## 字段占位符
-使用 $1, $2, $3... 表示动态字段值，生成 8-12 个字段，分布在 2-3 个标签页中。
+3. **动画与交互**：
+   - 所有可交互元素必须有 transition（0.3s ease）
+   - 悬停效果：transform: translateY(-2px) + 阴影加深
+   - 激活状态：明显的颜色变化 + scale(1.05)
+   - 页面切换：添加淡入淡出效果（opacity + transform）
 
-## 示例配色方案
-- 科技风：深蓝 (#1e293b) + 青色 (#06b6d4) + 紫色 (#8b5cf6)
-- 可爱风：粉色 (#ec4899) + 紫色 (#a855f7) + 橙色 (#f97316)
-- 自然风：绿色 (#10b981) + 青色 (#14b8a6) + 黄色 (#fbbf24)
-- 暗黑风：深灰 (#18181b) + 红色 (#ef4444) + 金色 (#fbbf24)
+4. **排版与间距**：
+   - 使用 CSS Grid 或 Flexbox 实现完美对齐
+   - 间距遵循 8px 基准（8, 16, 24, 32...）
+   - 字段标签和值要清晰分离
+   - 行高 line-height: 1.6-1.8
 
-根据用户需求选择合适的配色和风格，创造视觉冲击力强的设计！`;
+5. **细节打磨**：
+   - 添加微妙的 inset 阴影增加层次
+   - 使用 text-shadow 让文字更有质感
+   - 边框使用半透明色而非纯色
+   - 添加渐变边框或发光效果
+
+## 💎 CSS 样式要求（必须实现）
+
+### summary（标题栏）
+\`\`\`css
+summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 30px;
+  border-radius: 16px 16px 0 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  box-shadow:
+    0 4px 15px rgba(102, 126, 234, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+summary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+\`\`\`
+
+### .status-container（容器）
+\`\`\`css
+.status-container {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 240, 255, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  border-radius: 0 0 16px 16px;
+  padding: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+\`\`\`
+
+### .page-tabs（标签栏）
+\`\`\`css
+.page-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 12px;
+}
+\`\`\`
+
+### .page-tab（标签按钮）
+\`\`\`css
+.page-tab {
+  flex: 1;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.page-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.page-tab.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+}
+\`\`\`
+
+### .page-content（内容区）
+\`\`\`css
+.page-content {
+  min-height: 300px;
+  position: relative;
+}
+.page {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+.page.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+\`\`\`
+
+### .field-row（字段行）
+\`\`\`css
+.field-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%);
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+.field-row:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.field-label {
+  font-weight: 600;
+  color: #4a5568;
+  min-width: 120px;
+  font-size: 14px;
+}
+.field-value {
+  color: #2d3748;
+  font-size: 14px;
+  flex: 1;
+}
+\`\`\`
+
+## 🎯 字段占位符
+- 使用 $1, $2, $3... 表示动态字段值
+- 生成 10-15 个字段，分布在 3 个标签页
+- 每个标签页 3-5 个字段
+- 字段要有意义的 emoji 图标
+
+## 🌈 配色方案参考
+
+### 梦幻紫（推荐）
+- 主色：#667eea → #764ba2
+- 辅助：#f093fb → #f5576c
+- 背景：rgba(255, 255, 255, 0.95)
+- 强调：#ffd89b → #19547b
+
+### 科技蓝
+- 主色：#4facfe → #00f2fe
+- 辅助：#43e97b → #38f9d7
+- 背景：rgba(240, 248, 255, 0.95)
+- 强调：#fa709a → #fee140
+
+### 温暖橙
+- 主色：#fa709a → #fee140
+- 辅助：#30cfd0 → #330867
+- 背景：rgba(255, 250, 245, 0.95)
+- 强调：#a8edea → #fed6e3
+
+### 自然绿
+- 主色：#56ab2f → #a8e063
+- 辅助：#f2994a → #f2c94c
+- 背景：rgba(245, 255, 250, 0.95)
+- 强调：#ee9ca7 → #ffdde1
+
+## ⚡ 特殊效果（可选但推荐）
+1. **进度条**：如果有百分比数据，使用渐变进度条
+2. **徽章**：重要信息用圆角徽章高亮
+3. **分隔线**：使用渐变分隔线而非纯色
+4. **图标**：大量使用 emoji 增加趣味性
+5. **悬浮卡片**：字段行可以有轻微的悬浮效果
+
+## 🚀 最终要求
+- 整体风格必须统一协调
+- 颜色过渡必须平滑自然
+- 交互反馈必须流畅
+- 视觉层次必须清晰
+- 细节打磨必须到位
+
+根据用户需求，创造一个让人眼前一亮的精美状态栏！`;
 
   try {
     taskStore.updateTaskProgress(taskId, 10, '正在准备...');
@@ -936,6 +1246,20 @@ const clearAll = () => {
     generatedHTML.value = '';
     (window as any).toastr?.success('已清空');
   }
+};
+
+// 导入模板数据
+import { templates } from './regexTemplates';
+
+const showTemplateLibrary = () => {
+  showTemplateDialog.value = true;
+};
+
+const loadTemplate = (template: (typeof templates)[0]) => {
+  triggerRegex.value = template.triggerRegex;
+  generatedHTML.value = template.htmlTemplate;
+  showTemplateDialog.value = false;
+  (window as any).toastr?.success(`✨ 已加载模板：${template.name}`);
 };
 </script>
 
