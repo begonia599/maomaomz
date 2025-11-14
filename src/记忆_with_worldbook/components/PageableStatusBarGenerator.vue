@@ -195,7 +195,7 @@
           >
             <div>
               <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3"></i>
-              <p style="font-size: 16px">使用 AI 生成或加载示例查看预览</p>
+              <p style="font-size: 16px">使用 AI 生成查看预览</p>
             </div>
           </div>
         </div>
@@ -525,35 +525,6 @@ const exportRegex = () => {
   URL.revokeObjectURL(url);
 
   (window as any).toastr?.success('✅ 正则已导出');
-};
-
-// 加载示例
-const loadExample = () => {
-  aiPrompt.value = `🎮 深色科技风角色状态栏
-
-【风格】深色科技风，充满未来感，原创设计
-
-【配色】
-- 主背景：深灰渐变 #1e293b → #334155
-- 强调色：蓝色 #3b82f6 + 紫色点缀 #8b5cf6
-- 发光效果：蓝色发光 rgba(59, 130, 246, 0.6)
-
-【布局】顶部水平标签页，3个标签页按钮
-
-【页面内容】
-📄 页面1 - 基础信息：姓名、年龄、性别、职业、生日
-📊 页面2 - 状态数据：HP、MP、体力、精力（用精美进度条展示）
-💕 页面3 - 关系数据：好感度、信任度、亲密度（用进度条或创意方式）
-
-【设计要点】
-✨ 容器：渐变背景 + 大圆角(20px) + 多层阴影 + 发光边框
-🔘 标签页按钮：半透明默认态 → 悬停放大发光 → 激活渐变发光
-📦 字段卡片：每个字段独立卡片，半透明背景，圆角，悬停上移
-📈 进度条：渐变填充 + 发光 + 脉动动画
-🎬 动画：0.3s cubic-bezier 平滑过渡
-
-请自由发挥创意，打造独特精美的界面！`;
-  (window as any).toastr?.info('已加载示例，点击"AI 一键生成"开始');
 };
 
 // 清空所有
