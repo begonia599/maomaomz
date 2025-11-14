@@ -40,7 +40,7 @@
         <i class="fa-solid fa-book-open" style="color: #4a9eff; font-size: 18px"></i>
         翻页状态栏生成器
       </h3>
-      <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 10">
         <button
           class="action-button"
           style="
@@ -53,10 +53,11 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            pointer-events: auto;
           "
-          @click="loadExample"
+          @click.stop="loadExample"
         >
-          <i class="fa-solid fa-lightbulb" style="margin-right: 6px"></i>
+          <i class="fa-solid fa-lightbulb" style="margin-right: 6px; pointer-events: none"></i>
           加载示例
         </button>
         <button
@@ -71,13 +72,14 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            pointer-events: auto;
           "
           :disabled="isGenerating"
-          @click="generateWithAI"
+          @click.stop="generateWithAI"
         >
           <i
             :class="isGenerating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-wand-magic-sparkles'"
-            style="margin-right: 6px"
+            style="margin-right: 6px; pointer-events: none"
           ></i>
           {{ isGenerating ? '生成中...' : 'AI 生成' }}
         </button>
@@ -93,11 +95,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            pointer-events: auto;
           "
           :disabled="!generatedHTML"
-          @click="exportRegex"
+          @click.stop="exportRegex"
         >
-          <i class="fa-solid fa-download" style="margin-right: 6px"></i>
+          <i class="fa-solid fa-download" style="margin-right: 6px; pointer-events: none"></i>
           导出正则
         </button>
         <button
@@ -112,11 +115,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            pointer-events: auto;
           "
           :disabled="!generatedHTML"
-          @click="exportWorldbookEntry"
+          @click.stop="exportWorldbookEntry"
         >
-          <i class="fa-solid fa-book" style="margin-right: 6px"></i>
+          <i class="fa-solid fa-book" style="margin-right: 6px; pointer-events: none"></i>
           导出世界书
         </button>
         <button
@@ -131,11 +135,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            pointer-events: auto;
           "
           :disabled="!generatedHTML"
-          @click="showWorldbookGuide"
+          @click.stop="showWorldbookGuide"
         >
-          <i class="fa-solid fa-question-circle" style="margin-right: 6px"></i>
+          <i class="fa-solid fa-question-circle" style="margin-right: 6px; pointer-events: none"></i>
           使用说明
         </button>
         <button
@@ -150,10 +155,11 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            pointer-events: auto;
           "
-          @click="clearAll"
+          @click.stop="clearAll"
         >
-          <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
+          <i class="fa-solid fa-trash" style="margin-right: 6px; pointer-events: none"></i>
           清空
         </button>
       </div>
@@ -791,18 +797,30 @@ const clearAll = () => {
 </script>
 
 <style scoped>
-.action-button:hover {
+.pageable-statusbar-generator {
+  position: relative;
+  z-index: 1;
+}
+
+.action-button {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+}
+
+.action-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.action-button:active {
+.action-button:active:not(:disabled) {
   transform: translateY(0);
 }
 
 .action-button:disabled {
   cursor: not-allowed !important;
   opacity: 0.5 !important;
+  pointer-events: none !important;
 }
 
 textarea:focus,
