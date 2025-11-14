@@ -488,7 +488,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 
 const settingsStore = useSettingsStore();
@@ -499,6 +499,50 @@ const aiPrompt = ref('');
 const isGenerating = ref(false);
 const generatedHTML = ref('');
 const showWorldbookDialog = ref(false);
+
+// localStorage 键名
+const STORAGE_KEY = 'pageable_statusbar_generator_data';
+
+// 从 localStorage 加载数据
+const loadFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      triggerRegex.value = data.triggerRegex || '<-STATUS->';
+      aiPrompt.value = data.aiPrompt || '';
+      generatedHTML.value = data.generatedHTML || '';
+      console.log('✅ 已从 localStorage 加载翻页状态栏数据');
+    }
+  } catch (error) {
+    console.error('❌ 加载数据失败:', error);
+  }
+};
+
+// 保存到 localStorage
+const saveToStorage = () => {
+  try {
+    const data = {
+      triggerRegex: triggerRegex.value,
+      aiPrompt: aiPrompt.value,
+      generatedHTML: generatedHTML.value,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.log('💾 翻页状态栏数据已保存');
+  } catch (error) {
+    console.error('❌ 保存数据失败:', error);
+  }
+};
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadFromStorage();
+});
+
+// 监听数据变化，自动保存
+watch([triggerRegex, aiPrompt, generatedHTML], () => {
+  saveToStorage();
+});
 
 // 预览 HTML
 const previewHTML = computed(() => {
@@ -617,6 +661,11 @@ const generateWithAI = async () => {
 
   isGenerating.value = true;
 
+  // 创建任务
+  const { useTaskStore } = await import('../taskStore');
+  const taskStore = useTaskStore();
+  const taskId = taskStore.createTask('ui_generate', `AI 生成翻页状态栏: ${aiPrompt.value.substring(0, 30)}...`);
+
   const scriptTag = 'script';
   const systemPrompt = `你是一个专业的前端设计师，专门为 SillyTavern 生成翻页状态栏。
 
@@ -668,7 +717,11 @@ function switchPage(index) {
 6. 不要使用 \`\`\`html 代码块标记`;
 
   try {
+    taskStore.updateTaskProgress(taskId, 10, '正在准备...');
+
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+
+    taskStore.updateTaskProgress(taskId, 20, '正在连接 AI...');
 
     const requestParams = {
       model: settings.value.model,
@@ -695,8 +748,12 @@ function switchPage(index) {
       throw new Error(`API 请求失败 (${response.status})`);
     }
 
+    taskStore.updateTaskProgress(taskId, 60, '正在接收 AI 响应...');
+
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || data.content || '';
+
+    taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
 
     content = content
       .replace(/```html\n?/g, '')
@@ -708,13 +765,16 @@ function switchPage(index) {
 
     if (detailsMatch) {
       generatedHTML.value = detailsMatch[0];
+      taskStore.completeTask(taskId, '✨ AI 生成成功！');
       (window as any).toastr?.success('✨ AI 生成成功！');
     } else {
       generatedHTML.value = content;
+      taskStore.completeTask(taskId, '生成成功，但格式可能需要调整');
       (window as any).toastr?.warning('生成成功，但格式可能需要调整');
     }
   } catch (error) {
     console.error('AI 生成失败:', error);
+    taskStore.failTask(taskId, (error as Error).message);
     (window as any).toastr?.error('AI 生成失败：' + (error as Error).message);
   } finally {
     isGenerating.value = false;
