@@ -1,6 +1,8 @@
 // 优化后的 AI 提示词 - 无 emoji 专业版
 
-export const getOptimizedPrompt = (scriptTag: string) => `你是专业的前端工程师。根据用户需求,生成精美的翻页状态栏 HTML 代码。
+export const getOptimizedPrompt = (
+  scriptTag: string,
+) => `你是专业的前端工程师。根据用户需求,生成精美的翻页状态栏 HTML 代码。
 
 ## ⚠️ 强制要求
 **禁止使用任何 emoji 符号!包括但不限于: 😀 🎯 💡 ❤️ 等所有 Unicode emoji 字符。所有文字必须使用纯文本,简洁专业。**

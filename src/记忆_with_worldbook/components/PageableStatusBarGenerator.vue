@@ -461,14 +461,8 @@ function switchPage(index) {
 }
 </script>
 
----
-
-生成规则:
-
-参照上述示例,按以下要求生成代码:
-
-1. 必须包含的结构:
-   - <details open> + <summary> 标题
+--- 生成规则: 参照上述示例,按以下要求生成代码: 1. 必须包含的结构: -
+<details open> + <summary> 标题
    - 容器 div(自定义 class 名)
    - <style> 标签(内联样式)
    - .page-tabs(标签栏,3-4 个标签)
@@ -568,93 +562,9 @@ ${aiPrompt.value.trim()}
       .replace(/```\n?/g, '')
       .trim();
 
-    // 提取 <details> 到 </details> 之间的内容
-    const detailsMatch = content.match(/<details[\s\S]*?<\/details>/i);
-    if (detailsMatch) {
-      generatedHTML.value = detailsMatch[0];
-      (window as any).toastr?.success('AI 生成成功');
-    } else {
-      // 如果没有 <details>，尝试提取整个 HTML
-      generatedHTML.value = content;
-      (window as any).toastr?.warning('生成成功，但格式可能需要调整');
-    }
-  } catch (error) {
-    console.error('AI 生成失败:', error);
-    (window as any).toastr?.error('AI 生成失败：' + (error as Error).message);
-  } finally {
-    isGenerating.value = false;
-  }
-};
-
-// 导出正则
-const exportRegex = () => {
-  if (!generatedHTML.value) {
-    (window as any).toastr?.warning('请先生成内容');
-    return;
-  }
-
-  const uuid = `regex-pageable-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-  // 清理HTML：去除Windows的\r，标准化换行符（和普通状态栏生成器保持一致）
-  const cleanReplaceString = generatedHTML.value.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
-
-  const regexData = {
-    id: uuid,
-    scriptName: '翻页状态栏',
-    findRegex: triggerRegex.value,
-    replaceString: cleanReplaceString,
-    trimStrings: [],
-    placement: [2], // AI回复前
-    disabled: false,
-    markdownOnly: true, // 重要：仅在Markdown中生效，让HTML正确渲染
-    promptOnly: false,
-    runOnEdit: true,
-    substituteRegex: 0,
-    minDepth: null,
-    maxDepth: null,
-  };
-
-  const jsonStr = JSON.stringify(regexData, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'pageable-statusbar.json';
-  a.click();
-  URL.revokeObjectURL(url);
-
-  (window as any).toastr?.success('正则已导出');
-};
-
-// 清空所有
-const clearAll = () => {
-  if (confirm('确定要清空所有内容吗？')) {
-    triggerRegex.value = '<-STATUS->';
-    aiPrompt.value = '';
-    generatedHTML.value = '';
-    (window as any).toastr?.success('已清空');
-  }
-};
-</script>
-
-<style scoped>
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-button:disabled {
-  cursor: not-allowed !important;
-  opacity: 0.5 !important;
-}
-
-textarea:focus,
-input:focus {
-  outline: none;
-  border-color: #4a9eff;
-}
-</style>
+    // 提取 <details> 到 </details>
+之间的内容 const detailsMatch = content.match(/
+<details[\s\S]*?></details[\s\S]*?>
+<\/details>/i); if (detailsMatch) { generatedHTML.value = detailsMatch[0]; (window as any).toastr?.success('AI
+生成成功'); } else { // 如果没有
+<details></details>
