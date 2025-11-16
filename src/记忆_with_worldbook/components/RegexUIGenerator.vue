@@ -670,7 +670,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 
 const settingsStore = useSettingsStore();
@@ -857,12 +857,24 @@ const cleanupStorage = () => {
 // 组件挂载时加载数据
 onMounted(() => {
   loadFromStorage();
+  checkPendingGeneration();
 });
 
 // 监听数据变化，自动保存（带防抖）
 watch([triggerRegex, aiPrompt, generatedHTML], () => {
   saveToStorage();
 });
+
+// 监听生成完成，自动清理状态
+watch(
+  () => isGenerating.value,
+  newValue => {
+    if (!newValue) {
+      // 生成完成，清理状态
+      localStorage.removeItem(GENERATING_STATE_KEY);
+    }
+  },
+);
 
 // 预览 HTML
 const previewHTML = computed(() => {
@@ -1038,6 +1050,69 @@ ${uniqueFields
   return statusRule;
 });
 
+// 全局生成状态存储键
+const GENERATING_STATE_KEY = 'pageable_statusbar_generating_state';
+let checkInterval: ReturnType<typeof setInterval> | null = null;
+
+// 检查是否有未完成的生成任务
+const checkPendingGeneration = () => {
+  try {
+    const stateStr = localStorage.getItem(GENERATING_STATE_KEY);
+    if (stateStr) {
+      const state = JSON.parse(stateStr);
+      // 如果有未完成的任务且时间不超过10分钟
+      if (state.isGenerating && Date.now() - state.startTime < 10 * 60 * 1000) {
+        isGenerating.value = true;
+        (window as any).toastr?.info('检测到后台生成任务正在进行中...');
+        // 开始轮询检查生成状态
+        startStatusPolling();
+      } else {
+        // 清理过期的状态
+        localStorage.removeItem(GENERATING_STATE_KEY);
+      }
+    }
+  } catch (error) {
+    console.error('检查生成状态失败:', error);
+  }
+};
+
+// 开始轮询生成状态
+const startStatusPolling = () => {
+  if (checkInterval) return; // 已经在轮询中
+
+  checkInterval = setInterval(() => {
+    const stateStr = localStorage.getItem(GENERATING_STATE_KEY);
+    if (!stateStr) {
+      // 生成已完成
+      isGenerating.value = false;
+      stopStatusPolling();
+    } else {
+      const state = JSON.parse(stateStr);
+      // 检查是否超时
+      if (Date.now() - state.startTime > 10 * 60 * 1000) {
+        // 超时，清理状态
+        localStorage.removeItem(GENERATING_STATE_KEY);
+        isGenerating.value = false;
+        stopStatusPolling();
+        (window as any).toastr?.warning('生成任务超时');
+      }
+    }
+  }, 1000); // 每秒检查一次
+};
+
+// 停止轮询
+const stopStatusPolling = () => {
+  if (checkInterval) {
+    clearInterval(checkInterval);
+    checkInterval = null;
+  }
+};
+
+// 组件卸载时停止轮询
+onUnmounted(() => {
+  stopStatusPolling();
+});
+
 // AI 生成
 const generateWithAI = async () => {
   if (!aiPrompt.value.trim()) {
@@ -1052,6 +1127,19 @@ const generateWithAI = async () => {
 
   isGenerating.value = true;
 
+  // 保存生成状态到 localStorage
+  localStorage.setItem(
+    GENERATING_STATE_KEY,
+    JSON.stringify({
+      isGenerating: true,
+      startTime: Date.now(),
+      prompt: aiPrompt.value.substring(0, 50),
+    }),
+  );
+
+  // 开始轮询状态
+  startStatusPolling();
+
   // 创建任务
   const { useTaskStore } = await import('../taskStore');
   const taskStore = useTaskStore();
@@ -1063,69 +1151,78 @@ const generateWithAI = async () => {
   const { getOptimizedPrompt } = await import('./optimized-prompt');
   const systemPrompt = getOptimizedPrompt(scriptTag);
 
-  try {
-    taskStore.updateTaskProgress(taskId, 10, '正在准备...');
+  // 创建一个独立的异步函数来执行生成，这样即使组件卸载也能继续
+  const executeGeneration = async () => {
+    try {
+      taskStore.updateTaskProgress(taskId, 10, '正在准备...');
 
-    const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+      const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
 
-    taskStore.updateTaskProgress(taskId, 20, '正在连接 AI...');
+      taskStore.updateTaskProgress(taskId, 20, '正在连接 AI...');
 
-    const requestParams = {
-      model: settings.value.model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `用户需求：${aiPrompt.value.trim()}\n\n现在直接输出完整的 HTML 代码：` },
-      ],
-      max_tokens: Math.min(settings.value.max_tokens, 8192),
-      temperature: settings.value.temperature,
-    };
+      const requestParams = {
+        model: settings.value.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `用户需求：${aiPrompt.value.trim()}\n\n现在直接输出完整的 HTML 代码：` },
+        ],
+        max_tokens: Math.min(settings.value.max_tokens, 8192),
+        temperature: settings.value.temperature,
+      };
 
-    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+      const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
 
-    if (!response.ok) {
-      throw new Error(`API 请求失败 (${response.status})`);
+      if (!response.ok) {
+        throw new Error(`API 请求失败 (${response.status})`);
+      }
+
+      taskStore.updateTaskProgress(taskId, 60, '正在接收 AI 响应...');
+
+      const data = await response.json();
+      let content = data.choices?.[0]?.message?.content || data.content || '';
+
+      taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
+
+      content = content
+        .replace(/```html\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
+
+      const detailsRegex = new RegExp('<details[\\s\\S]*?</details>', 'i');
+      const detailsMatch = content.match(detailsRegex);
+
+      if (detailsMatch) {
+        generatedHTML.value = detailsMatch[0];
+        taskStore.completeTask(taskId, '✨ AI 生成成功！');
+        (window as any).toastr?.success('✨ AI 生成成功！');
+      } else {
+        generatedHTML.value = content;
+        taskStore.completeTask(taskId, '生成成功，但格式可能需要调整');
+        (window as any).toastr?.warning('生成成功，但格式可能需要调整');
+      }
+    } catch (error) {
+      console.error('AI 生成失败:', error);
+      taskStore.failTask(taskId, (error as Error).message);
+      (window as any).toastr?.error('AI 生成失败：' + (error as Error).message);
+    } finally {
+      isGenerating.value = false;
+      // 清理生成状态
+      localStorage.removeItem(GENERATING_STATE_KEY);
+      stopStatusPolling();
     }
+  };
 
-    taskStore.updateTaskProgress(taskId, 60, '正在接收 AI 响应...');
-
-    const data = await response.json();
-    let content = data.choices?.[0]?.message?.content || data.content || '';
-
-    taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
-
-    content = content
-      .replace(/```html\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-
-    const detailsRegex = new RegExp('<details[\\s\\S]*?</details>', 'i');
-    const detailsMatch = content.match(detailsRegex);
-
-    if (detailsMatch) {
-      generatedHTML.value = detailsMatch[0];
-      taskStore.completeTask(taskId, '✨ AI 生成成功！');
-      (window as any).toastr?.success('✨ AI 生成成功！');
-    } else {
-      generatedHTML.value = content;
-      taskStore.completeTask(taskId, '生成成功，但格式可能需要调整');
-      (window as any).toastr?.warning('生成成功，但格式可能需要调整');
-    }
-  } catch (error) {
-    console.error('AI 生成失败:', error);
-    taskStore.failTask(taskId, (error as Error).message);
-    (window as any).toastr?.error('AI 生成失败：' + (error as Error).message);
-  } finally {
-    isGenerating.value = false;
-  }
+  // 执行生成（不等待完成，让它在后台运行）
+  executeGeneration();
 };
 
 const exportRegex = () => {
