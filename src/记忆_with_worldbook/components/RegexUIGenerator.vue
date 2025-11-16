@@ -819,17 +819,21 @@ const worldbookContent = computed(() => {
 
   const uniqueFields = [...new Set(matches.map(m => m.slice(2, -2)))];
 
-  // 生成状态栏规则
+  // 生成状态栏规则 - 使用 {{字段名}} 格式
   const statusRule = `<status_rule>
 每一次回复必须在开头包含以下格式的状态栏，实时更新{{char}}的状态：
 
 ##状态栏格式：
 <status>
-${uniqueFields.map(field => `<${field.toUpperCase()}_STATUS_>`).join('\n')}
+${uniqueFields.map(field => `{{${field}}}`).join('\n')}
 </status>
 
 ##字段说明
 ${uniqueFields.map(field => `- ${field}：描述${field}当前的值`).join('\n')}
+
+##重要提示
+- 翻页状态栏中的 {{字段名}} 会被自动替换为对应的值
+- 你只需要在 <status> 标签中按照上述格式提供字段值即可
 </status_rule>`;
 
   // 生成示例状态
@@ -838,11 +842,12 @@ ${uniqueFields.map(field => `- ${field}：描述${field}当前的值`).join('\n'
 ${uniqueFields
   .map(field => {
     let example = '[具体值]';
-    if (field.includes('姓名') || field.includes('名字')) example = '{{char}}';
+    if (field.includes('姓名') || field.includes('名字')) example = '张三';
     else if (field.includes('年龄')) example = '25';
     else if (field.includes('HP') || field.includes('生命')) example = '100/100';
     else if (field.includes('MP') || field.includes('魔法')) example = '80/100';
-    return `<${field.toUpperCase()}_STATUS_>${example}`;
+    else if (field.includes('好感')) example = '88/100';
+    return `{{${field}}}${example}`;
   })
   .join('\n')}
 </status>`;
