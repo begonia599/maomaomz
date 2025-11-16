@@ -140,9 +140,9 @@ summary:hover {
 }
 </style>
   <div class="page-tabs">
-    <button class="page-tab active" onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===0));const pages=this.parentElement.nextElementSibling.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='0'))">基础信息</button>
-    <button class="page-tab" onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===1));const pages=this.parentElement.nextElementSibling.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='1'))">状态属性</button>
-    <button class="page-tab" onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===2));const pages=this.parentElement.nextElementSibling.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='2'))">关系面板</button>
+    <button class="page-tab active" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===0));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='0'))">基础信息</button>
+    <button class="page-tab" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===1));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='1'))">状态属性</button>
+    <button class="page-tab" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===2));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='2'))">关系面板</button>
   </div>
   <div class="page-content">
     <div class="page active" data-page="0">
@@ -316,9 +316,9 @@ summary:hover {
 }
 </style>
   <div class="page-tabs">
-    <button class="page-tab active" onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===0));const pages=this.parentElement.nextElementSibling.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='0'))">基础数据</button>
-    <button class="page-tab" onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===1));const pages=this.parentElement.nextElementSibling.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='1'))">属性状态</button>
-    <button class="page-tab" onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===2));const pages=this.parentElement.nextElementSibling.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='2'))">关系信息</button>
+    <button class="page-tab active" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===0));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='0'))">基础数据</button>
+    <button class="page-tab" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===1));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='1'))">属性状态</button>
+    <button class="page-tab" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===2));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='2'))">关系信息</button>
   </div>
   <div class="page-content">
     <div class="page active" data-page="0">
@@ -384,7 +384,7 @@ summary:hover {
    - .page-tabs(标签栏,3-4 个标签)
    - .page-content(内容区)
    - 每个 .page 使用 data-page="0/1/2" 标识
-   - **<${scriptTag}> 标签实现 switchPage 函数（这是必须的！否则翻页功能无法工作）**
+   - **按钮必须使用内联 onclick，不要使用独立的 <${scriptTag}> 标签！**
 
 2. **字段占位符**:
    - **根据用户描述的字段需求，智能生成对应数量的占位符**
@@ -411,10 +411,9 @@ summary:hover {
 5. **代码质量**:
    - CSS 类名语义化
    - 样式集中在 <style> 内
-   - **必须包含完整的 switchPage JavaScript 函数**
-   - JavaScript 简洁高效
+   - **必须使用内联 onclick 事件，参考示例代码**
+   - 使用 this.closest() 定位容器，确保在任何环境都能工作
    - 完整可运行,无需外部依赖
-   - **确保按钮的 onclick 事件正确绑定到 switchPage 函数**
 
 ---
 
@@ -429,15 +428,18 @@ summary:hover {
 ---
 
 ## ⚠️ 关键提醒：翻页功能实现方式
-**SillyTavern 可能会过滤 <${scriptTag}> 标签，所以必须使用内联 JavaScript！**
+**SillyTavern 会过滤 <${scriptTag}> 标签，必须使用内联 JavaScript！**
 
-### 方法1：使用内联匿名函数（推荐）
-<button class="page-tab active" onclick="(function(){const t=document.querySelectorAll('.page-tab');t.forEach((e,i)=>e.classList.toggle('active',i===0));const p=document.querySelectorAll('.page');p.forEach(e=>e.classList.toggle('active',e.getAttribute('data-page')==='0'))})()">第1页</button>
+### 正确的按钮写法（必须严格遵循）：
+<button class="page-tab active" onclick="let container=this.closest('details')||this.closest('div');let tabs=container.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===0));let pages=container.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.getAttribute('data-page')==='0'))">第1页</button>
 
-### 方法2：完整内联代码
-<button onclick="const tabs=this.parentElement.querySelectorAll('.page-tab');tabs.forEach((t,i)=>t.classList.toggle('active',i===0));const pages=this.parentElement.parentElement.querySelectorAll('.page');pages.forEach(p=>p.classList.toggle('active',p.dataset.page==='0'))">第1页</button>
+### 关键点：
+1. 使用 this.closest() 找到最近的 details 或 div 容器
+2. 在容器内用 querySelectorAll 查找元素
+3. 使用 getAttribute('data-page') 而非 dataset.page
+4. 每个按钮都是独立的，不依赖外部函数
 
-**重要：每个按钮的 onclick 必须包含完整的切换逻辑，不要依赖外部函数！**
+**不要使用 <${scriptTag}> 标签定义 switchPage 函数！**
 
 ---
 
