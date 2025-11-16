@@ -3093,7 +3093,7 @@ const handle_hide_messages = async () => {
         // 批量设置消息为隐藏状态
         await setChatMessagesFn(
           messageIds.map(message_id => ({ message_id, is_hidden: true })),
-          { refresh: 'affected' }
+          { refresh: 'all' }
         );
 
         window.toastr.success(`成功隐藏 ${messageIds.length} 个楼层`);
@@ -3196,7 +3196,7 @@ const handle_show_messages = async () => {
       // 批量设置消息为显示状态
       await setChatMessagesFn(
         messageIds.map(message_id => ({ message_id, is_hidden: false })),
-        { refresh: 'affected' }
+        { refresh: 'all' }
       );
 
       window.toastr.success(`成功显示 ${messageIds.length} 个楼层`);
@@ -3327,7 +3327,7 @@ const handle_unhide_single = async (messageId: number) => {
       }
 
       // 设置消息为显示状态
-      await setChatMessagesFn([{ message_id: messageId, is_hidden: false }], { refresh: 'affected' });
+      await setChatMessagesFn([{ message_id: messageId, is_hidden: false }], { refresh: 'all' });
       console.log('成功显示楼层:', messageId);
     } catch (error) {
       console.error('调用显示API失败:', error);
