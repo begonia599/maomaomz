@@ -364,6 +364,47 @@
             </div>
           </div>
         </div>
+
+        <!-- 世界书条目预览 -->
+        <div
+          v-if="generatedHTML"
+          style="
+            margin-top: 20px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 16px;
+            border: 2px solid #8b5cf6;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              margin-bottom: 12px;
+              padding-bottom: 12px;
+              border-bottom: 1px solid #3a3a3a;
+            "
+          >
+            <i class="fa-solid fa-book" style="color: #8b5cf6; font-size: 16px"></i>
+            <span style="color: #fff; font-size: 14px; font-weight: 600">世界书条目</span>
+          </div>
+          <div
+            style="
+              background: #1e1e1e;
+              border-radius: 8px;
+              padding: 12px;
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              color: #e0e0e0;
+              line-height: 1.6;
+              max-height: 300px;
+              overflow-y: auto;
+            "
+          >
+            <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word">{{ worldbookContent }}</pre>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -770,6 +811,47 @@ ${examples}
 
 // 在世界书中创建一个条目，包含以上内容
 // 当触发 ${triggerRegex.value} 时，这些值会自动填充到状态栏`;
+});
+
+// 世界书条目内容（用于显示）
+const worldbookContent = computed(() => {
+  if (!generatedHTML.value) return '';
+
+  // 提取 {{字段名}} 格式的占位符
+  const matches = generatedHTML.value.match(/\{\{([^}]+)\}\}/g);
+  if (!matches || matches.length === 0) {
+    return '未检测到字段占位符\n\n请在 AI 需求中描述需要的字段，AI 会自动生成对应的 {{字段名}} 占位符';
+  }
+
+  const uniqueFields = [...new Set(matches.map(m => m.slice(2, -2)))];
+
+  // 生成状态栏规则
+  const statusRule = `<status_rule>
+每一次回复必须在开头包含以下格式的状态栏，实时更新{{char}}的状态：
+
+##状态栏格式：
+<status>
+${uniqueFields.map(field => `<${field.toUpperCase()}_STATUS_>`).join('\n')}
+</status>
+
+##字段说明
+${uniqueFields.map(field => `- ${field}：描述${field}当前的值`).join('\n')}
+</status_rule>`;
+
+  // 生成示例状态
+  const exampleStatus = `
+<status>
+${uniqueFields.map(field => {
+    let example = '[具体值]';
+    if (field.includes('姓名') || field.includes('名字')) example = '{{char}}';
+    else if (field.includes('年龄')) example = '25';
+    else if (field.includes('HP') || field.includes('生命')) example = '100/100';
+    else if (field.includes('MP') || field.includes('魔法')) example = '80/100';
+    return `<${field.toUpperCase()}_STATUS_>${example}`;
+  }).join('\n')}
+</status>`;
+
+  return `${statusRule}\n\n##示例${exampleStatus}`;
 });
 
 // AI 生成
