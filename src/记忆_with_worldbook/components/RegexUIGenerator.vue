@@ -126,26 +126,6 @@
           class="action-button"
           style="
             padding: 8px 16px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            pointer-events: auto;
-          "
-          :disabled="!generatedHTML"
-          @click.stop="exportWorldbookEntry"
-        >
-          <i class="fa-solid fa-book" style="margin-right: 6px; pointer-events: none"></i>
-          导出世界书
-        </button>
-        <button
-          class="action-button"
-          style="
-            padding: 8px 16px;
             background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
             border: none;
             border-radius: 8px;
@@ -374,14 +354,36 @@
             style="
               display: flex;
               align-items: center;
-              gap: 10px;
+              justify-content: space-between;
               margin-bottom: 12px;
               padding-bottom: 12px;
               border-bottom: 1px solid #3a3a3a;
             "
           >
-            <i class="fa-solid fa-book" style="color: #8b5cf6; font-size: 16px"></i>
-            <span style="color: #fff; font-size: 14px; font-weight: 600">世界书条目</span>
+            <div style="display: flex; align-items: center; gap: 10px">
+              <i class="fa-solid fa-book" style="color: #8b5cf6; font-size: 16px"></i>
+              <span style="color: #fff; font-size: 14px; font-weight: 600">世界书条目</span>
+            </div>
+            <button
+              style="
+                padding: 6px 12px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              "
+              @click="copyWorldbookContent"
+            >
+              <i class="fa-solid fa-copy"></i>
+              复制
+            </button>
           </div>
           <div
             style="
@@ -570,12 +572,11 @@
           >
             <p style="margin: 0; font-size: 14px; line-height: 1.8">
               <strong style="color: #8b5cf6">📌 快速开始：</strong><br />
-              1. 点击顶部"导出世界书"按钮，下载世界书条目 JSON 文件<br />
-              2. 在 SillyTavern 中打开世界书，点击"导入"按钮导入该文件<br />
-              3. 编辑世界书条目，填写实际的字段值（替换 [字段名的值]）<br />
-              4. 在聊天中输入
-              <code style="background: #2a2a2a; padding: 2px 6px; border-radius: 3px">{{ triggerRegex }}</code>
-              触发状态栏
+              1. 点击右侧"世界书条目"区域的"复制"按钮，复制状态栏规则<br />
+              2. 在 SillyTavern 中打开世界书，创建或编辑一个条目<br />
+              3. 将复制的内容粘贴到世界书条目的"内容"字段中<br />
+              4. 在"关键词"中添加触发词（例如：<code style="background: #2a2a2a; padding: 2px 6px; border-radius: 3px">{{ triggerRegex }}</code>）<br />
+              5. 在聊天中输入触发词即可看到状态栏效果
             </p>
           </div>
 
@@ -1028,138 +1029,6 @@ const loadExample = () => {
   (window as any).toastr?.info('已加载示例，点击"AI 生成"开始');
 };
 
-const exportWorldbookEntry = () => {
-  if (!generatedHTML.value) {
-    (window as any).toastr?.warning('请先生成内容');
-    return;
-  }
-
-  if (detectedVariables.value.length === 0) {
-    (window as any).toastr?.warning('未检测到变量，无法生成世界书条目');
-    return;
-  }
-
-  // 生成字段定义（类似普通状态栏）
-  const fieldNames = ['姓名', '年龄', '性别', '职业', 'HP', 'MP', '体力', '精力', '好感度', '信任度', '魅力', '智力'];
-  const fieldDefinitions = detectedVariables.value
-    .map((num, index) => {
-      const fieldName = fieldNames[index] || `字段${num}`;
-      return `  - ${fieldName}：描述{{char}}的${fieldName}状态`;
-    })
-    .join('\n');
-
-  // 生成格式示例和输出示例（翻页状态栏格式）
-  const triggerMark = triggerRegex.value;
-  const uniqueFields = detectedVariables.value.map((num, index) => {
-    return fieldNames[index] || `字段${num}`;
-  });
-
-  const formatExample = `${triggerMark}
-${uniqueFields.map(field => `{{${field}}}`).join('\n')}`;
-
-  const exampleOutput = `${triggerMark}
-${uniqueFields
-  .map(field => {
-    let example = '[具体值]';
-    if (field.includes('姓名') || field.includes('名字')) example = '{{char}}';
-    else if (field.includes('年龄')) example = '25';
-    else if (field.includes('HP') || field.includes('生命')) example = '100/100';
-    else if (field.includes('MP') || field.includes('魔法')) example = '80/100';
-    else if (field.includes('好感')) example = '88/100';
-    return `{{${field}}}${example}`;
-  })
-  .join('\n')}`;
-
-  // 生成世界书条目内容（参考普通状态栏的格式）
-  const entryContent = `<status_rule>
-#每一次回复都必须在末尾加上完整的状态栏，实时更新{{char}}的状态。
-
-##状态栏格式：
-<status>
-${formatExample}
-</status>
-
-##字段说明
-${fieldDefinitions}
-
-##输出示例
-此处仅为格式示例，具体内容需根据剧情填写
-<status>
-${exampleOutput}
-</status>
-
-##格式要求（必读）：
-1. **必须包含 <status> 标签和触发标记**：
-   - ✅ 开头：<status>
-   - ✅ 第一行：${triggerMark}
-   - ✅ 结尾：</status>
-
-2. **严格按照上述示例格式输出**：
-   - 每个字段必须独占一行
-   - ❌ 错误：姓名：张三
-   - ✅ 正确：{{姓名}}张三
-   - 格式必须是：{{字段名}}字段值（{{字段名}}不能省略！）
-   - 不要改变行数、不要合并行、不要调换顺序
-
-3. **字段值格式**：
-   - ❌ 错误：姓名：张三（有冒号和字段名）
-   - ✅ 正确：{{姓名}}张三（只有占位符和值）
-   - 必须保留 {{字段名}} 占位符
-
-4. **其他要求**：
-   - 状态栏紧贴正文最后一句
-   - {{字段名}} 是必须的，不能省略
-   - 这是 {{char}} 的状态，不是 {{user}} 的状态
-</status_rule>`;
-
-  // 创建世界书条目 JSON
-  const worldbookEntry = {
-    uid: Date.now(),
-    key: [triggerRegex.value], // 保留完整的触发标记
-    keysecondary: [],
-    comment: '翻页状态栏',
-    content: entryContent,
-    constant: false,
-    selective: true,
-    selectiveLogic: 0,
-    addMemo: true,
-    order: 100,
-    position: 0,
-    disable: false,
-    excludeRecursion: false,
-    preventRecursion: false,
-    delayUntilRecursion: false,
-    probability: 100,
-    useProbability: true,
-    depth: 4,
-    group: '',
-    groupOverride: false,
-    groupWeight: 100,
-    scanDepth: null,
-    caseSensitive: null,
-    matchWholeWords: null,
-    useGroupScoring: null,
-    automationId: '',
-    role: 0,
-    vectorized: false,
-    sticky: 0,
-    cooldown: 0,
-    delay: 0,
-  };
-
-  // 导出为 JSON 文件
-  const jsonStr = JSON.stringify(worldbookEntry, null, 2);
-  const blob = new Blob([jsonStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'pageable-statusbar-worldbook-entry.json';
-  a.click();
-  URL.revokeObjectURL(url);
-
-  (window as any).toastr?.success(`✅ 世界书条目已导出！包含 ${detectedVariables.value.length} 个字段`);
-};
-
 const showWorldbookGuide = () => {
   showWorldbookDialog.value = true;
 };
@@ -1185,6 +1054,22 @@ const loadTemplate = (template: (typeof templates)[0]) => {
   generatedHTML.value = template.htmlTemplate;
   showTemplateDialog.value = false;
   (window as any).toastr?.success(`✨ 已加载模板：${template.name}`);
+};
+
+// 复制世界书内容到剪贴板
+const copyWorldbookContent = async () => {
+  if (!worldbookContent.value) {
+    (window as any).toastr?.warning('没有可复制的内容');
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(worldbookContent.value);
+    (window as any).toastr?.success('✅ 世界书内容已复制到剪贴板');
+  } catch (error) {
+    console.error('复制失败:', error);
+    (window as any).toastr?.error('复制失败：' + (error as Error).message);
+  }
 };
 </script>
 
