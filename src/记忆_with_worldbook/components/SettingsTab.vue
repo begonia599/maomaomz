@@ -3080,67 +3080,23 @@ const handle_hide_messages = async () => {
     // 调用酒馆API真正隐藏楼层
     if (messagesToHide.length > 0) {
       try {
-        console.log('准备调用 slash 命令隐藏楼层, 原始输入范围:', hide_range.value);
-        console.log('解析后的消息ID列表:', messageIds);
+        console.log('准备调用 setChatMessages 隐藏楼层:', messageIds);
 
-        // 检查 triggerSlash 是否可用
-        // triggerSlash 在酒馆中是全局函数,需要通过 eval 或者声明使用
-        let triggerSlashFn: any;
-        try {
-          // 尝试直接访问全局 triggerSlash
-          triggerSlashFn = (window as any).triggerSlash || (globalThis as any).triggerSlash;
-          if (!triggerSlashFn) {
-            // 如果还找不到,尝试通过 eval 访问
-            triggerSlashFn = eval('typeof triggerSlash !== "undefined" ? triggerSlash : null');
-          }
-        } catch (e) {
-          console.error('无法访问 triggerSlash:', e);
-        }
-
-        if (!triggerSlashFn) {
-          console.error('triggerSlash 函数不可用');
+        // 使用 setChatMessages API 隐藏楼层
+        const setChatMessagesFn = (window as any).TavernHelper?.setChatMessages;
+        if (!setChatMessagesFn) {
+          console.error('setChatMessages 函数不可用');
           window.toastr.error('无法调用酒馆隐藏命令，请确保在酒馆环境中运行');
           return;
         }
 
-        // 直接使用用户输入的范围格式调用 /hide 命令
-        // 例如: /hide 143-144 或 /hide 143
-        const ranges = hide_range.value
-          .split(',')
-          .map(r => r.trim())
-          .filter(r => r);
+        // 批量设置消息为隐藏状态
+        await setChatMessagesFn(
+          messageIds.map(message_id => ({ message_id, is_hidden: true })),
+          { refresh: 'affected' }
+        );
 
-        let successCount = 0;
-        let failedRanges: string[] = [];
-
-        for (const range of ranges) {
-          try {
-            console.log(`调用 /hide ${range}`);
-            const result = await triggerSlashFn(`/hide ${range}`);
-            console.log(`成功隐藏楼层范围 ${range}, 返回结果:`, result);
-
-            // 计算成功隐藏的数量
-            if (range.includes('-')) {
-              const [start, end] = range.split('-').map(Number);
-              if (start && end && start <= end) {
-                successCount += end - start + 1;
-              }
-            } else {
-              successCount++;
-            }
-          } catch (error) {
-            console.error(`隐藏楼层范围 ${range} 失败:`, error);
-            failedRanges.push(range);
-          }
-        }
-
-        if (successCount > 0 && failedRanges.length === 0) {
-          window.toastr.success(`成功隐藏 ${successCount} 个楼层`);
-        } else if (successCount > 0 && failedRanges.length > 0) {
-          window.toastr.warning(`成功隐藏 ${successCount} 个楼层，但以下范围失败: ${failedRanges.join(', ')}`);
-        } else {
-          window.toastr.error(`隐藏楼层失败: ${failedRanges.join(', ')}`);
-        }
+        window.toastr.success(`成功隐藏 ${messageIds.length} 个楼层`);
       } catch (error) {
         console.error('调用隐藏API失败:', error);
         window.toastr.error('隐藏楼层API调用失败: ' + (error as Error).message);
@@ -3227,63 +3183,23 @@ const handle_show_messages = async () => {
 
     // 调用酒馆API真正显示楼层
     try {
-      console.log('准备调用 slash 命令显示楼层, 原始输入范围:', hide_range.value);
+      console.log('准备调用 setChatMessages 显示楼层:', messageIds);
 
-      // 检查 triggerSlash 是否可用
-      let triggerSlashFn: any;
-      try {
-        triggerSlashFn = (window as any).triggerSlash || (globalThis as any).triggerSlash;
-        if (!triggerSlashFn) {
-          triggerSlashFn = eval('typeof triggerSlash !== "undefined" ? triggerSlash : null');
-        }
-      } catch (e) {
-        console.error('无法访问 triggerSlash:', e);
-      }
-
-      if (!triggerSlashFn) {
-        console.error('triggerSlash 函数不可用');
+      // 使用 setChatMessages API 显示楼层
+      const setChatMessagesFn = (window as any).TavernHelper?.setChatMessages;
+      if (!setChatMessagesFn) {
+        console.error('setChatMessages 函数不可用');
         window.toastr.error('无法调用酒馆显示命令，请确保在酒馆环境中运行');
         return;
       }
 
-      // 直接使用用户输入的范围格式调用 /unhide 命令
-      const ranges = hide_range.value
-        .split(',')
-        .map(r => r.trim())
-        .filter(r => r);
+      // 批量设置消息为显示状态
+      await setChatMessagesFn(
+        messageIds.map(message_id => ({ message_id, is_hidden: false })),
+        { refresh: 'affected' }
+      );
 
-      let successCount = 0;
-      let failedRanges: string[] = [];
-
-      for (const range of ranges) {
-        try {
-          console.log(`调用 /unhide ${range}`);
-          await triggerSlashFn(`/unhide ${range}`);
-          console.log(`成功显示楼层范围 ${range}`);
-
-          // 计算成功显示的数量
-          if (range.includes('-')) {
-            const [start, end] = range.split('-').map(Number);
-            if (start && end && start <= end) {
-              successCount += end - start + 1;
-            }
-          } else {
-            successCount++;
-          }
-        } catch (error) {
-          console.error(`显示楼层范围 ${range} 失败:`, error);
-          failedRanges.push(range);
-        }
-      }
-
-      if (successCount > 0 && failedRanges.length === 0) {
-        window.toastr.success(`成功显示 ${successCount} 个楼层`);
-      } else if (successCount > 0 && failedRanges.length > 0) {
-        window.toastr.warning(`成功显示 ${successCount} 个楼层，但以下范围失败: ${failedRanges.join(', ')}`);
-      } else {
-        window.toastr.error(`显示楼层失败: ${failedRanges.join(', ')}`);
-        return;
-      }
+      window.toastr.success(`成功显示 ${messageIds.length} 个楼层`);
     } catch (error) {
       console.error('调用显示API失败:', error);
       window.toastr.error('显示楼层API调用失败: ' + (error as Error).message);
@@ -3402,25 +3318,16 @@ const handle_unhide_single = async (messageId: number) => {
 
     // 调用酒馆API真正显示楼层
     try {
-      // 检查 triggerSlash 是否可用
-      let triggerSlashFn: any;
-      try {
-        triggerSlashFn = (window as any).triggerSlash || (globalThis as any).triggerSlash;
-        if (!triggerSlashFn) {
-          triggerSlashFn = eval('typeof triggerSlash !== "undefined" ? triggerSlash : null');
-        }
-      } catch (e) {
-        console.error('无法访问 triggerSlash:', e);
-      }
-
-      if (!triggerSlashFn) {
-        console.error('triggerSlash 函数不可用');
+      //使用 setChatMessages API 显示楼层
+      const setChatMessagesFn = (window as any).TavernHelper?.setChatMessages;
+      if (!setChatMessagesFn) {
+        console.error('setChatMessages 函数不可用');
         window.toastr.warning('显示楼层API调用失败');
         return;
       }
 
-      // 使用 slash 命令显示楼层
-      await triggerSlashFn(`/unhide ${messageId}`);
+      // 设置消息为显示状态
+      await setChatMessagesFn([{ message_id: messageId, is_hidden: false }], { refresh: 'affected' });
       console.log('成功显示楼层:', messageId);
     } catch (error) {
       console.error('调用显示API失败:', error);
