@@ -235,30 +235,52 @@ const applyPreferences = () => {
     // 保存到全局，供其他模块使用
     (window as any).maomaomzPreferences = preferences;
 
-    // 延迟应用DOM设置，避免阻塞渲染
-    setTimeout(() => {
-      try {
-        // 查找任务管理器容器（ID 是 global-task-manager）
-        const taskManager = document.getElementById('global-task-manager') as HTMLElement;
-        if (taskManager) {
-          taskManager.style.display = preferences.showTaskManager ? 'block' : 'none';
-          console.log('✅ 任务管理器显示状态已更新:', preferences.showTaskManager ? '显示' : '隐藏');
-        } else {
-          console.warn('⚠️ 任务管理器容器未找到');
-        }
+    // 立即应用任务管理器显示状态
+    try {
+      const taskManager = document.getElementById('global-task-manager') as HTMLElement;
+      if (taskManager) {
+        taskManager.style.display = preferences.showTaskManager ? 'block' : 'none';
+        console.log('✅ 任务管理器显示状态已更新:', preferences.showTaskManager ? '显示' : '隐藏');
+      } else {
+        console.warn('⚠️ 任务管理器容器未找到');
+      }
+    } catch (err) {
+      console.warn('❌ 更新任务管理器显示状态失败:', err);
+    }
 
-        // 查找最小化图标（ID 是 memoryPanelMinimizeIcon）
+    // 应用最小化图标显示状态（需要等待图标创建，增加重试机制）
+    const applyMinimizeIconState = () => {
+      try {
         const minimizeIcon = document.getElementById('memoryPanelMinimizeIcon') as HTMLElement;
         if (minimizeIcon) {
           minimizeIcon.style.display = preferences.showMinimizeIcon ? 'flex' : 'none';
           console.log('✅ 最小化图标显示状态已更新:', preferences.showMinimizeIcon ? '显示' : '隐藏');
-        } else {
-          console.warn('⚠️ 最小化图标容器未找到');
+          return true;
         }
+        return false;
       } catch (err) {
-        console.warn('❌ 更新显示状态失败:', err);
+        console.warn('❌ 更新最小化图标显示状态失败:', err);
+        return false;
       }
-    }, 100);
+    };
+
+    // 立即尝试应用
+    if (!applyMinimizeIconState()) {
+      // 如果图标还未创建，延迟重试（最多尝试15次，每次间隔100ms = 1.5秒总等待）
+      console.log('⏳ 最小化图标尚未创建，开始等待...');
+      let retryCount = 0;
+      const maxRetries = 15;
+      const retryInterval = setInterval(() => {
+        retryCount++;
+        if (applyMinimizeIconState()) {
+          clearInterval(retryInterval);
+          console.log(`✅ 第 ${retryCount} 次重试成功应用最小化图标状态`);
+        } else if (retryCount >= maxRetries) {
+          clearInterval(retryInterval);
+          console.warn('⚠️ 最小化图标在1.5秒后仍未创建');
+        }
+      }, 100);
+    }
   } catch (error) {
     console.error('❌ 应用偏好设置失败:', error);
   }

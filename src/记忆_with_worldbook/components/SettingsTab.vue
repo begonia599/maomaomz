@@ -3080,19 +3080,51 @@ const handle_hide_messages = async () => {
     // 调用酒馆API真正隐藏楼层
     if (messagesToHide.length > 0) {
       try {
-        console.log('准备调用 slash 命令隐藏楼层:', messageIds);
+        console.log('准备调用 slash 命令隐藏楼层, 原始输入范围:', hide_range.value);
+        console.log('解析后的消息ID列表:', messageIds);
 
-        // 使用 slash 命令隐藏楼层
-        for (const messageId of messageIds) {
+        // 检查 triggerSlash 是否可用
+        if (typeof triggerSlash === 'undefined') {
+          console.error('triggerSlash 函数不可用');
+          window.toastr.error('无法调用酒馆隐藏命令，请确保在酒馆环境中运行');
+          return;
+        }
+
+        // 直接使用用户输入的范围格式调用 /hide 命令
+        // 例如: /hide 143-144 或 /hide 143
+        const ranges = hide_range.value.split(',').map(r => r.trim()).filter(r => r);
+
+        let successCount = 0;
+        let failedRanges: string[] = [];
+
+        for (const range of ranges) {
           try {
-            await triggerSlash(`/hide ${messageId}`);
-            console.log(`成功隐藏楼层 ${messageId}`);
+            console.log(`调用 /hide ${range}`);
+            const result = await triggerSlash(`/hide ${range}`);
+            console.log(`成功隐藏楼层范围 ${range}, 返回结果:`, result);
+
+            // 计算成功隐藏的数量
+            if (range.includes('-')) {
+              const [start, end] = range.split('-').map(Number);
+              if (start && end && start <= end) {
+                successCount += (end - start + 1);
+              }
+            } else {
+              successCount++;
+            }
           } catch (error) {
-            console.error(`隐藏楼层 ${messageId} 失败:`, error);
+            console.error(`隐藏楼层范围 ${range} 失败:`, error);
+            failedRanges.push(range);
           }
         }
 
-        window.toastr.success('楼层已真正隐藏');
+        if (successCount > 0 && failedRanges.length === 0) {
+          window.toastr.success(`成功隐藏 ${successCount} 个楼层`);
+        } else if (successCount > 0 && failedRanges.length > 0) {
+          window.toastr.warning(`成功隐藏 ${successCount} 个楼层，但以下范围失败: ${failedRanges.join(', ')}`);
+        } else {
+          window.toastr.error(`隐藏楼层失败: ${failedRanges.join(', ')}`);
+        }
       } catch (error) {
         console.error('调用隐藏API失败:', error);
         window.toastr.error('隐藏楼层API调用失败: ' + (error as Error).message);
@@ -3179,14 +3211,49 @@ const handle_show_messages = async () => {
 
     // 调用酒馆API真正显示楼层
     try {
-      // 使用 slash 命令显示楼层
-      for (const messageId of messageIds) {
+      console.log('准备调用 slash 命令显示楼层, 原始输入范围:', hide_range.value);
+
+      // 检查 triggerSlash 是否可用
+      if (typeof triggerSlash === 'undefined') {
+        console.error('triggerSlash 函数不可用');
+        window.toastr.error('无法调用酒馆显示命令，请确保在酒馆环境中运行');
+        return;
+      }
+
+      // 直接使用用户输入的范围格式调用 /unhide 命令
+      const ranges = hide_range.value.split(',').map(r => r.trim()).filter(r => r);
+
+      let successCount = 0;
+      let failedRanges: string[] = [];
+
+      for (const range of ranges) {
         try {
-          await triggerSlash(`/unhide ${messageId}`);
-          console.log(`成功显示楼层 ${messageId}`);
+          console.log(`调用 /unhide ${range}`);
+          await triggerSlash(`/unhide ${range}`);
+          console.log(`成功显示楼层范围 ${range}`);
+
+          // 计算成功显示的数量
+          if (range.includes('-')) {
+            const [start, end] = range.split('-').map(Number);
+            if (start && end && start <= end) {
+              successCount += (end - start + 1);
+            }
+          } else {
+            successCount++;
+          }
         } catch (error) {
-          console.error(`显示楼层 ${messageId} 失败:`, error);
+          console.error(`显示楼层范围 ${range} 失败:`, error);
+          failedRanges.push(range);
         }
+      }
+
+      if (successCount > 0 && failedRanges.length === 0) {
+        window.toastr.success(`成功显示 ${successCount} 个楼层`);
+      } else if (successCount > 0 && failedRanges.length > 0) {
+        window.toastr.warning(`成功显示 ${successCount} 个楼层，但以下范围失败: ${failedRanges.join(', ')}`);
+      } else {
+        window.toastr.error(`显示楼层失败: ${failedRanges.join(', ')}`);
+        return;
       }
     } catch (error) {
       console.error('调用显示API失败:', error);
