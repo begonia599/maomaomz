@@ -100,6 +100,7 @@ const Settings = z.object({
   end_message_id: z.number().default(0), // 结束总结的楼层
   table_start_message_id: z.number().default(0), // 开始生成表格的楼层
   table_end_message_id: z.number().default(0), // 结束生成表格的楼层
+  show_minimize_icon: z.boolean().default(true), // 是否显示最小化图标
   summary_history: z
     .array(
       z.object({

@@ -552,6 +552,20 @@ $(() => {
 
 // 创建最小化图标
 function createMinimizeIcon() {
+  // 检查偏好设置，如果用户禁用了最小化图标，则不创建
+  const preferencesStr = localStorage.getItem('maomaomz_preferences');
+  if (preferencesStr) {
+    try {
+      const preferences = JSON.parse(preferencesStr);
+      if (preferences.showMinimizeIcon === false) {
+        console.log('⚙️ 最小化图标已被用户禁用');
+        return null;
+      }
+    } catch (error) {
+      console.error('读取偏好设置失败:', error);
+    }
+  }
+
   // 如果图标已存在，只需要显示它
   const existingIcon = $('#memoryPanelMinimizeIcon');
   if (existingIcon.length > 0) {

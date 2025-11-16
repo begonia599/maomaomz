@@ -57,6 +57,7 @@
           padding: 15px;
           background: #1e1e1e;
           border-radius: 8px;
+          margin-bottom: 12px;
         "
       >
         <div style="flex: 1">
@@ -65,6 +66,27 @@
         </div>
         <label class="toggle-switch">
           <input v-model="preferences.showTaskManager" type="checkbox" @change="savePreferences" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- 显示最小化图标 -->
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px;
+          background: #1e1e1e;
+          border-radius: 8px;
+        "
+      >
+        <div style="flex: 1">
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示最小化图标</div>
+          <div style="color: #888; font-size: 12px">在页面右上角显示猫猫头快捷图标</div>
+        </div>
+        <label class="toggle-switch">
+          <input v-model="preferences.showMinimizeIcon" type="checkbox" @change="savePreferences" />
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -155,6 +177,7 @@ import { onMounted, reactive } from 'vue';
 interface Preferences {
   autoShowPanel: boolean;
   showTaskManager: boolean;
+  showMinimizeIcon: boolean;
   showSuccessToast: boolean;
   showErrorToast: boolean;
 }
@@ -163,6 +186,7 @@ interface Preferences {
 const defaultPreferences: Preferences = {
   autoShowPanel: true,
   showTaskManager: true,
+  showMinimizeIcon: true,
   showSuccessToast: true,
   showErrorToast: true,
 };
@@ -222,8 +246,17 @@ const applyPreferences = () => {
         } else {
           console.warn('⚠️ 任务管理器容器未找到');
         }
+
+        // 查找最小化图标（ID 是 memoryPanelMinimizeIcon）
+        const minimizeIcon = document.getElementById('memoryPanelMinimizeIcon') as HTMLElement;
+        if (minimizeIcon) {
+          minimizeIcon.style.display = preferences.showMinimizeIcon ? 'flex' : 'none';
+          console.log('✅ 最小化图标显示状态已更新:', preferences.showMinimizeIcon ? '显示' : '隐藏');
+        } else {
+          console.warn('⚠️ 最小化图标容器未找到');
+        }
       } catch (err) {
-        console.warn('❌ 更新任务管理器显示状态失败:', err);
+        console.warn('❌ 更新显示状态失败:', err);
       }
     }, 100);
   } catch (error) {
