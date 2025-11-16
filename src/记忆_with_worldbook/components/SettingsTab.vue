@@ -3084,7 +3084,7 @@ const handle_hide_messages = async () => {
         console.log('解析后的消息ID列表:', messageIds);
 
         // 检查 triggerSlash 是否可用
-        if (typeof triggerSlash === 'undefined') {
+        if (typeof (window as any).triggerSlash === 'undefined') {
           console.error('triggerSlash 函数不可用');
           window.toastr.error('无法调用酒馆隐藏命令，请确保在酒馆环境中运行');
           return;
@@ -3103,7 +3103,7 @@ const handle_hide_messages = async () => {
         for (const range of ranges) {
           try {
             console.log(`调用 /hide ${range}`);
-            const result = await triggerSlash(`/hide ${range}`);
+            const result = await (window as any).triggerSlash(`/hide ${range}`);
             console.log(`成功隐藏楼层范围 ${range}, 返回结果:`, result);
 
             // 计算成功隐藏的数量
@@ -3217,7 +3217,7 @@ const handle_show_messages = async () => {
       console.log('准备调用 slash 命令显示楼层, 原始输入范围:', hide_range.value);
 
       // 检查 triggerSlash 是否可用
-      if (typeof triggerSlash === 'undefined') {
+      if (typeof (window as any).triggerSlash === 'undefined') {
         console.error('triggerSlash 函数不可用');
         window.toastr.error('无法调用酒馆显示命令，请确保在酒馆环境中运行');
         return;
@@ -3235,7 +3235,7 @@ const handle_show_messages = async () => {
       for (const range of ranges) {
         try {
           console.log(`调用 /unhide ${range}`);
-          await triggerSlash(`/unhide ${range}`);
+          await (window as any).triggerSlash(`/unhide ${range}`);
           console.log(`成功显示楼层范围 ${range}`);
 
           // 计算成功显示的数量
@@ -3380,7 +3380,7 @@ const handle_unhide_single = async (messageId: number) => {
     // 调用酒馆API真正显示楼层
     try {
       // 使用 slash 命令显示楼层
-      await triggerSlash(`/unhide ${messageId}`);
+      await (window as any).triggerSlash(`/unhide ${messageId}`);
       console.log('成功显示楼层:', messageId);
     } catch (error) {
       console.error('调用显示API失败:', error);
