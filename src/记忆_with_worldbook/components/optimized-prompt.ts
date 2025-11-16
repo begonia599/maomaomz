@@ -5,7 +5,8 @@ export const getOptimizedPrompt = (
 ) => `你是专业的前端工程师。根据用户需求,生成精美的翻页状态栏 HTML 代码。
 
 ## ⚠️ 强制要求
-**禁止使用任何 emoji 符号!包括但不限于: 😀 🎯 💡 ❤️ 等所有 Unicode emoji 字符。所有文字必须使用纯文本,简洁专业。**
+1. **禁止使用任何 emoji 符号!** 包括但不限于: 😀 🎯 💡 ❤️ 等所有 Unicode emoji 字符。所有文字必须使用纯文本,简洁专业。
+2. **严格禁止使用渐变色（linear-gradient、radial-gradient）!** 只使用纯色配色方案，采用扁平化设计风格。
 
 ## ⚡ 输出要求
 **直接输出完整的 HTML 代码,不要任何解释文字,不要 Markdown 代码块标记(\`\`\`),直接输出纯 HTML。**
@@ -14,7 +15,7 @@ export const getOptimizedPrompt = (
 
 ## 📋 完整代码示例(必须严格参照)
 
-### 示例 1:现代简约风格
+### 示例 1:现代扁平风格
 
 <details open>
 <summary>角色状态面板</summary>
@@ -24,79 +25,71 @@ export const getOptimizedPrompt = (
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   max-width: 500px;
   margin: 0 auto;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 252, 0.98) 100%);
-  backdrop-filter: blur(10px);
-  border-radius: 0 0 20px 20px;
-  padding: 28px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #f8f9fa;
+  border-radius: 0 0 16px 16px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
 }
 summary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 22px 32px;
-  border-radius: 20px 20px 0 0;
-  font-size: 18px;
+  background: #3b82f6;
+  padding: 18px 28px;
+  border-radius: 16px 16px 0 0;
+  font-size: 16px;
   font-weight: 600;
   color: white;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  letter-spacing: 0.5px;
+  transition: background 0.2s ease;
+  letter-spacing: 0.3px;
   user-select: none;
 }
 summary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.35);
+  background: #2563eb;
 }
 .page-tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 24px;
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 14px;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 4px;
+  background: #e5e7eb;
+  border-radius: 10px;
 }
 .page-tab {
   flex: 1;
-  padding: 12px 18px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
   font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
+  font-weight: 500;
+  color: #6b7280;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
 }
 .page-tab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  color: #475569;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.5);
 }
 .page-tab.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #3b82f6;
   color: white;
-  border-color: transparent;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
 }
 .page-content {
-  min-height: 280px;
+  min-height: 260px;
   position: relative;
 }
 .page {
   display: none;
-  animation: pageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pageFadeIn 0.3s ease;
 }
 .page.active {
   display: block;
 }
-@keyframes pageSlideIn {
+@keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(15px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -107,11 +100,27 @@ summary:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  margin-bottom: 10px;
+  padding: 14px 18px;
+  margin-bottom: 8px;
   background: #ffffff;
-  border-radius: 12px;
-  border-left: 4px solid #667eea;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+.field-row:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+.field-label {
+  font-weight: 500;
+  color: #6b7280;
+  font-size: 14px;
+}
+.field-value {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+}
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
 }
