@@ -60,12 +60,7 @@
             <i class="fa-solid fa-code" style="color: #10b981"></i>
             触发正则
           </h4>
-          <input
-            v-model="triggerRegex"
-            type="text"
-            placeholder="<-UI->"
-            class="regex-input"
-          />
+          <input v-model="triggerRegex" type="text" placeholder="<-UI->" class="regex-input" />
         </div>
 
         <div v-if="isModifyMode" class="modify-tips">
@@ -362,7 +357,10 @@ const generateWithAI = async () => {
 
       taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
 
-      content = content.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+      content = content
+        .replace(/```html\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
 
       generatedCode.value = content;
       taskStore.completeTask(taskId, '✨ AI 生成成功！');
@@ -467,7 +465,10 @@ const modifyWithAI = async () => {
 
       taskStore.updateTaskProgress(taskId, 80, '正在解析结果...');
 
-      content = content.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+      content = content
+        .replace(/```html\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
 
       generatedCode.value = content;
       taskStore.completeTask(taskId, '✨ AI 修改成功！');
@@ -600,7 +601,12 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 20px 28px;
-  background: linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(30, 30, 30, 0.95) 0%,
+    rgba(38, 38, 38, 0.9) 50%,
+    rgba(30, 30, 30, 0.95) 100%
+  );
   backdrop-filter: blur(12px);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.06);
