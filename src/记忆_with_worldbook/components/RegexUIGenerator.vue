@@ -575,7 +575,10 @@
               1. 点击右侧"世界书条目"区域的"复制"按钮，复制状态栏规则<br />
               2. 在 SillyTavern 中打开世界书，创建或编辑一个条目<br />
               3. 将复制的内容粘贴到世界书条目的"内容"字段中<br />
-              4. 在"关键词"中添加触发词（例如：<code style="background: #2a2a2a; padding: 2px 6px; border-radius: 3px">{{ triggerRegex }}</code>）<br />
+              4. 在"关键词"中添加触发词（例如：<code
+                style="background: #2a2a2a; padding: 2px 6px; border-radius: 3px"
+                >{{ triggerRegex }}</code
+              >）<br />
               5. 在聊天中输入触发词即可看到状态栏效果
             </p>
           </div>
