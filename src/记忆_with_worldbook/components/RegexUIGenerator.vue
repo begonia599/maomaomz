@@ -221,7 +221,7 @@
             <input
               v-model="triggerRegex"
               type="text"
-              placeholder="<-STATUS->"
+              placeholder="<-PAGEABLE_STATUSBAR->"
               style="
                 width: 100%;
                 padding: 10px 12px;
@@ -618,7 +618,7 @@ import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../sett
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
 
-const triggerRegex = ref('<-STATUS->');
+const triggerRegex = ref('<-PAGEABLE_STATUSBAR->');
 const aiPrompt = ref('');
 const isGenerating = ref(false);
 const generatedHTML = ref('');
@@ -634,7 +634,7 @@ const loadFromStorage = () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const data = JSON.parse(saved);
-      triggerRegex.value = data.triggerRegex || '<-STATUS->';
+      triggerRegex.value = data.triggerRegex || '<-PAGEABLE_STATUSBAR->';
       aiPrompt.value = data.aiPrompt || '';
       generatedHTML.value = data.generatedHTML || '';
       console.log('✅ 已从 localStorage 加载翻页状态栏数据');
@@ -995,7 +995,7 @@ const showWorldbookGuide = () => {
 
 const clearAll = () => {
   if (confirm('确定要清空所有内容吗？')) {
-    triggerRegex.value = '<-STATUS->';
+    triggerRegex.value = '<-PAGEABLE_STATUSBAR->';
     aiPrompt.value = '';
     generatedHTML.value = '';
     (window as any).toastr?.success('已清空');
