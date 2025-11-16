@@ -412,7 +412,7 @@ function switchPage(index) {
    - .page-tabs(标签栏,3-4 个标签)
    - .page-content(内容区)
    - 每个 .page 使用 data-page="0/1/2" 标识
-   - <${scriptTag}> 标签实现 switchPage 函数
+   - **<${scriptTag}> 标签实现 switchPage 函数（这是必须的！否则翻页功能无法工作）**
 
 2. **字段占位符**:
    - 使用 $1, $2, $3... $15 表示动态字段
@@ -436,8 +436,10 @@ function switchPage(index) {
 5. **代码质量**:
    - CSS 类名语义化
    - 样式集中在 <style> 内
+   - **必须包含完整的 switchPage JavaScript 函数**
    - JavaScript 简洁高效
    - 完整可运行,无需外部依赖
+   - **确保按钮的 onclick 事件正确绑定到 switchPage 函数**
 
 ---
 
@@ -448,6 +450,25 @@ function switchPage(index) {
 - summary 标题: 使用纯文字,不要任何表情符号
 
 违反此规则将视为失败!
+
+---
+
+## ⚠️ 关键提醒：翻页功能
+**必须包含完整的 switchPage 函数！**
+示例代码：
+<${scriptTag}>
+function switchPage(index) {
+  document.querySelectorAll('.page-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', i === index);
+  });
+  document.querySelectorAll('.page').forEach((page) => {
+    const pageIndex = parseInt(page.getAttribute('data-page'));
+    page.classList.toggle('active', pageIndex === index);
+  });
+}
+</${scriptTag}>
+
+**不包含此函数，翻页功能将无法工作！**
 
 ---
 
