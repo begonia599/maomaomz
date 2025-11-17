@@ -1196,6 +1196,7 @@ import { detectApiProvider, filterApiParams, normalizeApiEndpoint, useSettingsSt
 import { useTaskStore } from '../taskStore';
 import { copyToClipboard, getScriptIdSafe } from '../utils';
 import AIModifyDialog from './AIModifyDialog.vue';
+import CodeCompareDialog from './CodeCompareDialog.vue';
 
 interface Field {
   name: string;
