@@ -142,7 +142,8 @@
               max-height: 300px;
               overflow-y: auto;
             "
-          >{{ worldbookPrompt }}</pre>
+            >{{ worldbookPrompt }}</pre
+          >
         </div>
 
         <!-- 操作按钮 -->
@@ -424,17 +425,12 @@ ${aiPrompt.value.trim()}
 
     if (parts.length >= 2) {
       // 找到世界书提示词部分
-      const worldbookPart = parts.find(part =>
-        part.includes('#指令：') ||
-        part.includes('核心警告') ||
-        part.includes('<-PAGEABLE_STATUSBAR->')
+      const worldbookPart = parts.find(
+        part => part.includes('#指令：') || part.includes('核心警告') || part.includes('<-PAGEABLE_STATUSBAR->'),
       );
 
       // 找到HTML部分
-      const htmlPart = parts.find(part =>
-        part.includes('<details') ||
-        part.includes('<div')
-      );
+      const htmlPart = parts.find(part => part.includes('<details') || part.includes('<div'));
 
       if (worldbookPart) {
         // 清理世界书提示词
@@ -539,20 +535,23 @@ const copyWorldbookPrompt = () => {
   }
 
   // 复制到剪贴板
-  navigator.clipboard.writeText(worldbookPrompt.value).then(() => {
-    (window as any).toastr?.success('✅ 世界书提示词已复制到剪贴板');
-  }).catch(() => {
-    // 降级方案
-    const textarea = document.createElement('textarea');
-    textarea.value = worldbookPrompt.value;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    (window as any).toastr?.success('✅ 世界书提示词已复制到剪贴板');
-  });
+  navigator.clipboard
+    .writeText(worldbookPrompt.value)
+    .then(() => {
+      (window as any).toastr?.success('✅ 世界书提示词已复制到剪贴板');
+    })
+    .catch(() => {
+      // 降级方案
+      const textarea = document.createElement('textarea');
+      textarea.value = worldbookPrompt.value;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      (window as any).toastr?.success('✅ 世界书提示词已复制到剪贴板');
+    });
 };
 </script>
 
