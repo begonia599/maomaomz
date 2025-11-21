@@ -56,7 +56,7 @@
           </h4>
           <textarea
             v-model="aiPrompt"
-            placeholder="✨ 描述你想要的翻页状态栏（描述越详细越精美）：&#10;&#10;🎨 风格示例：&#10;• 深色科技风：深灰渐变 #1e293b → #334155，蓝色强调 #3b82f6，发光效果，玻璃态&#10;• 粉色可爱风：粉色渐变 #ec4899 → #f472b6，圆润设计，卡片式布局，柔和动画&#10;• 赛博朋克风：紫色 #8b5cf6 + 霓虹边框，HP/MP 进度条，脉动动画&#10;• 商务简约风：灰蓝渐变 #475569 → #64748b，极简设计，专业配色&#10;&#10;💡 描述要点：&#10;1. 【风格】科技/可爱/游戏/商务/简约等&#10;2. 【配色】具体颜色值（如 #3b82f6）&#10;3. 【布局】标签页位置（顶部/左侧/右侧）&#10;4. 【页面内容】每页显示哪些字段&#10;5. 【特殊效果】渐变/阴影/发光/玻璃态/进度条等&#10;&#10;⚠️ 提示：描述越详细，AI 生成的界面越精美！"
+            placeholder="✨ 描述你想要的翻页状态栏（描述越详细越精美）：&#10;&#10;🎨 风格示例：&#10;• 深色科技风：深灰渐变 #1e293b → #334155，蓝色强调 #3b82f6，发光效果，玻璃态&#10;• 粉色可爱风：粉色渐变 #ec4899 → #f472b6，圆润设计，卡片式布局，柔和动画&#10;• 赛博朋克风：紫色 #8b5cf6 + 霓虹边框，HP/MP 进度条，脉动动画&#10;• 商务简约风：灰蓝渐变 #475569 → #64748b，极简设计，专业配色&#10;&#10;📝 字段示例：&#10;• 基础信息：时间、地点、天气、姿势&#10;• 角色状态：心情、健康值、能量值&#10;• ABO设定：发情期、抑制剂、标记状态&#10;• 游戏属性：等级、经验、金币、背包&#10;&#10;💡 描述要点：&#10;1. 【字段】需要显示哪些信息（会生成对应的世界书提示词）&#10;2. 【风格】科技/可爱/游戏/商务/简约等&#10;3. 【配色】具体颜色值（如 #3b82f6）&#10;4. 【布局】标签页位置（顶部/左侧/右侧）&#10;5. 【特殊效果】渐变/阴影/发光/玻璃态/进度条等&#10;&#10;⚠️ 提示：描述越详细，AI 生成的界面越精美！同时会生成可用于世界书的提示词。"
             :disabled="isGenerating"
             style="
               width: 100%;
@@ -94,6 +94,55 @@
             ></i>
             {{ isGenerating ? '生成中...' : '✨ AI 一键生成' }}
           </button>
+        </div>
+
+        <!-- 世界书提示词显示区 -->
+        <div
+          v-if="worldbookPrompt"
+          style="
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            margin-bottom: 15px;
+          "
+        >
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
+            <h4 style="color: #8b5cf6; margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px">
+              <i class="fa-solid fa-book"></i>
+              世界书提示词
+            </h4>
+            <button
+              style="
+                padding: 6px 12px;
+                background: rgba(139, 92, 246, 0.2);
+                border: 1px solid rgba(139, 92, 246, 0.4);
+                border-radius: 6px;
+                color: #8b5cf6;
+                font-size: 12px;
+                cursor: pointer;
+              "
+              @click="copyWorldbookPrompt"
+            >
+              <i class="fa-solid fa-copy" style="margin-right: 4px"></i>
+              复制
+            </button>
+          </div>
+          <pre
+            style="
+              background: #1e1e1e;
+              border: 1px solid #3a3a3a;
+              border-radius: 8px;
+              padding: 12px;
+              color: #e0e0e0;
+              font-size: 12px;
+              line-height: 1.5;
+              margin: 0;
+              overflow-x: auto;
+              max-height: 300px;
+              overflow-y: auto;
+            "
+          >{{ worldbookPrompt }}</pre>
         </div>
 
         <!-- 操作按钮 -->
@@ -218,6 +267,7 @@ const triggerRegex = ref('<-PAGEABLE_STATUS->');
 const aiPrompt = ref('');
 const isGenerating = ref(false);
 const generatedHTML = ref('');
+const worldbookPrompt = ref(''); // 存储生成的世界书提示词
 
 // 预览 HTML
 const previewHTML = computed(() => {
@@ -265,51 +315,52 @@ const generateWithAI = async () => {
 
   const systemPrompt = `🚫🚫🚫 严重警告 🚫🚫🚫
 
-如果你生成这样的代码，将被拒绝：
-❌ <span class="field-label">姓名</span><span class="field-value">$1</span>
-❌ <div class="field-row"><span>姓名</span><span>$1</span></div>
-❌ 任何使用 class 的字段
-❌ 任何简单的文本行
+你需要生成两个部分：
 
-你必须生成这样的代码：
-✅ 每个字段必须是独立的 div 卡片
-✅ 所有样式必须 inline（不要用 class）
-✅ 必须有渐变/阴影/圆角
+# 第一部分：世界书提示词
+生成一个可以添加到世界书中的提示词，格式如下：
 
-正确示例（强制照做）：
-\`\`\`html
-<div style="background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.08)); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1); transition: all 0.3s ease;">
-  <div style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px; font-weight: 600;">
-    <i class="fa-solid fa-user" style="margin-right: 6px;"></i>姓名
-  </div>
-  <div style="font-size: 17px; color: #fff; font-weight: 500;">
-    $1
-  </div>
-</div>
+\`\`\`
+#指令：回复末尾需附带状态栏。
 
-<div style="background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.08)); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;">
-  <div style="font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 10px; font-weight: 600;">
-    <i class="fa-solid fa-cake-candles" style="margin-right: 6px;"></i>年龄
-  </div>
-  <div style="font-size: 17px; color: #fff; font-weight: 500;">
-    $2
-  </div>
-</div>
+#⚠️ 核心警告:
+严禁输出任何 HTML 代码！仅输出纯文本格式。
+
+#格式要求：
+1. 必须以 <status> 开头，</status> 结尾。
+2. 第一行必须是 <-PAGEABLE_STATUSBAR->
+3. 每一行内容格式必须为：{{字段名}}具体内容
+4. 字段名和内容之间没有冒号或其他分隔符
+
+#智能填充逻辑：
+[根据用户需求添加字段规则]
+
+#输出结构示例：
+<status>
+<-PAGEABLE_STATUSBAR->
+{{字段1}}内容1
+{{字段2}}内容2
+{{字段3}}内容3
+</status>
 \`\`\`
 
-# 任务
-生成翻页状态栏（2-4个页面）
+# 第二部分：HTML 展示代码
+生成精美的 HTML 代码（翻页状态栏），要求：
+1. 使用 $1, $2, $3 占位符（对应提示词中的字段顺序）
+2. 每个字段必须是独立的 div 卡片
+3. 所有样式必须 inline（不要用 class）
+4. 必须有渐变/阴影/圆角
+5. 容器用渐变背景 + 圆角 + 阴影
+6. 标签页按钮三态明显
+7. 在 <details> 标签内
+8. 包含 <style> 和 <script>
 
-# 要求
-1. 使用 $1, $2, $3 占位符
-2. 容器用渐变背景 + 圆角 + 阴影
-3. 标签页按钮三态明显
-4. **每个字段必须完全按照上面的正确示例格式！**
-5. 所有 style 必须 inline
-6. 在 <details> 标签内
-7. 包含 <style> 和 <script>
+# 重要说明
+- 世界书提示词的字段要和 HTML 中的占位符一一对应
+- 用户描述的字段就是状态栏需要显示的内容
+- 根据用户需求自定义字段名和数量
 
-🚫 如果字段不是卡片（有完整 inline style），你的输出无效！🚫`;
+现在，请分别输出这两部分内容，用明显的分隔符分开。`;
 
   try {
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
@@ -331,8 +382,13 @@ ${aiPrompt.value.trim()}
 2. 字段项必须是精美卡片，禁止简单文本行
 3. 必须使用渐变、阴影、圆角、动画等现代元素
 4. 标签页三态（默认/悬停/激活）必须明显区分
+5. 根据用户描述的字段生成对应的世界书提示词
 
-现在直接输出完整的 HTML 代码（不要添加解释）：`,
+💡 提示：如果用户描述了具体字段（如：时间、地点、心情等），请在世界书提示词中包含这些字段。
+
+现在请输出：
+1. 世界书提示词（纯文本格式，用于添加到世界书）
+2. HTML 展示代码（用于预览效果）`,
         },
       ],
       max_tokens: Math.min(settings.value.max_tokens, 8192),
@@ -363,15 +419,58 @@ ${aiPrompt.value.trim()}
       .replace(/```\n?/g, '')
       .trim();
 
-    // 提取 <details> 到 </details> 之间的内容
-    const detailsMatch = content.match(/<details[\s\S]*?<\/details>/i);
-    if (detailsMatch) {
-      generatedHTML.value = detailsMatch[0];
-      (window as any).toastr?.success('✨ AI 生成成功！');
+    // 尝试分离世界书提示词和HTML代码
+    const parts = content.split(/={3,}|---{3,}|###.*世界书.*###|###.*HTML.*###/i);
+
+    if (parts.length >= 2) {
+      // 找到世界书提示词部分
+      const worldbookPart = parts.find(part =>
+        part.includes('#指令：') ||
+        part.includes('核心警告') ||
+        part.includes('<-PAGEABLE_STATUSBAR->')
+      );
+
+      // 找到HTML部分
+      const htmlPart = parts.find(part =>
+        part.includes('<details') ||
+        part.includes('<div')
+      );
+
+      if (worldbookPart) {
+        // 清理世界书提示词
+        worldbookPrompt.value = worldbookPart
+          .replace(/```.*?\n/g, '')
+          .replace(/```/g, '')
+          .trim();
+      }
+
+      if (htmlPart) {
+        // 提取 <details> 到 </details> 之间的内容
+        const detailsMatch = htmlPart.match(/<details[\s\S]*?<\/details>/i);
+        if (detailsMatch) {
+          generatedHTML.value = detailsMatch[0];
+        } else {
+          generatedHTML.value = htmlPart.trim();
+        }
+      }
+
+      if (worldbookPrompt.value && generatedHTML.value) {
+        (window as any).toastr?.success('✨ AI 生成成功！已生成世界书提示词和HTML预览');
+      } else if (generatedHTML.value) {
+        (window as any).toastr?.success('✨ AI 生成成功！');
+      } else {
+        (window as any).toastr?.warning('生成成功，但格式可能需要调整');
+      }
     } else {
-      // 如果没有 <details>，尝试提取整个 HTML
-      generatedHTML.value = content;
-      (window as any).toastr?.warning('生成成功，但格式可能需要调整');
+      // 兼容旧格式：只有HTML
+      const detailsMatch = content.match(/<details[\s\S]*?<\/details>/i);
+      if (detailsMatch) {
+        generatedHTML.value = detailsMatch[0];
+        (window as any).toastr?.success('✨ AI 生成成功！');
+      } else {
+        generatedHTML.value = content;
+        (window as any).toastr?.warning('生成成功，但格式可能需要调整');
+      }
     }
   } catch (error) {
     console.error('AI 生成失败:', error);
@@ -427,8 +526,33 @@ const clearAll = () => {
     triggerRegex.value = '<-PAGEABLE_STATUS->';
     aiPrompt.value = '';
     generatedHTML.value = '';
+    worldbookPrompt.value = '';
     (window as any).toastr?.success('已清空');
   }
+};
+
+// 复制世界书提示词
+const copyWorldbookPrompt = () => {
+  if (!worldbookPrompt.value) {
+    (window as any).toastr?.warning('还没有生成世界书提示词');
+    return;
+  }
+
+  // 复制到剪贴板
+  navigator.clipboard.writeText(worldbookPrompt.value).then(() => {
+    (window as any).toastr?.success('✅ 世界书提示词已复制到剪贴板');
+  }).catch(() => {
+    // 降级方案
+    const textarea = document.createElement('textarea');
+    textarea.value = worldbookPrompt.value;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    (window as any).toastr?.success('✅ 世界书提示词已复制到剪贴板');
+  });
 };
 </script>
 
