@@ -239,9 +239,11 @@ export function buildApiUrl(config: ApiEndpointConfig, path: string = '/chat/com
 
     case 'reverse-proxy':
       // 反向代理通常已经包含了完整路径
-      if (baseUrl.includes('/v1/chat/completions') ||
-          baseUrl.includes('/chat/completions') ||
-          baseUrl.includes('/api/chat')) {
+      if (
+        baseUrl.includes('/v1/chat/completions') ||
+        baseUrl.includes('/chat/completions') ||
+        baseUrl.includes('/api/chat')
+      ) {
         return baseUrl;
       }
       // 如果有自定义路径，使用它
@@ -290,10 +292,12 @@ function normalizeEndpoint(endpoint: string, path: string = '/chat/completions',
   }
 
   // 如果已经包含完整路径，直接返回
-  if (endpoint.includes('/chat/completions') ||
-      endpoint.includes('/models') ||
-      endpoint.includes('/v1/messages') ||
-      endpoint.includes('/api/chat')) {
+  if (
+    endpoint.includes('/chat/completions') ||
+    endpoint.includes('/models') ||
+    endpoint.includes('/v1/messages') ||
+    endpoint.includes('/api/chat')
+  ) {
     return endpoint;
   }
 
