@@ -90,6 +90,7 @@
           >
             <option value="openai">OpenAI</option>
             <option value="gemini">Gemini AI Studio</option>
+            <option value="local-proxy">本地反代 (无需 API Key)</option>
           </select>
         </div>
 
@@ -1475,8 +1476,9 @@ const { settings } = storeToRefs(settingsStore);
 const summaryHistoryStore = useSummaryHistoryStore();
 const taskStore = useTaskStore();
 
-// 检查 API 配置是否有效（本地端点不需要 API Key）
-const isApiConfigValid = () => checkApiConfig(settings.value.api_endpoint, settings.value.api_key);
+// 检查 API 配置是否有效（本地端点或本地反代提供商不需要 API Key）
+const isApiConfigValid = () =>
+  checkApiConfig(settings.value.api_endpoint, settings.value.api_key, settings.value.api_provider);
 
 // 折叠展开状态
 const expandedSections = ref<Record<string, boolean>>({

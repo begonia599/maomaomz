@@ -3,7 +3,7 @@ import { detectEndpointType } from './utils/api-config';
 
 /**
  * 智能请求函数，自动处理 CORS 问题
- * 对于本地反代，会尝试多种方式绕过 CORS
+ * 本地反代直接使用酒馆后端代理，避免 CORS 预检问题
  */
 async function smartFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const endpointType = detectEndpointType(url);
@@ -11,24 +11,10 @@ async function smartFetch(url: string, options: RequestInit = {}): Promise<Respo
 
   console.log(`🔍 端点类型: ${endpointType}, 是否本地: ${isLocalEndpoint}`);
 
-  // 对于本地端点，优先尝试直接请求（反代可能已配置 CORS）
+  // 对于本地端点，直接使用酒馆后端代理（避免 CORS 预检问题）
   if (isLocalEndpoint) {
-    try {
-      console.log('🚀 尝试直接请求本地端点...');
-      const response = await fetch(url, options);
-      console.log('✅ 本地端点直接请求成功');
-      return response;
-    } catch (directError) {
-      const errorMsg = (directError as Error).message;
-      console.log('⚠️ 直接请求失败:', errorMsg);
-
-      // 如果是 CORS 错误，尝试通过酒馆后端代理
-      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('CORS') || errorMsg.includes('NetworkError')) {
-        console.log('🔄 检测到 CORS 错误，尝试通过酒馆后端代理...');
-        return await tavernProxyFetch(url, options);
-      }
-      throw directError;
-    }
+    console.log('🔄 本地端点，使用酒馆后端代理绕过 CORS...');
+    return await tavernProxyFetch(url, options);
   }
 
   // 对于远程端点，直接请求
