@@ -265,7 +265,7 @@ const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
 
 // 状态
-const triggerRegex = ref('<-PAGEABLE_STATUS->');
+const triggerRegex = ref('<-PAGEABLE_STATUS->([\\s\\S]*?)</status>');
 const aiPrompt = ref('');
 const isGenerating = ref(false);
 const generatedHTML = ref('');
@@ -315,12 +315,9 @@ const generateWithAI = async () => {
 
   isGenerating.value = true;
 
-  const systemPrompt = `🚫🚫🚫 严重警告 🚫🚫🚫
-
-你需要生成两个部分：
+  const systemPrompt = `你需要生成两个部分：世界书提示词 和 HTML翻页状态栏。
 
 # 第一部分：世界书提示词
-生成一个可以添加到世界书中的提示词，格式如下：
 
 \`\`\`
 #指令：回复末尾需附带状态栏。
@@ -329,40 +326,54 @@ const generateWithAI = async () => {
 严禁输出任何 HTML 代码！仅输出纯文本格式。
 
 #格式要求：
-1. 必须以 <status> 开头，</status> 结尾。
-2. 第一行必须是 <-PAGEABLE_STATUSBAR->
-3. 每一行内容格式必须为：{{字段名}}具体内容
-4. 字段名和内容之间没有冒号或其他分隔符
+1. 必须以 <status> 开头，</status> 结尾
+2. 第一行必须是 <-PAGEABLE_STATUS->
+3. 每行格式：{{字段名}}具体内容
 
-#智能填充逻辑：
-[根据用户需求添加字段规则]
-
-#输出结构示例：
+#输出示例：
 <status>
-<-PAGEABLE_STATUSBAR->
-{{字段1}}内容1
-{{字段2}}内容2
-{{字段3}}内容3
+<-PAGEABLE_STATUS->
+{{时间}}10:30
+{{地点}}教室
+{{心情}}开心
 </status>
 \`\`\`
 
-# 第二部分：HTML 展示代码
-生成精美的 HTML 代码（翻页状态栏），要求：
-1. 使用 $1, $2, $3 占位符（对应提示词中的字段顺序）
-2. 每个字段必须是独立的 div 卡片
-3. 所有样式必须 inline（不要用 class）
-4. 必须有渐变/阴影/圆角
-5. 容器用渐变背景 + 圆角 + 阴影
-6. 标签页按钮三态明显
-7. 在 <details> 标签内
-8. 包含 <style> 和 <script>
+# 第二部分：HTML 翻页状态栏
 
-# 重要说明
-- 世界书提示词的字段要和 HTML 中的占位符一一对应
-- 用户描述的字段就是状态栏需要显示的内容
-- 根据用户需求自定义字段名和数量
+⚠️ 必须使用以下可靠模板结构（只修改样式和内容，不要修改翻页逻辑）：
 
-现在，请分别输出这两部分内容，用明显的分隔符分开。`;
+\`\`\`html
+<details open style="[你的容器样式]">
+<summary style="[你的标题样式]">📊 状态栏</summary>
+<div style="[你的内容容器样式]">
+  <!-- 标签页按钮 -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button onclick="this.parentElement.parentElement.querySelectorAll('[data-page]').forEach(p=>p.style.display='none');this.parentElement.parentElement.querySelector('[data-page=\\"1\\"]').style.display='block';this.parentElement.querySelectorAll('button').forEach(b=>b.style.opacity='0.6');this.style.opacity='1';" style="[按钮样式];opacity:1;">页面1</button>
+    <button onclick="this.parentElement.parentElement.querySelectorAll('[data-page]').forEach(p=>p.style.display='none');this.parentElement.parentElement.querySelector('[data-page=\\"2\\"]').style.display='block';this.parentElement.querySelectorAll('button').forEach(b=>b.style.opacity='0.6');this.style.opacity='1';" style="[按钮样式];opacity:0.6;">页面2</button>
+  </div>
+  <!-- 页面内容 -->
+  <div data-page="1" style="display:block;">
+    <div style="[卡片样式]">$1</div>
+    <div style="[卡片样式]">$2</div>
+  </div>
+  <div data-page="2" style="display:none;">
+    <div style="[卡片样式]">$3</div>
+    <div style="[卡片样式]">$4</div>
+  </div>
+</div>
+</details>
+\`\`\`
+
+# 关键规则
+1. **翻页逻辑必须用 onclick 内联**，不要用外部 script 标签
+2. **使用 data-page 属性**区分页面，不要用 class
+3. **按钮用 opacity 切换状态**（激活=1，未激活=0.6）
+4. **$1 $2 $3 占位符**对应提示词字段顺序
+5. 所有样式必须 inline
+6. 根据用户需求设计配色和布局
+
+用 === 分隔两部分输出。`;
 
   try {
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
@@ -427,11 +438,11 @@ ${aiPrompt.value.trim()}
     if (parts.length >= 2) {
       // 找到世界书提示词部分
       const worldbookPart = parts.find(
-        part => part.includes('#指令：') || part.includes('核心警告') || part.includes('<-PAGEABLE_STATUSBAR->'),
+        (part: string) => part.includes('#指令：') || part.includes('核心警告') || part.includes('<-PAGEABLE_STATUS->'),
       );
 
       // 找到HTML部分
-      const htmlPart = parts.find(part => part.includes('<details') || part.includes('<div'));
+      const htmlPart = parts.find((part: string) => part.includes('<details') || part.includes('<div'));
 
       if (worldbookPart) {
         // 清理世界书提示词
