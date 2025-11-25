@@ -1216,6 +1216,7 @@ function generatePrompt() {
 在所有文本的最后，进行变量更新。
 
 以下是故事中需要追踪的关键变量，当前状态以这些变量的值为准。
+变量格式说明：每个变量是 [当前值, "更新条件"] 的数组格式。
 
 <status_current_variables>
 {{get_message_variable::stat_data}}
@@ -1225,135 +1226,81 @@ function generatePrompt() {
 
 rule:
   description:
-    - Output update analysis at the end of response
-    - Variable updates are omitted in context but you must still add them
-    - **CRITICAL**: For MVU format [value, description], ALWAYS use [0] suffix to access the value part
-    - 4 commands available: \\\`_.set\\\` (2-3 args), \\\`_.insert\\\` (2-3 args), \\\`_.remove\\\` (1-2 args), \\\`_.add\\\` (2 args)
-    - **RECOMMENDED**: Use \\\`_.insert\\\` instead of \\\`_.assign\\\`
-    - strictSet enabled: [0] suffix is mandatory for all value access
+    - 在回复末尾输出变量更新分析
+    - 历史消息中的变量更新块已被隐藏，但你仍需添加新的更新
+    - 4个可用命令: _.set, _.add, _.assign, _.remove
 
   command_usage:
-    - \\\`_.set('path[0]', old?, new);//reason\\\` - Replace value
-    - \\\`_.add('path[0]', delta);//reason\\\` - Add/subtract numbers only
-    - \\\`_.insert('path[0]', value);//reason\\\` - Add to array end
-    - \\\`_.insert('path[0]', index, value);//reason\\\` - Insert to array at position
-    - \\\`_.insert('path', key, value);//reason\\\` - Add key-value to object
-    - \\\`_.remove('path[0]', value);//reason\\\` - Remove from array/object
+    - \\\`_.set('路径', 旧值, 新值);//原因\\\` - 替换变量值
+    - \\\`_.add('路径', 增量);//原因\\\` - 数值增减（仅用于数字）
+    - \\\`_.assign('路径', 值);//原因\\\` - 向数组末尾添加元素
+    - \\\`_.assign('路径', 索引, 值);//原因\\\` - 在数组指定位置插入
+    - \\\`_.assign('路径', 键名, 值);//原因\\\` - 向对象添加键值对
+    - \\\`_.remove('路径', 值);//原因\\\` - 从数组/对象删除元素
 
   analysis:
-    You MUST follow this Chain-of-Thought (COT) analysis process step by step:
+    你必须按以下思维链(COT)步骤逐一分析：
 
-    **STEP 1: Scene Analysis (50 words max, IN ENGLISH)**
-    - Identify current scene/stage/phase
-    - Describe what happened
-    - Determine what changes occurred (time/location/status/progress)
+    **第1步: 场景分析（简短描述发生了什么）**
+    - 当前场景/阶段
+    - 发生的事件
+    - 时间/地点/状态变化
 
-    **STEP 2: Time & Key Status Check**
-    - Extract current time/status from story context
-    - Read key variables from <status_current_variables>
-    - Calculate changes
-    - Decision: What needs to be updated?
+    **第2步: 变量检查**
+    - 从故事中提取当前状态
+    - 对照 <status_current_variables> 中的变量
+    - 计算变化量
+    - 决定需要更新哪些
 
-    **STEP 3: Systematic Variable Review (check EVERY variable category)**
-    Go through each variable category systematically and mark Y or N:
-
+    **第3步: 逐一检查变量（标记 Y 或 N）**
     ${categories}:
-      - 变量1[0]: [Y/N] - explain
-      - 变量2[0]: [Y/N] - explain
+      - 变量1: [Y/N] - 原因
+      - 变量2: [Y/N] - 原因
 
-    **STEP 4: Command Selection**
-    For each variable marked Y, determine which command to use
-
-    **STEP 5: Analyze Other Variable Systems**
-    - stat_data detailed COT: COMPLETED
-    - Other variable groups? [YES/NO]
-
-    **STEP 6: Final Validation Checklist**
-    - All [0] suffixes present? [YES/NO]
-    - All Y variables have corresponding commands? [YES/NO]
-    - All commands have clear Chinese comments? [YES/NO]
+    **第4步: 选择命令**
+    为每个标记 Y 的变量选择对应命令
 
   format: |-
     <UpdateVariable>
-        <ThinkingProcess>
-            **STEP 1: Scene Analysis**
-            [50 words]
+        <Analysis>
+            场景: [简述发生了什么]
+            变化: [时间/状态/关系等变化]
 
-            **STEP 2: Time & Key Status Check**
-            - Current status: ...
-            - Stored variable[0]: ...
-            - Changes: ...
-            - Update decision: ...
+            ${categories}:
+              - 变量1: Y/N
+              - 变量2: Y/N
+        </Analysis>
 
-            **STEP 3: Variable Review (stat_data)**
-            [List categories with Y/N]
-
-            **STEP 4: Command Selection**
-            [For each Y variable, state which command]
-
-            **STEP 5: Other Systems**
-            - stat_data COT: COMPLETED
-            - Other groups? NO
-
-            **STEP 6: Final Check**
-            - [0] suffixes? YES
-            - All Y have commands? YES
-            - Chinese comments? YES
-        </ThinkingProcess>
-
-        _.set('path[0]', old?, new);//reason
-        _.add('path[0]', delta);//reason
-        _.insert('path[0]', value);//reason
-        _.remove('path[0]', value);//reason
+        _.set('路径', 旧值, 新值);//原因
+        _.add('路径', 增量);//原因
     </UpdateVariable>
 
   example: |-
     <UpdateVariable>
-        <ThinkingProcess>
-            **STEP 1: Scene Analysis**
-            User and character had conversation at library. User helped find a book. Time advanced from 10:00 to 10:30. Character's impression improved.
+        <Analysis>
+            场景: 用户在图书馆与角色愉快交谈，帮忙找书
+            变化: 时间从10:00推进到10:30，好感度提升
 
-            **STEP 2: Time & Key Status Check**
-            - Current time: 10:30
-            - Stored 时间[0]: "10:00"
-            - Time passed: 30 minutes
-            - Update decision: Time, Favor
+            基础信息:
+              - 时间: Y - 时间推进
+              - 日期: N - 同一天
+              - 当前位置: N - 仍在图书馆
 
-            **STEP 3: Variable Review (stat_data)**
-            基础信息 - 3 fields:
-              - 时间[0]: Y - Time advanced
-              - 日期[0]: N - Same day
-              - 当前位置[0]: N - Still at library
+            人物关系:
+              - 好感度: Y - 正面互动
+        </Analysis>
 
-            人物关系 - 1 field:
-              - 好感度[0]: Y - Positive interaction
-
-            **STEP 4: Command Selection**
-            - 时间: use _.set
-            - 好感度: use _.add
-
-            **STEP 5: Other Systems**
-            - stat_data COT: COMPLETED
-            - Other groups? NO
-
-            **STEP 6: Final Check**
-            - [0] suffixes? YES
-            - All Y have commands? YES
-            - Chinese comments? YES
-        </ThinkingProcess>
-
-        _.set('时间[0]', '10:00', '10:30');//时间推进30分钟
-        _.add('角色.好感度[0]', 3);//愉快的交流，好感度小幅提升
+        _.set('时间', '10:00', '10:30');//时间推进30分钟
+        _.add('角色.好感度', 3);//愉快的交流，好感度小幅提升
     </UpdateVariable>
 
   specific_rules:
-    - 时间推进：每次互动后更新具体时间，使用 _.set 更新
-    - 状态切换：当状态/阶段切换时，必须更新对应的状态变量
-    - 计数器：使用 _.add 增加或减少计数
-    - 数组操作：添加元素必须用 _.insert，删除元素必须用 _.remove
-    - [0]后缀：所有变量访问都必须加[0]后缀
-    - 扩展数组：带有 $__META_EXTENSIBLE__$ 标记的数组使用 _.insert 添加元素
-    - 对象添加键值：使用 _.insert('路径', 键名, 值) 向对象添加新的键值对`;
+    - 时间推进：每次互动后更新具体时间
+    - 状态切换：状态/阶段改变时必须更新
+    - 数值变化：使用 _.add 增减数字
+    - 数组添加：使用 _.assign 添加元素（数组需有 $__META_EXTENSIBLE__$ 标记）
+    - 数组删除：使用 _.remove 删除元素
+    - 对象添加：使用 _.assign('路径', 键名, 值) 添加键值对`;
 
   generatedPrompt.value = promptTemplate;
 }
@@ -1380,17 +1327,22 @@ async function handleAIGeneratePrompt() {
   isGeneratingPrompt.value = true;
 
   try {
-    const systemPrompt = `你是 MVU Beta COT（思维链）提示词专家，负责生成完整、规范的 6 步分析流程提示词。
+    const systemPrompt = `你是 MVU Beta 变量更新提示词专家。根据用户的场景描述生成简洁实用的变量更新提示词。
 
 # 核心要求
 
-## ⚠️ 必须包含的元素
+## 必须包含的元素
 1. **变量读取**: \`{{get_message_variable::stat_data}}\`
-2. **[0] 后缀**: 所有MVU变量访问必须加 \`[0]\` 后缀
-3. **推荐命令**: 优先使用 \`_.insert\` 而非 \`_.assign\`
-4. **6步COT**: 完整的思维链分析流程
+2. **4个命令**: _.set, _.add, _.assign, _.remove
 
-## 提示词结构
+## 命令格式（重要！）
+- \`_.set('路径', 旧值, 新值);//原因\` - 替换变量值
+- \`_.add('路径', 增量);//原因\` - 数值增减
+- \`_.assign('路径', 值);//原因\` - 向数组添加元素
+- \`_.assign('路径', 键名, 值);//原因\` - 向对象添加键值对
+- \`_.remove('路径', 值);//原因\` - 删除元素
+
+## 提示词模板
 
 \`\`\`ejs
 <%_ setLocalVar('initialized_lorebooks.-YourLorebook[0]', true); _%>
@@ -1398,117 +1350,66 @@ async function handleAIGeneratePrompt() {
 在所有文本的最后，进行变量更新。
 
 以下是故事中需要追踪的关键变量，当前状态以这些变量的值为准。
+变量格式说明：每个变量是 [当前值, "更新条件"] 的数组格式。
 
 <status_current_variables>
 {{get_message_variable::stat_data}}
 </status_current_variables>
 
-严格按照以下规则和格式进行输出，并确定每一个变量是否需要更新，不要遗漏：
-
 rule:
   description:
-    - Output update analysis at the end of response
-    - Variable updates are omitted in context but you must still add them
-    - **CRITICAL**: For MVU format [value, description], ALWAYS use [0] suffix to access the value part
-    - 4 commands available: _.set (2-3 args), _.insert (2-3 args), _.remove (1-2 args), _.add (2 args)
-    - **RECOMMENDED**: Use _.insert instead of _.assign
-    - strictSet enabled: [0] suffix is mandatory for all value access
+    - 在回复末尾输出变量更新
+    - 4个可用命令: _.set, _.add, _.assign, _.remove
 
   command_usage:
-    - _.set('path[0]', old?, new);//reason - Replace value
-    - _.add('path[0]', delta);//reason - Add/subtract numbers only
-    - _.insert('path[0]', value);//reason - Add to array end
-    - _.insert('path[0]', index, value);//reason - Insert to array at position
-    - _.insert('path', key, value);//reason - Add key-value to object
-    - _.remove('path[0]', value);//reason - Remove from array/object
+    - _.set('路径', 旧值, 新值);//原因 - 替换值
+    - _.add('路径', 增量);//原因 - 数值增减
+    - _.assign('路径', 值);//原因 - 向数组添加
+    - _.remove('路径', 值);//原因 - 删除元素
 
   analysis:
-    You MUST follow this Chain-of-Thought (COT) analysis process step by step:
-
-    **STEP 1: Scene Analysis (50 words max, IN ENGLISH)**
-    - Identify current scene/stage/phase
-    - Describe what happened
-    - Determine what changes occurred (time/location/status/progress)
-
-    **STEP 2: Time & Key Status Check**
-    - Extract current time/status from story context
-    - Read key variables from <status_current_variables>
-    - Calculate changes
-    - Decision: What needs to be updated?
-
-    **STEP 3: Systematic Variable Review (check EVERY variable category)**
-    Go through each variable category systematically and mark Y or N:
-
-    [基于用户需求生成的变量分类]:
-      - 变量1[0]: [Y/N] - explain
-      - 变量2[0]: [Y/N] - explain
-
-    **STEP 4: Command Selection**
-    For each variable marked Y, determine which command to use
-
-    **STEP 5: Analyze Other Variable Systems**
-    - stat_data detailed COT: COMPLETED
-    - Other variable groups? [YES/NO]
-
-    **STEP 6: Final Validation Checklist**
-    - All [0] suffixes present? [YES/NO]
-    - All Y variables have corresponding commands? [YES/NO]
-    - All commands have clear Chinese comments? [YES/NO]
+    分析步骤：
+    1. 描述发生了什么（场景/事件）
+    2. 对照变量列表，标记需要更新的变量(Y/N)
+    3. 为每个Y选择合适的命令
 
   format: |-
     <UpdateVariable>
-        <ThinkingProcess>
-            **STEP 1: Scene Analysis**
-            [50 words]
+        <Analysis>
+            场景: [简述发生了什么]
+            变化: [时间/状态/关系等变化]
 
-            **STEP 2: Time & Key Status Check**
-            - Current status: ...
-            - Stored variable[0]: ...
-            - Changes: ...
-            - Update decision: ...
+            [变量分类]:
+              - 变量1: Y/N
+              - 变量2: Y/N
+        </Analysis>
 
-            **STEP 3: Variable Review (stat_data)**
-            [List categories with Y/N]
-
-            **STEP 4: Command Selection**
-            [For each Y variable, state which command]
-
-            **STEP 5: Other Systems**
-            - stat_data COT: COMPLETED
-            - Other groups? NO
-
-            **STEP 6: Final Check**
-            - [0] suffixes? YES
-            - All Y have commands? YES
-            - Chinese comments? YES
-        </ThinkingProcess>
-
-        _.set('path[0]', old?, new);//reason
-        _.add('path[0]', delta);//reason
-        _.insert('path[0]', value);//reason
-        _.remove('path[0]', value);//reason
+        _.set('路径', 旧值, 新值);//原因
     </UpdateVariable>
 
-  specific_rules:
-    - 时间推进：每次互动后更新具体时间，使用 _.set 更新
-    - 状态切换：当状态/阶段切换时，必须更新对应的状态变量
-    - 计数器：使用 _.add 增加或减少计数
-    - 数组操作：添加元素必须用 _.insert，删除元素必须用 _.remove
-    - [0]后缀：所有变量访问都必须加[0]后缀
-    - 扩展数组：带有 $__META_EXTENSIBLE__$ 标记的数组使用 _.insert 添加元素
-    - 对象添加键值：使用 _.insert('路径', 键名, 值) 向对象添加新的键值对
-\`\`\`
+  example: |-
+    <UpdateVariable>
+        <Analysis>
+            场景: 用户与角色愉快交谈
+            变化: 时间推进30分钟，好感度提升
 
----
+            基础信息:
+              - 时间: Y
+              - 地点: N
+            人物:
+              - 好感度: Y
+        </Analysis>
+
+        _.set('时间', '10:00', '10:30');//时间推进
+        _.add('角色.好感度', 3);//愉快交流
+    </UpdateVariable>
+\`\`\`
 
 # 生成要求
 
-1. **完整性**: 包含所有必需部分（变量读取、6步COT、命令示例）
-2. **准确性**: 变量名与用户的InitVar结构一致
-3. **实用性**: 具体规则要符合用户的实际使用场景
-4. **格式**: 直接输出EJS格式，可直接使用
-
-直接输出完整的 COT 提示词内容。`;
+1. 根据用户场景定制变量分类和示例
+2. 保持简洁，易于新手理解
+3. 直接输出可用的EJS格式提示词`;
 
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
     // 过滤 API 参数，确保兼容不同的服务提供商
