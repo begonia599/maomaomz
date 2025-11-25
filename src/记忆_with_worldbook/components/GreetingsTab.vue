@@ -803,6 +803,7 @@ import { z } from 'zod';
 import { normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { useTaskStore } from '../taskStore';
 import { copyToClipboard, getScriptIdSafe, handleApiError } from '../utils';
+import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import AIGenerateDialog from './AIGenerateDialog.vue';
 import AIModifyDialog from './AIModifyDialog.vue';
 
@@ -1127,9 +1128,9 @@ async function generateDescription(index: number) {
     updateProgress(1, '检查配置', '正在验证 API 配置和权限...');
     taskStore.updateTaskProgress(taskId, 10, '检查配置');
 
-    // 检查 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      toastr.error('请先在设置页面配置 API 端点和 API Key');
+    // 检查 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+      toastr.error(getApiConfigError(settings.value.api_endpoint));
       showAiGenerateDialog.value = false;
       isGeneratingAi.value = false;
       taskStore.failTask(taskId, 'API 未配置');
@@ -1292,9 +1293,9 @@ async function confirmEditDescription(requirement: string) {
     updateProgress(1, '检查配置', '正在验证 API 配置和权限...');
     taskStore.updateTaskProgress(taskId, 10, '检查配置');
 
-    // 检查 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      toastr.error('请先在设置页面配置 API 端点和 API Key');
+    // 检查 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+      toastr.error(getApiConfigError(settings.value.api_endpoint));
       showAiEditDialog.value = false;
       isEditingAi.value = false;
       stopElapsedTimer();
@@ -1437,9 +1438,9 @@ async function generateStyleWithAI(styleDescription: string) {
   updateProgress(0, '准备中', '正在初始化界面样式生成任务...');
   startElapsedTimer(); // 启动耗时计算
 
-  // 检查 API 配置
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    toastr.error('请先在设置页面配置 API 端点和 API Key');
+  // 检查 API 配置（本地端点不需要 API Key）
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    toastr.error(getApiConfigError(settings.value.api_endpoint));
     showAiStyleDialog.value = false;
     stopElapsedTimer();
     taskStore.failTask(taskId, 'API 未配置');

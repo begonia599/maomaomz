@@ -1468,11 +1468,15 @@ import { onMounted, ref } from 'vue';
 import { useSettingsStore, useSummaryHistoryStore } from '../settings';
 import { useTaskStore } from '../taskStore';
 import { getChatIdSafe, getScriptIdSafe, handleApiError } from '../utils';
+import { isApiConfigValid as checkApiConfig, getApiConfigError } from '../utils/api-config';
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
 const summaryHistoryStore = useSummaryHistoryStore();
 const taskStore = useTaskStore();
+
+// 检查 API 配置是否有效（本地端点不需要 API Key）
+const isApiConfigValid = () => checkApiConfig(settings.value.api_endpoint, settings.value.api_key);
 
 // 折叠展开状态
 const expandedSections = ref<Record<string, boolean>>({
@@ -1541,8 +1545,8 @@ const saveApiTemplate = () => {
     return;
   }
 
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    window.toastr.warning('请先配置 API 端点和 API Key');
+  if (!isApiConfigValid()) {
+    window.toastr.warning(getApiConfigError(settings.value.api_endpoint));
     return;
   }
 
@@ -1963,9 +1967,9 @@ const handleProviderChange = () => {
 // 保存API配置
 const handleSaveApiConfig = () => {
   try {
-    // 验证必填项
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      window.toastr.warning('请先填写 API 端点和 API Key');
+    // 验证必填项（本地端点不需要 API Key）
+    if (!isApiConfigValid()) {
+      window.toastr.warning(getApiConfigError(settings.value.api_endpoint));
       return;
     }
 
@@ -2179,11 +2183,14 @@ const handle_fetch_models = async () => {
     loading_models.value = true;
     console.log('🚀 开始拉取模型列表...');
     console.log('📍 API 端点:', settings.value.api_endpoint);
-    console.log('🔑 API Key:', settings.value.api_key ? '***' + settings.value.api_key.slice(-4) : '未设置');
+    console.log(
+      '🔑 API Key:',
+      settings.value.api_key ? '***' + settings.value.api_key.slice(-4) : '未设置（本地反代可不填）',
+    );
 
-    // 验证 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      window.toastr.warning('请先配置 API 端点和 API Key');
+    // 验证 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid()) {
+      window.toastr.warning(getApiConfigError(settings.value.api_endpoint));
       return;
     }
 
@@ -2241,9 +2248,9 @@ const handle_test_connection = async () => {
   try {
     console.log('测试连接...');
 
-    // 验证 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      window.toastr.warning('请先配置 API 端点和 API Key');
+    // 验证 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid()) {
+      window.toastr.warning(getApiConfigError(settings.value.api_endpoint));
       return;
     }
 
@@ -2349,9 +2356,9 @@ const handle_summarize = async () => {
     taskStore.updateTaskProgress(taskId, 0, '准备生成总结...');
     taskStore.addTaskDetail(taskId, `楼层范围: ${settings.value.start_message_id} - ${settings.value.end_message_id}`);
 
-    // 验证 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      const errorMsg = '请先配置 API 端点和 API Key';
+    // 验证 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid()) {
+      const errorMsg = getApiConfigError(settings.value.api_endpoint);
       window.toastr.warning(errorMsg);
       if (taskId) taskStore.failTask(taskId, errorMsg);
       return;
@@ -2449,9 +2456,9 @@ const handle_generate_table = async () => {
       `楼层范围: ${settings.value.table_start_message_id} - ${settings.value.table_end_message_id}`,
     );
 
-    // 验证 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      const errorMsg = '请先配置 API 端点和 API Key';
+    // 验证 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid()) {
+      const errorMsg = getApiConfigError(settings.value.api_endpoint);
       window.toastr.warning(errorMsg);
       if (taskId) taskStore.failTask(taskId, errorMsg);
       return;

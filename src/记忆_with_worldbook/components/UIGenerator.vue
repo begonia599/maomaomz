@@ -109,6 +109,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
+import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
@@ -136,7 +137,7 @@ const loadFromStorage = () => {
     if (saved) {
       const parsed = JSON.parse(saved);
       const version = parsed.version || 1;
-      let data = parsed.data || parsed;
+      const data = parsed.data || parsed;
 
       triggerRegex.value = data.triggerRegex || '/【界面】/g';
       userPrompt.value = data.userPrompt || '';
@@ -281,8 +282,8 @@ const generateWithAI = async () => {
     return;
   }
 
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    (window as any).toastr?.error('请先在"设置"标签页配置 API');
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    (window as any).toastr?.error(getApiConfigError(settings.value.api_endpoint));
     return;
   }
 
@@ -391,8 +392,8 @@ const modifyWithAI = async () => {
     return;
   }
 
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    (window as any).toastr?.error('请先在"设置"标签页配置 API');
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    (window as any).toastr?.error(getApiConfigError(settings.value.api_endpoint));
     return;
   }
 

@@ -110,10 +110,10 @@
             cursor: pointer;
             transition: all 0.3s ease;
           "
+          title="清空所有配置和代码"
           @click="clearAll"
           @mouseenter="(e: any) => (e.currentTarget.style.transform = 'translateY(-2px)')"
           @mouseleave="(e: any) => (e.currentTarget.style.transform = 'translateY(0)')"
-          title="清空所有配置和代码"
         >
           <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
           清空
@@ -1195,6 +1195,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { detectApiProvider, filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { useTaskStore } from '../taskStore';
 import { copyToClipboard, getScriptIdSafe } from '../utils';
+import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import AIModifyDialog from './AIModifyDialog.vue';
 import CodeCompareDialog from './CodeCompareDialog.vue';
 
@@ -1650,9 +1651,9 @@ async function parseXmlWithAI() {
     return;
   }
 
-  // 检查 API 配置
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    toastr.error('⚠️ API 未配置！请点击右上角"⚙️ 设置"检查 API 配置', '', {
+  // 检查 API 配置（本地端点不需要 API Key）
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    toastr.error('⚠️ ' + getApiConfigError(settings.value.api_endpoint), '', {
       timeOut: 0,
       extendedTimeOut: 0,
       closeButton: true,
@@ -1953,9 +1954,9 @@ async function generateFieldsWithAI() {
     return;
   }
 
-  // 检查 API 配置
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    toastr.error('⚠️ API 未配置！请点击右上角"⚙️ 设置"检查 API 配置', '', {
+  // 检查 API 配置（本地端点不需要 API Key）
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    toastr.error('⚠️ ' + getApiConfigError(settings.value.api_endpoint), '', {
       timeOut: 0,
       extendedTimeOut: 0,
       closeButton: true,
@@ -2500,9 +2501,9 @@ async function generateWithAI() {
   // 显示进度对话框
 
   try {
-    // 检查 API 配置
-    if (!settings.value.api_endpoint || !settings.value.api_key) {
-      window.toastr.error('请先在设置页面配置 API 端点和 API Key');
+    // 检查 API 配置（本地端点不需要 API Key）
+    if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+      window.toastr.error(getApiConfigError(settings.value.api_endpoint));
       taskStore.failTask(taskId, 'API未配置');
       return;
     }

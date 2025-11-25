@@ -563,3 +563,36 @@ export async function getSmartConfig(endpoint: string): Promise<ApiEndpointConfi
 
   return config;
 }
+
+/**
+ * 检查是否是本地端点（本地端点不需要 API Key）
+ * @param endpoint API 端点 URL
+ * @returns 是否是本地端点
+ */
+export function isLocalEndpoint(endpoint: string): boolean {
+  if (!endpoint) return false;
+  return endpoint.includes('localhost') || endpoint.includes('127.0.0.1');
+}
+
+/**
+ * 检查 API 配置是否有效（本地端点不需要 API Key）
+ * @param endpoint API 端点
+ * @param apiKey API Key
+ * @returns 配置是否有效
+ */
+export function isApiConfigValid(endpoint: string, apiKey: string): boolean {
+  if (!endpoint) return false;
+  if (isLocalEndpoint(endpoint)) return true;
+  return !!apiKey;
+}
+
+/**
+ * 获取 API 配置错误信息
+ * @param endpoint API 端点
+ * @returns 错误信息
+ */
+export function getApiConfigError(endpoint: string): string {
+  if (!endpoint) return '请先配置 API 端点';
+  if (isLocalEndpoint(endpoint)) return '请先配置 API 端点';
+  return '请先配置 API 端点和 API Key';
+}

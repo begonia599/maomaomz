@@ -758,6 +758,7 @@ import { storeToRefs } from 'pinia';
 import { onMounted, ref, watch } from 'vue';
 import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { getScriptIdSafe, handleApiError } from '../utils';
+import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import AIModifyDialog from './AIModifyDialog.vue';
 
 const settingsStore = useSettingsStore();
@@ -857,8 +858,8 @@ async function handleAIGenerateStructure() {
     return;
   }
 
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    window.toastr.error('请先在设置页面配置 API 端点和 API Key');
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    window.toastr.error(getApiConfigError(settings.value.api_endpoint));
     return;
   }
 
@@ -1368,8 +1369,8 @@ async function handleAIGeneratePrompt() {
     return;
   }
 
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    window.toastr.error('请先在设置页面配置 API 端点和 API Key');
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    window.toastr.error(getApiConfigError(settings.value.api_endpoint));
     return;
   }
 
@@ -1683,7 +1684,7 @@ ${modifyInstruction}
     }
 
     const data = await response.json();
-    let result = data.choices?.[0]?.message?.content || '';
+    const result = data.choices?.[0]?.message?.content || '';
 
     // 提取 JSON
     let jsonText = result.replace(/```json\s*/gi, '').replace(/```\s*$/g, '');
@@ -1825,7 +1826,7 @@ ${modifyInstruction}
     }
 
     const data = await response.json();
-    let result = data.choices?.[0]?.message?.content || '';
+    const result = data.choices?.[0]?.message?.content || '';
 
     generatedPrompt.value = result.trim();
 

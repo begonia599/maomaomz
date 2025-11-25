@@ -258,6 +258,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
+import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 
 // Settings store
 const settingsStore = useSettingsStore();
@@ -307,8 +308,8 @@ const generateWithAI = async () => {
     return;
   }
 
-  if (!settings.value.api_endpoint || !settings.value.api_key) {
-    (window as any).toastr?.error('请先在"设置"标签页配置 API');
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    (window as any).toastr?.error(getApiConfigError(settings.value.api_endpoint));
     return;
   }
 
