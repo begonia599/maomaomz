@@ -1,15 +1,81 @@
-import { useSettingsStore, normalizeApiEndpoint, detectApiProvider } from './settings';
+import { detectApiProvider, normalizeApiEndpoint, useSettingsStore } from './settings';
+import { detectEndpointType } from './utils/api-config';
+
+/**
+ * 智能请求函数，自动处理 CORS 问题
+ * 对于本地反代，会尝试多种方式绕过 CORS
+ */
+async function smartFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const endpointType = detectEndpointType(url);
+  const isLocalEndpoint = endpointType === 'local' || endpointType === 'reverse-proxy';
+
+  console.log(`🔍 端点类型: ${endpointType}, 是否本地: ${isLocalEndpoint}`);
+
+  // 对于本地端点，优先尝试直接请求（反代可能已配置 CORS）
+  if (isLocalEndpoint) {
+    try {
+      console.log('🚀 尝试直接请求本地端点...');
+      const response = await fetch(url, options);
+      console.log('✅ 本地端点直接请求成功');
+      return response;
+    } catch (directError) {
+      const errorMsg = (directError as Error).message;
+      console.log('⚠️ 直接请求失败:', errorMsg);
+
+      // 如果是 CORS 错误，尝试通过酒馆后端代理
+      if (errorMsg.includes('Failed to fetch') || errorMsg.includes('CORS') || errorMsg.includes('NetworkError')) {
+        console.log('🔄 检测到 CORS 错误，尝试通过酒馆后端代理...');
+        return await tavernProxyFetch(url, options);
+      }
+      throw directError;
+    }
+  }
+
+  // 对于远程端点，直接请求
+  return fetch(url, options);
+}
 
 /**
  * 通过酒馆后端代理请求（绕过 CORS）
  */
-async function proxyFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  try {
-    // 方法 1: 尝试通过酒馆后端代理（如果酒馆在本地运行）
-    const tavernOrigin = window.location.origin; // 例如 http://localhost:8000
+async function tavernProxyFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const tavernOrigin = window.location.origin;
 
+  try {
     console.log('🔄 尝试通过酒馆后端代理:', tavernOrigin);
 
+    // 方法 1: 使用酒馆的 /api/backends/chat-completions 端点
+    // 这是酒馆内置的 OpenAI 兼容代理
+    if (options.method === 'POST' && url.includes('/chat/completions')) {
+      try {
+        const body = options.body ? JSON.parse(options.body as string) : {};
+        const headers = (options.headers as Record<string, string>) || {};
+
+        const proxyResponse = await fetch(`${tavernOrigin}/api/backends/chat-completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(typeof SillyTavern !== 'undefined' && SillyTavern.getRequestHeaders
+              ? SillyTavern.getRequestHeaders()
+              : {}),
+          },
+          body: JSON.stringify({
+            ...body,
+            api_url: url.replace('/chat/completions', ''),
+            api_key: headers['Authorization']?.replace('Bearer ', '') || '',
+          }),
+        });
+
+        if (proxyResponse.ok) {
+          console.log('✅ 成功通过酒馆 chat-completions 代理');
+          return proxyResponse;
+        }
+      } catch (e) {
+        console.log('⚠️ chat-completions 代理不可用:', e);
+      }
+    }
+
+    // 方法 2: 使用通用代理端点
     const proxyResponse = await fetch(`${tavernOrigin}/api/proxy`, {
       method: 'POST',
       headers: {
@@ -20,21 +86,35 @@ async function proxyFetch(url: string, options: RequestInit = {}): Promise<Respo
         url: url,
         method: options.method || 'GET',
         headers: options.headers || {},
+        body: options.body,
       }),
     });
 
     if (proxyResponse.ok) {
-      console.log('✅ 成功通过酒馆后端代理');
+      console.log('✅ 成功通过酒馆通用代理');
       return proxyResponse;
     }
 
-    console.log('⚠️ 酒馆代理不可用，尝试直接请求');
+    console.log('⚠️ 酒馆代理返回错误:', proxyResponse.status);
   } catch (proxyError) {
-    console.log('⚠️ 酒馆代理失败，尝试直接请求:', proxyError);
+    console.log('⚠️ 酒馆代理失败:', proxyError);
   }
 
-  // 方法 2: 直接请求（可能遇到 CORS）
-  return fetch(url, options);
+  // 所有代理方式都失败，抛出详细错误
+  throw new Error(
+    `无法连接到 API 端点 (CORS 错误)\n\n` +
+      `💡 解决方案：\n` +
+      `1. 在反代服务中启用 CORS（添加 Access-Control-Allow-Origin: * 头）\n` +
+      `2. 使用支持 CORS 的反代服务\n` +
+      `3. 确保 Neural Proxy 已正确配置`,
+  );
+}
+
+/**
+ * 兼容旧的 proxyFetch 函数名
+ */
+async function proxyFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  return smartFetch(url, options);
 }
 
 /**
@@ -86,13 +166,18 @@ export async function fetchAvailableModels(): Promise<string[]> {
     try {
       console.log(`📡 正在请求: ${modelsUrl}`);
 
+      // 构建请求头（API Key 可选）
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (settings.api_key && settings.api_key.trim()) {
+        headers['Authorization'] = `Bearer ${settings.api_key}`;
+      }
+
       // 使用代理请求
       const response = await proxyFetch(modelsUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${settings.api_key}`,
-        },
+        headers,
       });
 
       console.log(`📊 响应状态: ${response.status} ${response.statusText}`);
@@ -370,19 +455,24 @@ ${messages.map(msg => `[${msg.role}]: ${msg.message}`).join('\n\n')}
   // 根据 API 提供商过滤参数
   const filteredParams = filterApiParams(requestParams, settings.api_endpoint);
 
-  // 调用 OpenAI 兼容 API
+  // 调用 OpenAI 兼容 API（使用智能请求，自动处理 CORS）
   let response;
   try {
-    response = await fetch(apiUrl, {
+    // 构建请求头（API Key 可选，本地反代可能不需要）
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (settings.api_key && settings.api_key.trim()) {
+      headers['Authorization'] = `Bearer ${settings.api_key}`;
+    }
+
+    response = await smartFetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.api_key}`,
-      },
+      headers,
       body: JSON.stringify(filteredParams),
     });
   } catch (e) {
-    console.error('fetch 调用失败:', e);
+    console.error('smartFetch 调用失败:', e);
     throw new Error(`无法连接到 API: ${(e as Error).message}`);
   }
 
@@ -398,7 +488,9 @@ ${messages.map(msg => `[${msg.role}]: ${msg.message}`).join('\n\n')}
       // 如果响应不是 JSON，尝试读取文本
       try {
         errorDetails = await response.text();
-      } catch {}
+      } catch {
+        // 忽略文本读取错误
+      }
     }
 
     // 根据状态码提供更具体的错误信息

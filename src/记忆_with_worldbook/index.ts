@@ -83,6 +83,7 @@ $(() => {
             auto_summarize_enabled: settings.auto_summarize_enabled,
             summarize_interval: settings.summarize_interval,
             has_api_key: !!settings.api_key,
+            api_endpoint: settings.api_endpoint,
           });
 
           if (!settings.auto_summarize_enabled) {
@@ -90,8 +91,13 @@ $(() => {
             return;
           }
 
-          if (!settings.api_key) {
-            console.log('❌ API Key 未设置');
+          // API Key 检查（本地反代可以不需要 Key）
+          const isLocalEndpoint =
+            settings.api_endpoint &&
+            (settings.api_endpoint.includes('localhost') || settings.api_endpoint.includes('127.0.0.1'));
+
+          if (!settings.api_key && !isLocalEndpoint) {
+            console.log('❌ API Key 未设置（非本地端点需要 API Key）');
             return;
           }
 
@@ -383,12 +389,10 @@ $(() => {
                   lastCheckedMessageId = currentMessageId;
                   console.log(`🔄 DOM 监控触发自动总结检查，当前消息ID: ${currentMessageId}`);
                   checkAutoSummarize();
+                } else if (currentMessageId < 0) {
+                  console.warn('⚠️ 无法获取有效的消息ID，跳过自动总结检查');
                 } else {
-                  if (currentMessageId < 0) {
-                    console.warn('⚠️ 无法获取有效的消息ID，跳过自动总结检查');
-                  } else {
-                    console.log('ℹ️ 消息ID未变化，跳过检查');
-                  }
+                  console.log('ℹ️ 消息ID未变化，跳过检查');
                 }
               }, 500);
             }
@@ -549,7 +553,7 @@ $(() => {
                   } else {
                     console.warn('⚠️ 无法获取消息ID，起始楼层设置为 0');
                     localStorage.setItem(storageKey, '0');
-                    window.toastr?.warn('无法获取当前消息数，起始楼层设置为 0');
+                    window.toastr?.warning('无法获取当前消息数，起始楼层设置为 0');
                   }
                 } else {
                   console.log(`✅ 自动总结已开启，使用现有起始楼层: ${auto_summary_start_id}`);
@@ -587,7 +591,7 @@ $(() => {
           const chat_id = getChatIdSafe();
           console.log('获取到的聊天ID:', chat_id, '类型:', typeof chat_id);
 
-          if (!chat_id && chat_id !== 0) {
+          if (!chat_id) {
             console.error('❌ 无法获取当前聊天ID，可能未打开任何聊天');
             window.toastr.error('请先打开一个聊天');
             return;
@@ -652,7 +656,6 @@ $(() => {
           console.log('当前设置:', {
             自动总结开启: settings.auto_summarize_enabled,
             总结间隔: settings.summarize_interval,
-            保存到世界书: settings.auto_save_to_worldbook,
           });
 
           // 插件环境：使用 SillyTavern.chat
@@ -830,7 +833,6 @@ $(() => {
             设置信息: {
               自动总结开启: settings.auto_summarize_enabled,
               总结间隔: settings.summarize_interval,
-              保存到世界书: settings.auto_save_to_worldbook,
               API配置: settings.api_endpoint ? '已配置' : '未配置',
             },
             状态信息: {

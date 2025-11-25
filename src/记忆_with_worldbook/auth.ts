@@ -272,7 +272,7 @@ function showAuthDialog(): Promise<string | null> {
           line-height: 1.5;
         ">
           没有授权码？<br>
-          请访问我的 Discord 频道获取今日授权码
+          授权码请通过 DC 帖子或者 BOT 获取
         </p>
       </div>
     `;

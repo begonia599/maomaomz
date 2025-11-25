@@ -130,17 +130,21 @@
               • <strong>Gemini AI Studio:</strong> https://generativelanguage.googleapis.com/v1beta/openai/<br />
               • <strong>NewAPI / One API:</strong> https://你的服务器/v1<br />
               • <strong>本地模型 (Ollama):</strong> http://localhost:11434/v1<br />
+              • <strong>本地反代 (Neural Proxy):</strong> http://127.0.0.1:8889/v1<br />
               💡 <strong>提示：</strong>会自动补全 /chat/completions，也可以直接填完整路径
             </div>
           </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">API Key</label>
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+            API Key
+            <span style="color: #888; font-size: 11px; margin-left: 8px"> (本地反代可留空) </span>
+          </label>
           <input
             v-model="settings.api_key"
             type="password"
-            placeholder="sk-..."
+            placeholder="sk-... （本地反代可留空）"
             style="
               width: 100%;
               padding: 10px 12px;
@@ -281,7 +285,6 @@
               API 模板管理
             </label>
             <button
-              @click="showSaveTemplateDialog = true"
               style="
                 padding: 8px 16px;
                 background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
@@ -297,6 +300,7 @@
               "
               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(74, 158, 255, 0.4)'"
               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+              @click="showSaveTemplateDialog = true"
             >
               <i class="fa-solid fa-plus"></i>
               保存当前配置
@@ -306,7 +310,7 @@
           <!-- 模板列表 -->
           <div v-if="apiTemplates.length > 0" style="display: flex; flex-direction: column; gap: 10px">
             <div
-              v-for="(template, index) in apiTemplates"
+              v-for="template in apiTemplates"
               :key="template.id"
               style="
                 padding: 12px 16px;
@@ -333,7 +337,6 @@
               </div>
               <div style="display: flex; gap: 8px; margin-left: 12px">
                 <button
-                  @click="loadApiTemplate(template)"
                   style="
                     padding: 6px 12px;
                     background: #51cf66;
@@ -347,11 +350,11 @@
                   onmouseover="this.style.background='#40c057'; this.style.transform='scale(1.05)'"
                   onmouseout="this.style.background='#51cf66'; this.style.transform='scale(1)'"
                   title="加载此模板"
+                  @click="loadApiTemplate(template)"
                 >
                   <i class="fa-solid fa-download"></i>
                 </button>
                 <button
-                  @click="deleteApiTemplate(template.id)"
                   style="
                     padding: 6px 12px;
                     background: #ff6b6b;
@@ -365,6 +368,7 @@
                   onmouseover="this.style.background='#fa5252'; this.style.transform='scale(1.05)'"
                   onmouseout="this.style.background='#ff6b6b'; this.style.transform='scale(1)'"
                   title="删除此模板"
+                  @click="deleteApiTemplate(template.id)"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -801,7 +805,7 @@
           </button>
           <button
             class="action-button summarize-button"
-            :disabled="is_summarizing || !settings.api_key"
+            :disabled="is_summarizing"
             style="
               flex: 1;
               min-width: 120px;
@@ -1425,7 +1429,6 @@
       </div>
       <div style="display: flex; gap: 10px; justify-content: flex-end">
         <button
-          @click="showSaveTemplateDialog = false"
           style="
             padding: 10px 20px;
             background: #3a3a3a;
@@ -1435,11 +1438,11 @@
             font-size: 13px;
             cursor: pointer;
           "
+          @click="showSaveTemplateDialog = false"
         >
           取消
         </button>
         <button
-          @click="saveApiTemplate"
           style="
             padding: 10px 20px;
             background: #4a9eff;
@@ -1450,6 +1453,7 @@
             cursor: pointer;
             font-weight: 500;
           "
+          @click="saveApiTemplate"
         >
           保存
         </button>
@@ -1463,7 +1467,7 @@ import { storeToRefs } from 'pinia';
 import { onMounted, ref } from 'vue';
 import { useSettingsStore, useSummaryHistoryStore } from '../settings';
 import { useTaskStore } from '../taskStore';
-import { getChatIdSafe, getScriptIdSafe } from '../utils';
+import { getChatIdSafe, getScriptIdSafe, handleApiError } from '../utils';
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);

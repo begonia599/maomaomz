@@ -112,6 +112,12 @@ export const KNOWN_PROVIDERS = {
     defaultPath: '/api/chat',
     supportsCors: false,
   },
+  neuralProxy: {
+    pattern: /(localhost|127\.0\.0\.1):(8889|9998)/,
+    type: 'reverse-proxy' as ApiEndpointType,
+    defaultPath: '/v1/chat/completions',
+    supportsCors: true,
+  },
 };
 
 // 检测端点类型
@@ -119,14 +125,23 @@ export function detectEndpointType(endpoint: string): ApiEndpointType {
   try {
     const url = new URL(endpoint);
 
-    // 检查已知的 API 提供商
+    // 检查已知的 API 提供商（优先检查，包括本地反代）
     for (const [, config] of Object.entries(KNOWN_PROVIDERS)) {
       if (config.pattern.test(endpoint)) {
         return config.type;
       }
     }
 
-    // 本地地址
+    // 本地地址带非标准端口，通常是反向代理
+    if (
+      (url.hostname === 'localhost' || url.hostname === '127.0.0.1') &&
+      url.port &&
+      !['80', '443', '11434', '1234'].includes(url.port)
+    ) {
+      return 'reverse-proxy';
+    }
+
+    // 本地地址（标准端口）
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.endsWith('.local')) {
       return 'local';
     }
@@ -472,6 +487,9 @@ export function getEndpointSuggestions(endpoint: string): string[] {
       suggestions.push('检测到反向代理配置');
       suggestions.push('确保代理服务器正常运行');
       suggestions.push('检查端口号是否正确');
+      if (endpoint.includes(':8889') || endpoint.includes(':9998')) {
+        suggestions.push('💡 检测到 Neural Proxy，请确保反代服务已启动');
+      }
       break;
 
     case 'cloudflare':
