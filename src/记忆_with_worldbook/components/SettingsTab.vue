@@ -1833,7 +1833,7 @@ const deleteTemplate = () => {
   }
 };
 
-// 从 localStorage 加载隐藏楼层数据（插件环境）
+// 从 localStorage 加载隐藏楼层数据（插件环境，按聊天ID区分）
 const loadHiddenMessages = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -1841,22 +1841,30 @@ const loadHiddenMessages = () => {
       console.warn('script_id 为空，无法加载隐藏楼层数据');
       return;
     }
-    console.log('脚本ID:', scriptId);
 
-    // 插件环境：从 localStorage 加载
-    const storageKey = `${scriptId}_hidden_messages`;
+    // 获取当前聊天ID，按聊天区分隐藏楼层
+    const chatId = getChatIdSafe();
+    if (!chatId) {
+      console.warn('chat_id 为空，无法加载隐藏楼层数据');
+      hidden_messages.value = [];
+      return;
+    }
+    console.log('脚本ID:', scriptId, '聊天ID:', chatId);
+
+    // 插件环境：从 localStorage 加载（按聊天ID区分）
+    const storageKey = `${scriptId}_hidden_messages_${chatId}`;
     const savedData = localStorage.getItem(storageKey);
 
     if (savedData) {
       try {
         hidden_messages.value = JSON.parse(savedData);
-        console.log('✅ 从 localStorage 加载隐藏楼层数据:', hidden_messages.value.length, '个');
+        console.log('✅ 从 localStorage 加载隐藏楼层数据:', hidden_messages.value.length, '个 (聊天:', chatId, ')');
       } catch (parseError) {
         console.error('解析隐藏楼层数据失败:', parseError);
         hidden_messages.value = [];
       }
     } else {
-      console.log('📝 localStorage 中没有隐藏楼层数据');
+      console.log('📝 localStorage 中没有隐藏楼层数据 (聊天:', chatId, ')');
       hidden_messages.value = [];
     }
   } catch (error) {
@@ -1864,7 +1872,7 @@ const loadHiddenMessages = () => {
   }
 };
 
-// 保存隐藏楼层数据到 localStorage（插件环境）
+// 保存隐藏楼层数据到 localStorage（插件环境，按聊天ID区分）
 const saveHiddenMessages = () => {
   try {
     const scriptId = getScriptIdSafe();
@@ -1872,14 +1880,21 @@ const saveHiddenMessages = () => {
       console.warn('script_id 为空，无法保存隐藏楼层数据');
       return;
     }
-    console.log('保存到脚本ID:', scriptId);
+
+    // 获取当前聊天ID，按聊天区分隐藏楼层
+    const chatId = getChatIdSafe();
+    if (!chatId) {
+      console.warn('chat_id 为空，无法保存隐藏楼层数据');
+      return;
+    }
+    console.log('保存到脚本ID:', scriptId, '聊天ID:', chatId);
     console.log('要保存的数据:', klona(hidden_messages.value));
 
-    // 插件环境：保存到 localStorage
-    const storageKey = `${scriptId}_hidden_messages`;
+    // 插件环境：保存到 localStorage（按聊天ID区分）
+    const storageKey = `${scriptId}_hidden_messages_${chatId}`;
     localStorage.setItem(storageKey, JSON.stringify(hidden_messages.value));
 
-    console.log('✅ 成功保存隐藏楼层数据到 localStorage:', hidden_messages.value.length, '个');
+    console.log('✅ 成功保存隐藏楼层数据到 localStorage:', hidden_messages.value.length, '个 (聊天:', chatId, ')');
   } catch (error) {
     console.error('保存隐藏楼层数据失败:', error);
   }
@@ -3237,11 +3252,9 @@ const handle_refresh_hidden = async (showToast: boolean = false) => {
   try {
     console.log('刷新隐藏楼层', showToast);
 
-    // 先加载隐藏楼层数据（如果还没有加载的话）
-    if (hidden_messages.value.length === 0) {
-      console.log('隐藏楼层列表为空，先加载数据...');
-      loadHiddenMessages();
-    }
+    // 始终重新加载当前聊天的隐藏楼层数据（确保切换聊天后数据正确）
+    console.log('重新加载当前聊天的隐藏楼层数据...');
+    loadHiddenMessages();
 
     // 获取当前聊天的消息
     let chatMessages;
