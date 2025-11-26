@@ -44,7 +44,7 @@ async function fetchModelsViaTavern(apiUrl: string): Promise<string[]> {
 
 /**
  * 智能请求函数，自动处理 CORS 问题
- * 本地反代直接使用酒馆后端代理，避免 CORS 预检问题
+ * 优先使用酒馆后端代理，避免 CORS 问题
  */
 async function smartFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const endpointType = detectEndpointType(url);
@@ -52,14 +52,22 @@ async function smartFetch(url: string, options: RequestInit = {}): Promise<Respo
 
   console.log(`🔍 端点类型: ${endpointType}, 是否本地: ${isLocalEndpoint}`);
 
-  // 对于本地端点，直接使用酒馆后端代理（避免 CORS 预检问题）
+  // 对于本地端点，直接使用酒馆后端代理
   if (isLocalEndpoint) {
     console.log('🔄 本地端点，使用酒馆后端代理绕过 CORS...');
     return await tavernProxyFetch(url, options);
   }
 
-  // 对于远程端点，直接请求
-  return fetch(url, options);
+  // 对于远程端点，先尝试直接请求，如果失败（可能是 CORS）则使用代理
+  try {
+    console.log('🔄 远程端点，尝试直接请求...');
+    const response = await fetch(url, options);
+    return response;
+  } catch (directError) {
+    console.log('⚠️ 直接请求失败，尝试使用酒馆后端代理...', directError);
+    // 直接请求失败（可能是 CORS），尝试使用酒馆后端代理
+    return await tavernProxyFetch(url, options);
+  }
 }
 
 /**
