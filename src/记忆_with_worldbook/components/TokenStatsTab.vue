@@ -432,6 +432,63 @@ function getTokenCount(text: string | null | undefined): number {
   return Math.ceil(text.length / 4);
 }
 
+function collectPresetPromptTexts(st: any, tav: any): string[] {
+  const texts: string[] = [];
+
+  const pushText = (value: unknown) => {
+    if (typeof value !== 'string') return;
+    const trimmed = value.trim();
+    if (trimmed) {
+      texts.push(value);
+    }
+  };
+
+  // 1) 当前预设的 prompts（tavern helper）
+  if (tav && typeof tav.getPreset === 'function') {
+    try {
+      const preset = tav.getPreset('in_use');
+      if (preset && Array.isArray(preset.prompts)) {
+        for (const prompt of preset.prompts) {
+          if (prompt?.enabled !== false && prompt?.content) {
+            pushText(prompt.content);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[TokenStats] tav.getPreset("in_use") 失败:', e);
+    }
+  }
+
+  // 2) chatCompletionSettings / oai_settings
+  const oai = st?.chatCompletionSettings;
+  if (oai && typeof oai === 'object') {
+    const promptFields = [
+      'main_prompt',
+      'nsfw_prompt',
+      'jailbreak_prompt',
+      'jailbreak_system',
+      'new_chat_prompt',
+      'new_group_chat_prompt',
+      'new_example_chat_prompt',
+      'continue_nudge_prompt',
+      'group_nudge_prompt',
+      'impersonation_prompt',
+      'system_prompt',
+    ];
+    for (const field of promptFields) {
+      if (oai[field]) pushText(oai[field]);
+    }
+    // prompts 数组 (tokenInspect 里展示的最终 prompt 列表)
+    if (Array.isArray(oai.prompts)) {
+      for (const item of oai.prompts) {
+        if (item?.content) pushText(item.content);
+      }
+    }
+  }
+
+  return texts;
+}
+
 async function calculateTokenStats(): Promise<void> {
   if (!envReady.value) {
     error.value = '未检测到 SillyTavern / TavernHelper 环境，无法计算 Token。';
@@ -614,43 +671,13 @@ async function calculateTokenStats(): Promise<void> {
       }
     }
 
-    // 1.5 预设提示词统计（使用 TavernHelper.getPreset('in_use') 获取当前预设的所有提示词）
+    // 1.5 预设提示词统计（收集所有系统提示词文本）
     try {
-      // 使用酒馆官方的 getPreset 函数获取当前预设（通过 TavernHelper）
-      if (tav && typeof tav.getPreset === 'function') {
-        const preset = tav.getPreset('in_use');
-        if (preset && Array.isArray(preset.prompts)) {
-          // 遍历所有提示词，只统计启用的并且有内容的
-          for (const prompt of preset.prompts) {
-            if (prompt.enabled && prompt.content) {
-              local.systemPromptTokens += getTokenCount(prompt.content);
-            }
-          }
-          console.log(
-            '[TokenStats] 预设提示词 Tokens:',
-            local.systemPromptTokens,
-            '(共',
-            preset.prompts.filter((p: any) => p.enabled && p.content).length,
-            '条启用的提示词)',
-          );
-        }
-      } else {
-        console.warn('[TokenStats] tav.getPreset 函数不可用，尝试使用备用方式');
-        // 备用方式：从 chatCompletionSettings 获取
-        if (st?.chatCompletionSettings) {
-          const oai = st.chatCompletionSettings;
-          if (oai.main_prompt) local.systemPromptTokens += getTokenCount(oai.main_prompt);
-          if (oai.nsfw_prompt) local.systemPromptTokens += getTokenCount(oai.nsfw_prompt);
-          if (oai.jailbreak_prompt) local.systemPromptTokens += getTokenCount(oai.jailbreak_prompt);
-        }
+      const presetTexts = collectPresetPromptTexts(st, tav);
+      for (const text of presetTexts) {
+        local.systemPromptTokens += getTokenCount(text);
       }
-
-      // 用户人设（来自 powerUserSettings）
-      if (st?.powerUserSettings?.persona_description) {
-        local.personaTokens = getTokenCount(st.powerUserSettings.persona_description);
-        console.log('[TokenStats] 用户人设 Tokens:', local.personaTokens);
-      }
-
+      console.log('[TokenStats] 预设/系统提示词 Tokens:', local.systemPromptTokens, '(共', presetTexts.length, '条)');
       // 扩展注入的提示词
       if (st?.extensionPrompts && typeof st.extensionPrompts === 'object') {
         for (const [key, ext] of Object.entries(st.extensionPrompts)) {
