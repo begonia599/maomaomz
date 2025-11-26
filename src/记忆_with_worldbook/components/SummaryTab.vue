@@ -778,7 +778,7 @@ const promptForWorldbook = async (worldbookNames: string[]): Promise<string | nu
         min-width: 300px;
       ">
         <h3 style="margin: 0 0 15px 0; color: #e0e0e0;">选择世界书</h3>
-        <div style="margin-bottom: 15px;">
+        <div style="margin-bottom: 15px; max-height: 300px; overflow-y: auto; padding-right: 10px;">
           ${worldbookNames
             .map(
               name => `
