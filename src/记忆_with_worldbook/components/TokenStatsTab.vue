@@ -81,7 +81,7 @@
             {{ formatNumber(stats.totalTokens) }}
           </div>
           <div style="font-size: 11px; color: #777; margin-top: 4px">
-            角色卡 + 世界书 + 聊天内容（世界书仅统计启用条目）
+            包含角色卡、预设、人设、扩展、世界书、聊天（粗略估算）
           </div>
         </div>
 
@@ -145,7 +145,87 @@
               ({{ percent(stats.chatTokens, stats.totalTokens) }}%)
             </span>
           </div>
-          <div style="font-size: 11px; color: #777; margin-top: 4px">最近若干条对话消息（粗略估算）</div>
+          <div style="font-size: 11px; color: #777; margin-top: 4px">全部对话消息</div>
+        </div>
+      </div>
+
+      <!-- 其他统计项 -->
+      <div style="padding: 14px 16px; border-radius: 10px; background: #252525; border: 1px solid #333">
+        <div style="font-size: 13px; color: #ddd; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
+          <i class="fa-solid fa-layer-group" style="color: #60a5fa"></i>
+          其他项目
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <div
+            style="
+              flex: 1;
+              min-width: 140px;
+              padding: 8px 10px;
+              border-radius: 8px;
+              background: rgba(236, 72, 153, 0.1);
+              border: 1px solid rgba(236, 72, 153, 0.4);
+            "
+          >
+            <div style="font-size: 11px; color: #f472b6">系统提示 / 预设</div>
+            <div style="font-size: 16px; font-weight: 600; color: #f472b6">
+              {{ formatNumber(stats.systemPromptTokens) }}
+              <span style="font-size: 10px; color: #888"
+                >({{ percent(stats.systemPromptTokens, stats.totalTokens) }}%)</span
+              >
+            </div>
+          </div>
+          <div
+            style="
+              flex: 1;
+              min-width: 140px;
+              padding: 8px 10px;
+              border-radius: 8px;
+              background: rgba(34, 197, 94, 0.1);
+              border: 1px solid rgba(34, 197, 94, 0.4);
+            "
+          >
+            <div style="font-size: 11px; color: #4ade80">用户人设</div>
+            <div style="font-size: 16px; font-weight: 600; color: #4ade80">
+              {{ formatNumber(stats.personaTokens) }}
+              <span style="font-size: 10px; color: #888">({{ percent(stats.personaTokens, stats.totalTokens) }}%)</span>
+            </div>
+          </div>
+          <div
+            style="
+              flex: 1;
+              min-width: 140px;
+              padding: 8px 10px;
+              border-radius: 8px;
+              background: rgba(168, 85, 247, 0.1);
+              border: 1px solid rgba(168, 85, 247, 0.4);
+            "
+          >
+            <div style="font-size: 11px; color: #c084fc">扩展注入</div>
+            <div style="font-size: 16px; font-weight: 600; color: #c084fc">
+              {{ formatNumber(stats.extensionTokens) }}
+              <span style="font-size: 10px; color: #888"
+                >({{ percent(stats.extensionTokens, stats.totalTokens) }}%)</span
+              >
+            </div>
+          </div>
+          <div
+            style="
+              flex: 1;
+              min-width: 140px;
+              padding: 8px 10px;
+              border-radius: 8px;
+              background: rgba(251, 146, 60, 0.1);
+              border: 1px solid rgba(251, 146, 60, 0.4);
+            "
+          >
+            <div style="font-size: 11px; color: #fb923c">深度提示词</div>
+            <div style="font-size: 16px; font-weight: 600; color: #fb923c">
+              {{ formatNumber(stats.depthPromptTokens) }}
+              <span style="font-size: 10px; color: #888"
+                >({{ percent(stats.depthPromptTokens, stats.totalTokens) }}%)</span
+              >
+            </div>
+          </div>
         </div>
       </div>
 
@@ -327,6 +407,10 @@ interface LorebookStats {
 interface TokenStats {
   characterName: string;
   characterCardTokens: number;
+  systemPromptTokens: number; // 系统提示 / 预设
+  personaTokens: number; // 用户人设
+  extensionTokens: number; // 扩展注入的提示词
+  depthPromptTokens: number; // 深度提示词
   totalConstantTokens: number;
   totalSelectiveTokens: number;
   totalVectorizedTokens: number;
@@ -422,6 +506,10 @@ async function calculateTokenStats(): Promise<void> {
   const local: TokenStats = {
     characterName: '(未检测到角色)',
     characterCardTokens: 0,
+    systemPromptTokens: 0,
+    personaTokens: 0,
+    extensionTokens: 0,
+    depthPromptTokens: 0,
     totalConstantTokens: 0,
     totalSelectiveTokens: 0,
     totalVectorizedTokens: 0,
@@ -518,6 +606,68 @@ async function calculateTokenStats(): Promise<void> {
         }
         local.characterCardTokens = total;
         characterTokensComputed = local.characterCardTokens > 0;
+      }
+    }
+
+    // 1.5 统计系统提示、用户人设、扩展注入、深度提示词
+    if (st) {
+      // 系统提示 / 预设
+      try {
+        const chatSettings = (st as any).chatCompletionSettings;
+        if (chatSettings) {
+          // 主系统提示
+          const mainPrompt = chatSettings.main_prompt || chatSettings.system_prompt || '';
+          // NSFW 提示
+          const nsfwPrompt = chatSettings.nsfw_prompt || '';
+          // 越狱提示
+          const jbPrompt = chatSettings.jailbreak_prompt || '';
+          const allSystem = [mainPrompt, nsfwPrompt, jbPrompt].filter(Boolean).join('\n');
+          local.systemPromptTokens = getTokenCount(allSystem);
+        }
+      } catch (e) {
+        console.warn('[TokenStats] 获取系统提示失败:', e);
+      }
+
+      // 用户人设
+      try {
+        const name1 = (st as any).name1 || '';
+        // 尝试获取 persona 描述（power_user 里或 chatMetadata 里）
+        const powerUser = (st as any).powerUserSettings;
+        const personaDesc = powerUser?.persona_description || '';
+        if (name1 || personaDesc) {
+          local.personaTokens = getTokenCount([name1, personaDesc].filter(Boolean).join('\n'));
+        }
+      } catch (e) {
+        console.warn('[TokenStats] 获取用户人设失败:', e);
+      }
+
+      // 扩展注入的提示词
+      try {
+        const extPrompts = (st as any).extensionPrompts;
+        if (extPrompts && typeof extPrompts === 'object') {
+          let extText = '';
+          for (const key of Object.keys(extPrompts)) {
+            const ep = extPrompts[key];
+            if (ep && ep.value) {
+              extText += ep.value + '\n';
+            }
+          }
+          local.extensionTokens = getTokenCount(extText);
+        }
+      } catch (e) {
+        console.warn('[TokenStats] 获取扩展注入失败:', e);
+      }
+
+      // 深度提示词（角色卡的 depth_prompt）
+      try {
+        if (tav && typeof tav.getCharData === 'function') {
+          const charData = tav.getCharData('current');
+          if (charData?.data?.extensions?.depth_prompt?.prompt) {
+            local.depthPromptTokens = getTokenCount(charData.data.extensions.depth_prompt.prompt);
+          }
+        }
+      } catch (e) {
+        console.warn('[TokenStats] 获取深度提示词失败:', e);
       }
     }
 
@@ -646,10 +796,8 @@ async function calculateTokenStats(): Promise<void> {
       }
 
       if (Array.isArray(messages) && messages.length > 0) {
-        const maxMessages = 50;
-        const start = Math.max(0, messages.length - maxMessages);
-        const recent = messages.slice(start);
-        const text = recent
+        // 统计全部聊天消息
+        const text = messages
           .map((m: any) => (typeof m.mes === 'string' ? m.mes : ((m.message as string) ?? '')))
           .filter(Boolean)
           .join('\n');
@@ -662,7 +810,15 @@ async function calculateTokenStats(): Promise<void> {
       local.chatTokens = 0;
     }
 
-    local.totalTokens = local.characterCardTokens + local.lorebookTokens + local.chatTokens;
+    // 总 Token = 角色卡 + 系统提示 + 用户人设 + 扩展注入 + 深度提示词 + 世界书 + 聊天内容
+    local.totalTokens =
+      local.characterCardTokens +
+      local.systemPromptTokens +
+      local.personaTokens +
+      local.extensionTokens +
+      local.depthPromptTokens +
+      local.lorebookTokens +
+      local.chatTokens;
 
     stats.value = local;
     lastUpdated.value = Date.now();
