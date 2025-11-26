@@ -997,6 +997,7 @@ function handleRefresh() {
 
 // 监听实际发送的提示词
 function handlePromptReady(eventData: { chat: Array<{ role: string; content: string }>; dryRun: boolean }) {
+  console.log('[TokenStats] 🎯 收到 CHAT_COMPLETION_PROMPT_READY 事件:', eventData);
   const messages = eventData.chat || [];
   let totalTokens = 0;
 
@@ -1016,8 +1017,27 @@ function handlePromptReady(eventData: { chat: Array<{ role: string; content: str
   actualPromptTokens.value = totalTokens;
   actualPromptMessages.value = messages.length;
   actualPromptUpdated.value = Date.now();
-  console.log('[TokenStats] 实际发送提示词:', totalTokens, 'tokens,', messages.length, '条消息');
+  console.log('[TokenStats] 🎯 实际发送提示词:', totalTokens, 'tokens,', messages.length, '条消息');
 }
+
+// 立即尝试注册事件（不等待 onMounted）
+(function registerEventNow() {
+  const w = window as any;
+  const st = w.SillyTavern;
+  console.log('[TokenStats] 🔍 尝试注册事件监听...');
+  console.log('[TokenStats] SillyTavern:', !!st, 'eventSource:', !!st?.eventSource, 'eventTypes:', !!st?.eventTypes);
+  console.log('[TokenStats] eventOn:', typeof w.eventOn, 'tavern_events:', !!w.tavern_events);
+
+  if (st?.eventSource?.on && st?.eventTypes?.CHAT_COMPLETION_PROMPT_READY) {
+    st.eventSource.on(st.eventTypes.CHAT_COMPLETION_PROMPT_READY, handlePromptReady);
+    console.log('[TokenStats] ✅ 使用 SillyTavern.eventSource.on 注册成功');
+  } else if (typeof w.eventOn === 'function' && w.tavern_events?.CHAT_COMPLETION_PROMPT_READY) {
+    w.eventOn(w.tavern_events.CHAT_COMPLETION_PROMPT_READY, handlePromptReady);
+    console.log('[TokenStats] ✅ 使用全局 eventOn 注册成功');
+  } else {
+    console.warn('[TokenStats] ⚠️ 无法注册事件监听');
+  }
+})();
 
 onMounted(() => {
   // 默认不自动计算，避免每次打开面板都扫一次。用户手动点击按钮即可。
