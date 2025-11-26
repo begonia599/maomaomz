@@ -78,7 +78,9 @@
           <div style="font-size: 22px; font-weight: 700; color: #f97316">
             {{ formatNumber(stats.totalTokens) }}
           </div>
-          <div style="font-size: 11px; color: #777; margin-top: 4px">角色卡 + 世界书 + 聊天内容 的大致 Token 总量</div>
+          <div style="font-size: 11px; color: #777; margin-top: 4px">
+            角色卡 + 世界书 + 聊天 + 预设 的大致 Token 总量
+          </div>
         </div>
 
         <div
@@ -142,6 +144,32 @@
             </span>
           </div>
           <div style="font-size: 11px; color: #777; margin-top: 4px">当前会话全部对话消息的 Tokens（粗略估算）</div>
+        </div>
+
+        <div
+          class="stat-card"
+          style="
+            flex: 1;
+            min-width: 180px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: #252525;
+            border: 1px solid #333;
+          "
+        >
+          <div style="font-size: 12px; color: #aaa; margin-bottom: 4px">预设/系统</div>
+          <div style="font-size: 20px; font-weight: 700; color: #22c55e">
+            {{ formatNumber(stats.systemPromptTokens + stats.personaTokens + stats.extensionTokens) }}
+            <span style="font-size: 11px; color: #888; margin-left: 4px">
+              ({{
+                percent(stats.systemPromptTokens + stats.personaTokens + stats.extensionTokens, stats.totalTokens)
+              }}%)
+            </span>
+          </div>
+          <div style="font-size: 11px; color: #777; margin-top: 4px">
+            系统提示 {{ formatNumber(stats.systemPromptTokens) }} + 人设 {{ formatNumber(stats.personaTokens) }} + 扩展
+            {{ formatNumber(stats.extensionTokens) }}
+          </div>
         </div>
       </div>
 
@@ -328,6 +356,10 @@ interface TokenStats {
   totalVectorizedTokens: number;
   lorebookTokens: number;
   chatTokens: number;
+  // 新增：预设相关
+  systemPromptTokens: number;
+  personaTokens: number;
+  extensionTokens: number;
   totalTokens: number;
   bySource: Record<SourceKey, SourceStats>;
   byLorebook: Record<string, LorebookStats>;
@@ -423,6 +455,10 @@ async function calculateTokenStats(): Promise<void> {
     totalVectorizedTokens: 0,
     lorebookTokens: 0,
     chatTokens: 0,
+    // 新增：预设相关
+    systemPromptTokens: 0,
+    personaTokens: 0,
+    extensionTokens: 0,
     totalTokens: 0,
     bySource: {
       primary: emptySource(),
@@ -578,6 +614,73 @@ async function calculateTokenStats(): Promise<void> {
       }
     }
 
+    // 1.5 预设相关统计（系统提示词、用户人设、扩展注入）
+    try {
+      // 系统提示词（来自 chatCompletionSettings / oai_settings）
+      if (st?.chatCompletionSettings) {
+        const oai = st.chatCompletionSettings;
+        // 主系统提示词
+        if (oai.main_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.main_prompt);
+        }
+        // NSFW 提示词
+        if (oai.nsfw_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.nsfw_prompt);
+        }
+        // Jailbreak 提示词
+        if (oai.jailbreak_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.jailbreak_prompt);
+        }
+        // 越狱系统提示
+        if (oai.jailbreak_system) {
+          local.systemPromptTokens += getTokenCount(oai.jailbreak_system);
+        }
+        // 新会话提示词
+        if (oai.new_chat_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.new_chat_prompt);
+        }
+        // 新群组聊天提示词
+        if (oai.new_group_chat_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.new_group_chat_prompt);
+        }
+        // 新示例聊天提示词
+        if (oai.new_example_chat_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.new_example_chat_prompt);
+        }
+        // 续写提示词
+        if (oai.continue_nudge_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.continue_nudge_prompt);
+        }
+        // 群组推动提示词
+        if (oai.group_nudge_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.group_nudge_prompt);
+        }
+        // impersonation 提示词
+        if (oai.impersonation_prompt) {
+          local.systemPromptTokens += getTokenCount(oai.impersonation_prompt);
+        }
+        console.log('[TokenStats] 系统提示词 Tokens:', local.systemPromptTokens);
+      }
+
+      // 用户人设（来自 powerUserSettings）
+      if (st?.powerUserSettings?.persona_description) {
+        local.personaTokens = getTokenCount(st.powerUserSettings.persona_description);
+        console.log('[TokenStats] 用户人设 Tokens:', local.personaTokens);
+      }
+
+      // 扩展注入的提示词
+      if (st?.extensionPrompts && typeof st.extensionPrompts === 'object') {
+        for (const [key, ext] of Object.entries(st.extensionPrompts)) {
+          if (ext && typeof ext === 'object' && (ext as any).value) {
+            local.extensionTokens += getTokenCount((ext as any).value);
+          }
+        }
+        console.log('[TokenStats] 扩展注入 Tokens:', local.extensionTokens);
+      }
+    } catch (e) {
+      console.warn('[TokenStats] 获取预设相关 Token 失败:', e);
+    }
+
     // 2. 收集世界书
     const lorebooksToProcess = new Map<string, SourceKey>();
 
@@ -723,8 +826,14 @@ async function calculateTokenStats(): Promise<void> {
       local.chatTokens = 0;
     }
 
-    // 总 Token = 角色卡 + 世界书 + 聊天内容
-    local.totalTokens = local.characterCardTokens + local.lorebookTokens + local.chatTokens;
+    // 总 Token = 角色卡 + 世界书 + 聊天内容 + 预设相关
+    local.totalTokens =
+      local.characterCardTokens +
+      local.lorebookTokens +
+      local.chatTokens +
+      local.systemPromptTokens +
+      local.personaTokens +
+      local.extensionTokens;
 
     stats.value = local;
     lastUpdated.value = Date.now();
