@@ -260,7 +260,7 @@ $(() => {
             window.toastr.info(`🔄 开始自动总结楼层 ${start_id}-${end_id}...`);
 
             summarizeMessages(start_id, end_id)
-              .then(summary => {
+              .then(async summary => {
                 console.log(`✅ 自动总结完成: 楼层 ${start_id}-${end_id}`, summary);
 
                 // 添加到历史总结中
@@ -279,6 +279,28 @@ $(() => {
                   const storageKey = `${scriptId}_auto_summary_start_id_${current_chat_id}`;
                   localStorage.setItem(storageKey, String(new_start_id));
                   console.log(`🔄 更新起始楼层为: ${new_start_id}`);
+                }
+
+                // 自动隐藏已总结的楼层
+                if (settings.auto_hide_after_summary) {
+                  try {
+                    const hideCommand = `/hide ${start_id}-${end_id}`;
+                    console.log(`🙈 执行自动隐藏: ${hideCommand}`);
+
+                    // 使用 SillyTavern.executeSlashCommandsWithOptions 执行斜杠命令
+                    if (typeof SillyTavern !== 'undefined' && SillyTavern.executeSlashCommandsWithOptions) {
+                      const result = await SillyTavern.executeSlashCommandsWithOptions(hideCommand);
+                      if (!result.isError) {
+                        window.toastr.info(`🙈 已隐藏楼层 ${start_id}-${end_id}`);
+                      } else {
+                        console.warn('⚠️ 隐藏命令执行失败:', result.errorMessage);
+                      }
+                    } else {
+                      console.warn('⚠️ 无法执行隐藏命令：找不到 executeSlashCommandsWithOptions');
+                    }
+                  } catch (hideError) {
+                    console.error('❌ 自动隐藏失败:', hideError);
+                  }
                 }
 
                 window.toastr.success(`✅ 已自动总结第 ${start_id}-${end_id} 楼，下次将从第 ${new_start_id} 楼开始`);

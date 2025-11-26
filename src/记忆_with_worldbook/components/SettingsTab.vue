@@ -612,6 +612,19 @@
               transition: border-color 0.2s;
             "
           />
+          <div style="margin-top: 12px">
+            <label style="display: flex; align-items: center; gap: 10px; color: #ccc; font-size: 13px; cursor: pointer">
+              <input
+                v-model="settings.auto_hide_after_summary"
+                type="checkbox"
+                style="width: 18px; height: 18px; cursor: pointer; accent-color: #4a9eff; border-radius: 4px"
+              />
+              总结后自动隐藏已总结楼层
+            </label>
+            <small style="color: #888; font-size: 11px; margin-left: 28px">
+              开启后，小总结完成会自动执行 /hide 命令隐藏已总结的楼层
+            </small>
+          </div>
           <div style="margin-top: 10px; display: flex; gap: 10px">
             <button
               style="

@@ -651,3 +651,69 @@ ${messages.map(msg => `[${msg.role}]: ${msg.message}`).join('\n\n')}
   console.log('✅ 成功提取总结内容');
   return summary_content;
 }
+
+/**
+ * 直接发送文本给 AI 进行处理（用于大总结等场景）
+ * @param prompt 完整的提示词
+ * @returns AI 返回的文本
+ */
+export async function summarizeText(prompt: string): Promise<string> {
+  const settings = useSettingsStore().settings;
+
+  // 验证 API endpoint
+  if (!settings.api_endpoint || settings.api_endpoint.trim() === '') {
+    throw new Error('API 端点未配置');
+  }
+
+  const baseUrl = settings.api_endpoint.trim();
+  let apiUrl: string;
+  try {
+    apiUrl = normalizeApiEndpoint(baseUrl);
+  } catch (e) {
+    throw new Error(`API 端点格式不正确: ${baseUrl}`);
+  }
+
+  console.log('🔄 发送文本给 AI 处理...');
+
+  // 构造请求体
+  const requestBody = {
+    model: settings.model || 'gpt-4o-mini',
+    messages: [{ role: 'user', content: prompt }],
+    max_tokens: settings.max_tokens || 4000,
+    temperature: settings.temperature ?? 0.7,
+    top_p: settings.top_p ?? 1.0,
+  };
+
+  // 发送请求
+  const response = await smartFetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${settings.api_key}`,
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API 请求失败 (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  // 提取返回内容
+  let content: string | null = null;
+  if (data.choices?.[0]?.message?.content) {
+    content = data.choices[0].message.content;
+  } else if (typeof data.content === 'string') {
+    content = data.content;
+  } else if (typeof data === 'string') {
+    content = data;
+  }
+
+  if (!content) {
+    throw new Error('API 返回数据格式不符合预期');
+  }
+
+  return content;
+}

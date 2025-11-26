@@ -51,6 +51,28 @@
           <i class="fa-solid fa-refresh"></i> 刷新数据
         </button>
         <button
+          v-if="summary_history.length >= 2"
+          class="mini-button mega-summary-button"
+          style="
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          "
+          :disabled="isMegaSummarizing"
+          @click="handleMegaSummary"
+        >
+          <i :class="isMegaSummarizing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-layer-group'"></i>
+          {{ isMegaSummarizing ? '生成中...' : '生成大总结' }}
+        </button>
+        <button
           class="mini-button create-worldbook-button"
           style="
             padding: 6px 12px;
@@ -234,12 +256,14 @@
 import { ref } from 'vue';
 import { useSummaryHistoryStore } from '../settings';
 import { getChatIdSafe, getScriptIdSafe } from '../utils';
+import { summarizeText } from '../总结功能';
 
 const historyStore = useSummaryHistoryStore();
 
 // 响应式数据
 const summary_history = ref<Array<{ start_id: number; end_id: number; content: string }>>([]);
 const expandedState = ref<Map<number, boolean>>(new Map());
+const isMegaSummarizing = ref(false);
 
 // 更新总结历史的函数
 const refreshSummaryHistory = () => {
@@ -271,6 +295,65 @@ const handleRefreshData = async () => {
   } catch (error) {
     console.error('刷新数据失败:', error);
     window.toastr.error('刷新数据失败: ' + (error as Error).message);
+  }
+};
+
+// 处理大总结：将多个小总结合并成一个概括性总结
+const handleMegaSummary = async () => {
+  if (summary_history.value.length < 2) {
+    window.toastr.warning('需要至少 2 条小总结才能生成大总结');
+    return;
+  }
+
+  isMegaSummarizing.value = true;
+  try {
+    // 合并所有小总结的内容
+    const allSummaries = summary_history.value
+      .map((item, idx) => `【第${idx + 1}段总结 (楼层${item.start_id}-${item.end_id})】\n${item.content}`)
+      .join('\n\n');
+
+    // 构建大总结的提示词
+    const megaSummaryPrompt = `你是一个专业的故事总结助手。以下是多段对话的小总结，请将它们合并成一个更加概括性的大总结。
+
+要求：
+1. 保留关键人物、事件和情感变化
+2. 按时间/逻辑顺序组织内容
+3. 语言精炼，突出重要转折点
+4. 远期事件可以更模糊，近期事件保留更多细节
+5. 总结长度控制在原内容的 30%-50%
+
+以下是需要合并的小总结：
+${allSummaries}
+
+请直接输出合并后的大总结，不要包含任何额外说明：`;
+
+    console.log('🔄 开始生成大总结...');
+    window.toastr.info('🔄 正在生成大总结...');
+
+    const megaSummary = await summarizeText(megaSummaryPrompt);
+
+    if (megaSummary) {
+      // 计算楼层范围
+      const startId = Math.min(...summary_history.value.map(s => s.start_id));
+      const endId = Math.max(...summary_history.value.map(s => s.end_id));
+
+      // 清空旧的小总结，添加新的大总结
+      historyStore.clearSummaryHistory();
+      historyStore.addSummary(startId, endId, `【大总结】\n${megaSummary}`);
+
+      // 刷新显示
+      refreshSummaryHistory();
+
+      window.toastr.success(`✅ 大总结已生成！已合并 ${summary_history.value.length + 1} 条小总结`);
+      console.log('✅ 大总结完成:', megaSummary);
+    } else {
+      window.toastr.error('❌ 生成大总结失败：返回内容为空');
+    }
+  } catch (error) {
+    console.error('❌ 生成大总结失败:', error);
+    window.toastr.error('❌ 生成大总结失败: ' + (error as Error).message);
+  } finally {
+    isMegaSummarizing.value = false;
   }
 };
 
