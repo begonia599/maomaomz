@@ -6,9 +6,7 @@
           <i class="fa-solid fa-chart-pie" style="color: #4a9eff"></i>
           Token 统计
         </h2>
-        <p style="margin: 4px 0 0; font-size: 12px; color: #aaa">
-          粗略了解当前角色卡、世界书和聊天内容大概消耗了多少上下文 Tokens。
-        </p>
+        <p style="margin: 4px 0 0; font-size: 12px; color: #aaa">该角色卡与绑定的世界书条目的总 Tokens</p>
       </div>
       <div style="display: flex; align-items: center; gap: 8px">
         <span v-if="stats" style="font-size: 11px; color: #888"> 上次计算: {{ lastUpdatedText }} </span>
@@ -80,9 +78,7 @@
           <div style="font-size: 22px; font-weight: 700; color: #f97316">
             {{ formatNumber(stats.totalTokens) }}
           </div>
-          <div style="font-size: 11px; color: #777; margin-top: 4px">
-            包含角色卡、预设、人设、扩展、世界书、聊天（粗略估算）
-          </div>
+          <div style="font-size: 11px; color: #777; margin-top: 4px">该角色卡与绑定的世界书条目的总 Tokens</div>
         </div>
 
         <div
@@ -124,108 +120,7 @@
               ({{ percent(stats.lorebookTokens, stats.totalTokens) }}%)
             </span>
           </div>
-          <div style="font-size: 11px; color: #777; margin-top: 4px">启用的常驻/关键词/向量条目</div>
-        </div>
-
-        <div
-          class="stat-card"
-          style="
-            flex: 1;
-            min-width: 180px;
-            padding: 14px 16px;
-            border-radius: 10px;
-            background: #252525;
-            border: 1px solid #333;
-          "
-        >
-          <div style="font-size: 12px; color: #aaa; margin-bottom: 4px">聊天内容</div>
-          <div style="font-size: 20px; font-weight: 700; color: #a855f7">
-            {{ formatNumber(stats.chatTokens) }}
-            <span style="font-size: 11px; color: #888; margin-left: 4px">
-              ({{ percent(stats.chatTokens, stats.totalTokens) }}%)
-            </span>
-          </div>
-          <div style="font-size: 11px; color: #777; margin-top: 4px">全部对话消息</div>
-        </div>
-      </div>
-
-      <!-- 其他统计项 -->
-      <div style="padding: 14px 16px; border-radius: 10px; background: #252525; border: 1px solid #333">
-        <div style="font-size: 13px; color: #ddd; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
-          <i class="fa-solid fa-layer-group" style="color: #60a5fa"></i>
-          其他项目
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px">
-          <div
-            style="
-              flex: 1;
-              min-width: 140px;
-              padding: 8px 10px;
-              border-radius: 8px;
-              background: rgba(236, 72, 153, 0.1);
-              border: 1px solid rgba(236, 72, 153, 0.4);
-            "
-          >
-            <div style="font-size: 11px; color: #f472b6">系统提示 / 预设</div>
-            <div style="font-size: 16px; font-weight: 600; color: #f472b6">
-              {{ formatNumber(stats.systemPromptTokens) }}
-              <span style="font-size: 10px; color: #888"
-                >({{ percent(stats.systemPromptTokens, stats.totalTokens) }}%)</span
-              >
-            </div>
-          </div>
-          <div
-            style="
-              flex: 1;
-              min-width: 140px;
-              padding: 8px 10px;
-              border-radius: 8px;
-              background: rgba(34, 197, 94, 0.1);
-              border: 1px solid rgba(34, 197, 94, 0.4);
-            "
-          >
-            <div style="font-size: 11px; color: #4ade80">用户人设</div>
-            <div style="font-size: 16px; font-weight: 600; color: #4ade80">
-              {{ formatNumber(stats.personaTokens) }}
-              <span style="font-size: 10px; color: #888">({{ percent(stats.personaTokens, stats.totalTokens) }}%)</span>
-            </div>
-          </div>
-          <div
-            style="
-              flex: 1;
-              min-width: 140px;
-              padding: 8px 10px;
-              border-radius: 8px;
-              background: rgba(168, 85, 247, 0.1);
-              border: 1px solid rgba(168, 85, 247, 0.4);
-            "
-          >
-            <div style="font-size: 11px; color: #c084fc">扩展注入</div>
-            <div style="font-size: 16px; font-weight: 600; color: #c084fc">
-              {{ formatNumber(stats.extensionTokens) }}
-              <span style="font-size: 10px; color: #888"
-                >({{ percent(stats.extensionTokens, stats.totalTokens) }}%)</span
-              >
-            </div>
-          </div>
-          <div
-            style="
-              flex: 1;
-              min-width: 140px;
-              padding: 8px 10px;
-              border-radius: 8px;
-              background: rgba(251, 146, 60, 0.1);
-              border: 1px solid rgba(251, 146, 60, 0.4);
-            "
-          >
-            <div style="font-size: 11px; color: #fb923c">深度提示词</div>
-            <div style="font-size: 16px; font-weight: 600; color: #fb923c">
-              {{ formatNumber(stats.depthPromptTokens) }}
-              <span style="font-size: 10px; color: #888"
-                >({{ percent(stats.depthPromptTokens, stats.totalTokens) }}%)</span
-              >
-            </div>
-          </div>
+          <div style="font-size: 11px; color: #777; margin-top: 4px">所有启用的世界书条目的 Token 总数</div>
         </div>
       </div>
 
@@ -407,16 +302,11 @@ interface LorebookStats {
 interface TokenStats {
   characterName: string;
   characterCardTokens: number;
-  systemPromptTokens: number; // 系统提示 / 预设
-  personaTokens: number; // 用户人设
-  extensionTokens: number; // 扩展注入的提示词
-  depthPromptTokens: number; // 深度提示词
   totalConstantTokens: number;
   totalSelectiveTokens: number;
   totalVectorizedTokens: number;
   lorebookTokens: number;
   totalTokens: number;
-  chatTokens: number;
   bySource: Record<SourceKey, SourceStats>;
   byLorebook: Record<string, LorebookStats>;
 }
@@ -506,15 +396,10 @@ async function calculateTokenStats(): Promise<void> {
   const local: TokenStats = {
     characterName: '(未检测到角色)',
     characterCardTokens: 0,
-    systemPromptTokens: 0,
-    personaTokens: 0,
-    extensionTokens: 0,
-    depthPromptTokens: 0,
     totalConstantTokens: 0,
     totalSelectiveTokens: 0,
     totalVectorizedTokens: 0,
     lorebookTokens: 0,
-    chatTokens: 0,
     totalTokens: 0,
     bySource: {
       primary: emptySource(),
@@ -606,68 +491,6 @@ async function calculateTokenStats(): Promise<void> {
         }
         local.characterCardTokens = total;
         characterTokensComputed = local.characterCardTokens > 0;
-      }
-    }
-
-    // 1.5 统计系统提示、用户人设、扩展注入、深度提示词
-    if (st) {
-      // 系统提示 / 预设
-      try {
-        const chatSettings = (st as any).chatCompletionSettings;
-        if (chatSettings) {
-          // 主系统提示
-          const mainPrompt = chatSettings.main_prompt || chatSettings.system_prompt || '';
-          // NSFW 提示
-          const nsfwPrompt = chatSettings.nsfw_prompt || '';
-          // 越狱提示
-          const jbPrompt = chatSettings.jailbreak_prompt || '';
-          const allSystem = [mainPrompt, nsfwPrompt, jbPrompt].filter(Boolean).join('\n');
-          local.systemPromptTokens = getTokenCount(allSystem);
-        }
-      } catch (e) {
-        console.warn('[TokenStats] 获取系统提示失败:', e);
-      }
-
-      // 用户人设
-      try {
-        const name1 = (st as any).name1 || '';
-        // 尝试获取 persona 描述（power_user 里或 chatMetadata 里）
-        const powerUser = (st as any).powerUserSettings;
-        const personaDesc = powerUser?.persona_description || '';
-        if (name1 || personaDesc) {
-          local.personaTokens = getTokenCount([name1, personaDesc].filter(Boolean).join('\n'));
-        }
-      } catch (e) {
-        console.warn('[TokenStats] 获取用户人设失败:', e);
-      }
-
-      // 扩展注入的提示词
-      try {
-        const extPrompts = (st as any).extensionPrompts;
-        if (extPrompts && typeof extPrompts === 'object') {
-          let extText = '';
-          for (const key of Object.keys(extPrompts)) {
-            const ep = extPrompts[key];
-            if (ep && ep.value) {
-              extText += ep.value + '\n';
-            }
-          }
-          local.extensionTokens = getTokenCount(extText);
-        }
-      } catch (e) {
-        console.warn('[TokenStats] 获取扩展注入失败:', e);
-      }
-
-      // 深度提示词（角色卡的 depth_prompt）
-      try {
-        if (tav && typeof tav.getCharData === 'function') {
-          const charData = tav.getCharData('current');
-          if (charData?.data?.extensions?.depth_prompt?.prompt) {
-            local.depthPromptTokens = getTokenCount(charData.data.extensions.depth_prompt.prompt);
-          }
-        }
-      } catch (e) {
-        console.warn('[TokenStats] 获取深度提示词失败:', e);
       }
     }
 
@@ -776,49 +599,8 @@ async function calculateTokenStats(): Promise<void> {
 
     local.lorebookTokens = local.totalConstantTokens + local.totalSelectiveTokens + local.totalVectorizedTokens;
 
-    // 4. 聊天内容（最近若干条消息，粗略估算）
-    try {
-      let messages: any[] = [];
-
-      if (st && Array.isArray(st.chat)) {
-        console.log('[TokenStats] 使用 SillyTavern.chat 统计聊天内容，条数:', st.chat.length);
-        messages = st.chat;
-      } else if (
-        typeof (w as any).TavernHelper !== 'undefined' &&
-        typeof (w as any).TavernHelper.getChatMessages === 'function'
-      ) {
-        try {
-          messages = (w as any).TavernHelper.getChatMessages('0-{{lastMessageId}}') || [];
-          console.log('[TokenStats] 使用 TavernHelper.getChatMessages 统计聊天内容，条数:', messages.length);
-        } catch (e) {
-          console.warn('TavernHelper.getChatMessages 调用失败:', e);
-        }
-      }
-
-      if (Array.isArray(messages) && messages.length > 0) {
-        // 统计全部聊天消息
-        const text = messages
-          .map((m: any) => (typeof m.mes === 'string' ? m.mes : ((m.message as string) ?? '')))
-          .filter(Boolean)
-          .join('\n');
-        local.chatTokens = getTokenCount(text);
-      } else {
-        local.chatTokens = 0;
-      }
-    } catch (e) {
-      console.warn('计算聊天内容 Token 失败:', e);
-      local.chatTokens = 0;
-    }
-
-    // 总 Token = 角色卡 + 系统提示 + 用户人设 + 扩展注入 + 深度提示词 + 世界书 + 聊天内容
-    local.totalTokens =
-      local.characterCardTokens +
-      local.systemPromptTokens +
-      local.personaTokens +
-      local.extensionTokens +
-      local.depthPromptTokens +
-      local.lorebookTokens +
-      local.chatTokens;
+    // 总 Token = 角色卡 + 世界书
+    local.totalTokens = local.characterCardTokens + local.lorebookTokens;
 
     stats.value = local;
     lastUpdated.value = Date.now();
