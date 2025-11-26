@@ -614,52 +614,35 @@ async function calculateTokenStats(): Promise<void> {
       }
     }
 
-    // 1.5 预设相关统计（系统提示词、用户人设、扩展注入）
+    // 1.5 预设提示词统计（使用 getPreset('in_use') 获取当前预设的所有提示词）
     try {
-      // 系统提示词（来自 chatCompletionSettings / oai_settings）
-      if (st?.chatCompletionSettings) {
-        const oai = st.chatCompletionSettings;
-        // 主系统提示词
-        if (oai.main_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.main_prompt);
+      // 使用酒馆官方的 getPreset 函数获取当前预设
+      if (typeof getPreset === 'function') {
+        const preset = getPreset('in_use');
+        if (preset && Array.isArray(preset.prompts)) {
+          // 遍历所有提示词，只统计启用的并且有内容的
+          for (const prompt of preset.prompts) {
+            if (prompt.enabled && prompt.content) {
+              local.systemPromptTokens += getTokenCount(prompt.content);
+            }
+          }
+          console.log(
+            '[TokenStats] 预设提示词 Tokens:',
+            local.systemPromptTokens,
+            '(共',
+            preset.prompts.filter((p: any) => p.enabled && p.content).length,
+            '条启用的提示词)',
+          );
         }
-        // NSFW 提示词
-        if (oai.nsfw_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.nsfw_prompt);
+      } else {
+        console.warn('[TokenStats] getPreset 函数不可用，尝试使用备用方式');
+        // 备用方式：从 chatCompletionSettings 获取
+        if (st?.chatCompletionSettings) {
+          const oai = st.chatCompletionSettings;
+          if (oai.main_prompt) local.systemPromptTokens += getTokenCount(oai.main_prompt);
+          if (oai.nsfw_prompt) local.systemPromptTokens += getTokenCount(oai.nsfw_prompt);
+          if (oai.jailbreak_prompt) local.systemPromptTokens += getTokenCount(oai.jailbreak_prompt);
         }
-        // Jailbreak 提示词
-        if (oai.jailbreak_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.jailbreak_prompt);
-        }
-        // 越狱系统提示
-        if (oai.jailbreak_system) {
-          local.systemPromptTokens += getTokenCount(oai.jailbreak_system);
-        }
-        // 新会话提示词
-        if (oai.new_chat_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.new_chat_prompt);
-        }
-        // 新群组聊天提示词
-        if (oai.new_group_chat_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.new_group_chat_prompt);
-        }
-        // 新示例聊天提示词
-        if (oai.new_example_chat_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.new_example_chat_prompt);
-        }
-        // 续写提示词
-        if (oai.continue_nudge_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.continue_nudge_prompt);
-        }
-        // 群组推动提示词
-        if (oai.group_nudge_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.group_nudge_prompt);
-        }
-        // impersonation 提示词
-        if (oai.impersonation_prompt) {
-          local.systemPromptTokens += getTokenCount(oai.impersonation_prompt);
-        }
-        console.log('[TokenStats] 系统提示词 Tokens:', local.systemPromptTokens);
       }
 
       // 用户人设（来自 powerUserSettings）
