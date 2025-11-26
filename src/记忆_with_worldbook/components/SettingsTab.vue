@@ -2352,7 +2352,24 @@ const handle_test_connection = async () => {
     }
   } catch (error) {
     console.error('连接测试失败:', error);
-    window.toastr.error('连接测试失败: ' + (error as Error).message);
+    const errorMsg = (error as Error).message || '';
+
+    // 检测是否是服务器返回了 HTML 而不是 JSON
+    if (errorMsg.includes('Unexpected token') && errorMsg.includes('<')) {
+      window.toastr.error(
+        `❌ 连接测试失败\n\n` +
+          `服务器返回了网页而不是 API 响应\n\n` +
+          `💡 可能的原因：\n` +
+          `• API 地址配置错误（检查是否需要 /v1）\n` +
+          `• 反代服务不可用或返回了错误页面\n` +
+          `• API 服务暂时宕机\n\n` +
+          `请检查 API 端点地址是否正确`,
+        '',
+        { timeOut: 0, extendedTimeOut: 0, closeButton: true },
+      );
+    } else {
+      window.toastr.error('连接测试失败: ' + errorMsg);
+    }
   }
 };
 

@@ -570,7 +570,25 @@ ${messages.map(msg => `[${msg.role}]: ${msg.message}`).join('\n\n')}
     throw new Error(userFriendlyMessage);
   }
 
-  const data = await response.json();
+  // 解析响应 JSON，检测是否返回了 HTML
+  let data;
+  try {
+    data = await response.json();
+  } catch (parseError) {
+    const parseErrorMsg = (parseError as Error).message || '';
+    if (parseErrorMsg.includes('Unexpected token') && parseErrorMsg.includes('<')) {
+      throw new Error(
+        `❌ API 返回了网页而不是 JSON 数据\n\n` +
+          `这通常意味着：\n` +
+          `• API 地址配置错误（检查是否需要 /v1）\n` +
+          `• 反代服务不可用或返回了错误页面\n` +
+          `• API 服务暂时宕机\n\n` +
+          `当前 API 端点：${apiUrl}\n\n` +
+          `请检查 API 端点地址是否正确`,
+      );
+    }
+    throw new Error(`API 响应解析失败: ${parseErrorMsg}`);
+  }
   console.log('✅ API 返回的完整数据:', JSON.stringify(data, null, 2));
 
   // 尝试多种可能的返回格式
