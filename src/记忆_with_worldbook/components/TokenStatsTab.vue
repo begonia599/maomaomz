@@ -878,31 +878,59 @@ async function calculateTokenStats(): Promise<void> {
       }
 
       if (Array.isArray(messages) && messages.length > 0) {
-        // 检查第一条消息的结构，确认隐藏字段名
-        if (messages[0]) {
-          console.log('[TokenStats] 消息样本:', Object.keys(messages[0]), 'is_hidden:', messages[0].is_hidden);
+        // 过滤掉隐藏的消息（API不会发送隐藏的消息）
+        const visibleMessages = messages.filter((m: any) => !m.is_hidden && !m.hidden && !m.isHidden);
+        console.log('[TokenStats] 总消息数:', messages.length, '可见消息数:', visibleMessages.length);
+
+        // 获取上下文限制
+        let maxContext = 128000; // 默认值
+        try {
+          if (tav && typeof tav.getPreset === 'function') {
+            const preset = tav.getPreset('in_use');
+            if (preset?.settings?.max_context) {
+              maxContext = preset.settings.max_context;
+            }
+          }
+        } catch (e) {
+          console.warn('[TokenStats] 获取 max_context 失败:', e);
         }
 
-        // 过滤掉隐藏的消息（API不会发送隐藏的消息）
-        // 检查多种可能的隐藏标记: is_hidden, hidden, isHidden
-        const visibleMessages = messages.filter((m: any) => !m.is_hidden && !m.hidden && !m.isHidden);
-        const hiddenCount = messages.length - visibleMessages.length;
+        // 计算非聊天内容占用的 token（预设 + 角色卡 + 世界书 + 人设）
+        const nonChatTokens =
+          local.systemPromptTokens + local.characterCardTokens + local.lorebookTokens + local.personaTokens;
+        const availableForChat = Math.max(0, maxContext - nonChatTokens);
         console.log(
-          '[TokenStats] 总消息数:',
-          messages.length,
-          '可见消息数:',
-          visibleMessages.length,
-          '隐藏消息数:',
-          hiddenCount,
+          '[TokenStats] 上下文限制:',
+          maxContext,
+          '非聊天占用:',
+          nonChatTokens,
+          '聊天可用:',
+          availableForChat,
         );
 
-        // 直接统计消息内容，不加额外格式化
-        const text = visibleMessages
-          .map((m: any) => (typeof m.mes === 'string' ? m.mes : typeof m.message === 'string' ? m.message : ''))
-          .filter(Boolean)
-          .join('\n');
-        local.chatTokens = getTokenCount(text);
-        console.log('[TokenStats] 聊天内容 Tokens:', local.chatTokens, '(共', visibleMessages.length, '条可见消息)');
+        // 从最新消息开始向前累计，直到达到可用上下文
+        let chatTokens = 0;
+        let includedCount = 0;
+        for (let i = visibleMessages.length - 1; i >= 0; i--) {
+          const m = visibleMessages[i];
+          const content = typeof m.mes === 'string' ? m.mes : typeof m.message === 'string' ? m.message : '';
+          if (!content) continue;
+
+          const msgTokens = getTokenCount(content);
+          if (chatTokens + msgTokens > availableForChat && includedCount > 0) {
+            // 超出限制，停止
+            break;
+          }
+          chatTokens += msgTokens;
+          includedCount++;
+        }
+
+        local.chatTokens = chatTokens;
+        console.log(
+          '[TokenStats] 聊天内容 Tokens:',
+          local.chatTokens,
+          `(发送 ${includedCount}/${visibleMessages.length} 条消息)`,
+        );
       } else {
         local.chatTokens = 0;
       }
