@@ -562,15 +562,21 @@ async function calculateTokenStats(): Promise<void> {
       }
 
       for (const entry of entries) {
-        if (!entry || entry.enabled === false) continue;
+        // 跳过禁用的条目
+        if (!entry || !entry.enabled) continue;
 
-        const entryTokens =
-          typeof entry.tk === 'number' && !Number.isNaN(entry.tk) ? entry.tk : getTokenCount(entry.content);
+        // 计算 Token 数量
+        const entryTokens = getTokenCount(entry.content);
 
+        // 判断条目类型：使用布尔值字段，而不是 type 字符串
         let kind: 'c' | 's' | 'v';
-        if (entry.type === 'constant') kind = 'c';
-        else if (entry.type === 'vectorized') kind = 'v';
-        else kind = 's';
+        if (entry.constant === true) {
+          kind = 'c'; // 蓝灯 - constant
+        } else if (entry.vectorized === true) {
+          kind = 'v'; // 向量 - vectorized
+        } else {
+          kind = 's'; // 绿灯 - selective（默认）
+        }
 
         const bySource = local.bySource[source];
         const byBook = local.byLorebook[bookName];
