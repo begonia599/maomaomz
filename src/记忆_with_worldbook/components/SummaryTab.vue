@@ -337,14 +337,13 @@ ${allSummaries}
       const startId = Math.min(...summary_history.value.map(s => s.start_id));
       const endId = Math.max(...summary_history.value.map(s => s.end_id));
 
-      // 清空旧的小总结，添加新的大总结
-      historyStore.clearSummaryHistory();
+      // 在开头添加大总结，保留小总结
       historyStore.addSummary(startId, endId, `【大总结】\n${megaSummary}`);
 
       // 刷新显示
       refreshSummaryHistory();
 
-      window.toastr.success(`✅ 大总结已生成！已合并 ${summary_history.value.length + 1} 条小总结`);
+      window.toastr.success(`✅ 大总结已生成！已合并 ${summary_history.value.length} 条小总结`);
       console.log('✅ 大总结完成:', megaSummary);
     } else {
       window.toastr.error('❌ 生成大总结失败：返回内容为空');
