@@ -3161,27 +3161,28 @@ function getSafeMaxTokens(requested: number): number {
   .toolbar-buttons {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
+    gap: 10px;
     width: 100%;
   }
 
   .toolbar-btn {
     flex-direction: column;
-    padding: 8px 6px;
-    font-size: 10px;
-    gap: 3px;
+    padding: 14px 10px;
+    font-size: 12px;
+    gap: 6px;
     justify-content: center;
     text-align: center;
-    min-height: 44px;
+    min-height: 60px;
   }
 
   .toolbar-btn i {
-    font-size: 16px;
+    font-size: 20px;
     margin: 0;
   }
 
   .toolbar-btn span {
-    font-size: 9px;
+    font-size: 12px;
+    font-weight: 600;
   }
 }
 

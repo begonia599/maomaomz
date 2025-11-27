@@ -403,36 +403,38 @@ $(() => {
           .statusbar-generator > .section-header {
             flex-direction: column !important;
             align-items: stretch !important;
-            gap: 8px !important;
-            padding: 10px !important;
+            gap: 12px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
           }
 
           .statusbar-generator > .section-header h3 {
             text-align: center !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
+            margin-bottom: 8px !important;
           }
 
           .statusbar-generator > .section-header > div {
             display: grid !important;
             grid-template-columns: repeat(2, 1fr) !important;
-            gap: 6px !important;
+            gap: 10px !important;
             width: 100% !important;
           }
 
           .statusbar-generator > .section-header > div > button {
             width: 100% !important;
             justify-content: center !important;
-            padding: 8px 6px !important;
-            font-size: 11px !important;
-            min-height: 40px !important;
+            padding: 12px 10px !important;
+            font-size: 13px !important;
+            min-height: 50px !important;
             display: flex !important;
             align-items: center !important;
-            border-radius: 6px !important;
+            border-radius: 8px !important;
           }
 
           .statusbar-generator > .section-header > div > button i {
-            margin-right: 4px !important;
-            font-size: 12px !important;
+            margin-right: 6px !important;
+            font-size: 16px !important;
           }
 
           /* 移动端：所有带固定宽度的元素强制改为100%宽度 */
