@@ -85,8 +85,35 @@
       </div>
     </div>
 
-    <!-- 面板标签栏 -->
+    <!-- 移动端标签菜单 -->
     <div
+      v-if="isMobile"
+      class="mobile-tab-menu"
+      style="
+        background: #222;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        flex-shrink: 0;
+        padding: 8px 10px 6px;
+      "
+    >
+      <div class="mobile-tab-grid" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+        <button
+          v-for="tab of tabs"
+          :key="tab.key"
+          type="button"
+          class="mobile-tab-btn"
+          :class="{ 'mobile-tab-btn-active': activeTab === tab.key }"
+          @click="switchTab(tab.key)"
+        >
+          <i :class="tab.icon" class="mobile-tab-icon"></i>
+          <span class="mobile-tab-label">{{ tab.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 面板标签栏（桌面端） -->
+    <div
+      v-else
       class="panel-tabs"
       style="
         display: flex;
@@ -147,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { minimizeMemoryPanel } from '../浮动面板';
 import GreetingsTab from './GreetingsTab.vue';
 import HelpTab from './HelpTab.vue';
@@ -192,6 +219,22 @@ const activeTab = ref<
   | 'mvu'
   | 'help'
 >('settings');
+
+// 仅用于 UI 的移动端检测，不影响业务逻辑
+const isMobile = ref(false);
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
+
+onMounted(() => {
+  updateIsMobile();
+  window.addEventListener('resize', updateIsMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsMobile);
+});
 
 // 组件映射
 const componentMap = {
@@ -311,5 +354,46 @@ const closePanel = () => {
 
 .panel-content::-webkit-scrollbar-thumb:hover {
   background: #5ab0ff;
+}
+
+/* 移动端标签菜单样式 */
+@media (max-width: 768px) {
+  .mobile-tab-menu {
+    background: #222;
+  }
+
+  .mobile-tab-btn {
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    color: #ccc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-tab-btn-active {
+    background: #111827;
+    border-color: #4a9eff;
+    color: #4a9eff;
+    box-shadow: 0 0 0 1px rgba(74, 158, 255, 0.3);
+  }
+
+  .mobile-tab-icon {
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+
+  .mobile-tab-label {
+    font-size: 11px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 80px;
+  }
 }
 </style>
