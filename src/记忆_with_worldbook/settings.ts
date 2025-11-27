@@ -133,6 +133,52 @@ export async function switchTavernPreset(presetValue: string): Promise<boolean> 
 }
 
 /**
+ * 获取当前酒馆的 API 配置信息用于显示
+ */
+export function getTavernApiConfigForDisplay(): { url: string; key: string; model: string } {
+  try {
+    const mainDoc = window.parent?.document || document;
+
+    // URL - 尝试多个选择器
+    let url = '';
+    const urlSelectors = [
+      '#custom_api_url',
+      '#reverse_proxy',
+      '#openai_reverse_proxy',
+      'input[id*="api_url"]',
+      'input[id*="reverse_proxy"]',
+    ];
+    for (const sel of urlSelectors) {
+      const el = mainDoc.querySelector(sel) as HTMLInputElement;
+      if (el && el.value) {
+        url = el.value;
+        break;
+      }
+    }
+
+    // API Key
+    let key = '';
+    const keySelectors = ['#api_key_openai', '#custom_api_key', '#api_key', 'input[id*="api_key"]'];
+    for (const sel of keySelectors) {
+      const el = mainDoc.querySelector(sel) as HTMLInputElement;
+      if (el && el.value) {
+        // 只显示前几位，隐藏其余部分
+        const val = el.value;
+        key = val.length > 8 ? val.substring(0, 4) + '****' + val.substring(val.length - 4) : '****';
+        break;
+      }
+    }
+
+    // Model
+    const model = getTavernCurrentModel();
+
+    return { url, key, model };
+  } catch (error) {
+    return { url: '', key: '', model: '' };
+  }
+}
+
+/**
  * 获取当前酒馆使用的模型名称
  */
 export function getTavernCurrentModel(): string {

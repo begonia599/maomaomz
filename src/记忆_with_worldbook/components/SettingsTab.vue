@@ -135,24 +135,35 @@
               </select>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 11px">
-              <span style="color: #888">当前模型:</span>
-              <span style="color: #51cf66; font-weight: 500">{{ tavernCurrentModel || '未检测到' }}</span>
-              <button
-                style="
-                  margin-left: auto;
-                  padding: 4px 10px;
-                  background: rgba(81, 207, 102, 0.2);
-                  border: 1px solid rgba(81, 207, 102, 0.4);
-                  border-radius: 4px;
-                  color: #51cf66;
-                  font-size: 10px;
-                  cursor: pointer;
-                "
-                @click="refreshTavernInfo"
-              >
-                <i class="fa-solid fa-sync"></i> 刷新
-              </button>
+            <!-- 显示当前配置信息 -->
+            <div style="font-size: 11px; line-height: 1.8; color: #aaa">
+              <div style="display: flex; gap: 8px">
+                <span style="color: #888; min-width: 50px">URL:</span>
+                <span style="color: #51cf66; word-break: break-all">{{ tavernApiUrl || '未检测到' }}</span>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <span style="color: #888; min-width: 50px">Key:</span>
+                <span style="color: #51cf66">{{ tavernApiKey || '未检测到' }}</span>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center">
+                <span style="color: #888; min-width: 50px">模型:</span>
+                <span style="color: #51cf66; font-weight: 500">{{ tavernCurrentModel || '未检测到' }}</span>
+                <button
+                  style="
+                    margin-left: auto;
+                    padding: 4px 10px;
+                    background: rgba(81, 207, 102, 0.2);
+                    border: 1px solid rgba(81, 207, 102, 0.4);
+                    border-radius: 4px;
+                    color: #51cf66;
+                    font-size: 10px;
+                    cursor: pointer;
+                  "
+                  @click="refreshTavernInfo"
+                >
+                  <i class="fa-solid fa-sync"></i> 刷新
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1568,8 +1579,8 @@
 import { storeToRefs } from 'pinia';
 import { onMounted, ref, watch } from 'vue';
 import {
+  getTavernApiConfigForDisplay,
   getTavernApiPresets,
-  getTavernCurrentModel,
   getTavernCurrentPreset,
   switchTavernPreset,
   useSettingsStore,
@@ -1584,16 +1595,23 @@ const { settings } = storeToRefs(settingsStore);
 
 // 酒馆当前模型
 const tavernCurrentModel = ref<string>('');
+// 酒馆 API URL
+const tavernApiUrl = ref<string>('');
+// 酒馆 API Key
+const tavernApiKey = ref<string>('');
 // 酒馆预设列表
 const tavernPresets = ref<Array<{ name: string; value: string }>>([]);
 // 当前选中的预设
 const selectedTavernPreset = ref<string>('');
 
-// 刷新酒馆信息（预设列表和当前模型）
+// 刷新酒馆信息（预设列表和当前配置）
 const refreshTavernInfo = () => {
   tavernPresets.value = getTavernApiPresets();
   selectedTavernPreset.value = getTavernCurrentPreset();
-  tavernCurrentModel.value = getTavernCurrentModel();
+  const config = getTavernApiConfigForDisplay();
+  tavernApiUrl.value = config.url;
+  tavernApiKey.value = config.key;
+  tavernCurrentModel.value = config.model;
 };
 
 // 切换预设
@@ -1602,14 +1620,14 @@ const onPresetChange = async () => {
     console.log('🔄 切换预设到:', selectedTavernPreset.value);
     const success = await switchTavernPreset(selectedTavernPreset.value);
     if (success) {
-      // 等待酒馆切换完成，多次刷新确保获取到新模型
+      // 等待酒馆切换完成，刷新完整配置
       setTimeout(() => {
-        tavernCurrentModel.value = getTavernCurrentModel();
-        console.log('📍 1秒后模型:', tavernCurrentModel.value);
+        refreshTavernInfo();
+        console.log('📍 1秒后刷新配置');
       }, 1000);
       setTimeout(() => {
-        tavernCurrentModel.value = getTavernCurrentModel();
-        console.log('📍 2秒后模型:', tavernCurrentModel.value);
+        refreshTavernInfo();
+        console.log('📍 2秒后刷新配置');
       }, 2000);
     }
   }
