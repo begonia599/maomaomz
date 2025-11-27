@@ -6,6 +6,93 @@ import { getChatIdSafe, getScriptIdSafe } from './utils';
 // 这样确保 zod 在全局作用域中可用，避免与其他插件冲突
 import { z } from 'zod';
 
+/**
+ * 获取酒馆的 API 连接预设列表
+ */
+export function getTavernApiPresets(): Array<{ name: string; value: string }> {
+  try {
+    const presets: Array<{ name: string; value: string }> = [];
+
+    // 方法1: 从 SillyTavern 的 getPresetManager 获取
+    if (typeof SillyTavern !== 'undefined' && typeof SillyTavern.getPresetManager === 'function') {
+      try {
+        const presetManager = SillyTavern.getPresetManager('openai');
+        if (presetManager && presetManager.presets) {
+          for (const [key, preset] of Object.entries(presetManager.presets)) {
+            if (preset && typeof preset === 'object') {
+              presets.push({
+                name: (preset as any).name || key,
+                value: key,
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.log('⚠️ getPresetManager 不可用:', e);
+      }
+    }
+
+    // 方法2: 从 DOM 读取预设下拉框
+    if (presets.length === 0) {
+      const presetSelect = document.querySelector('#api_button_openai') as HTMLSelectElement;
+      if (presetSelect && presetSelect.options) {
+        for (let i = 0; i < presetSelect.options.length; i++) {
+          const option = presetSelect.options[i];
+          if (option.value && option.value !== 'None') {
+            presets.push({
+              name: option.text || option.value,
+              value: option.value,
+            });
+          }
+        }
+      }
+    }
+
+    // 方法3: 从 chatCompletionSettings 获取当前配置的名称
+    if (presets.length === 0 && typeof SillyTavern !== 'undefined') {
+      const settings = SillyTavern.chatCompletionSettings;
+      if (settings) {
+        // 添加当前配置作为选项
+        presets.push({
+          name: '当前酒馆配置',
+          value: 'current',
+        });
+      }
+    }
+
+    console.log('🔍 获取到的酒馆 API 预设:', presets);
+    return presets;
+  } catch (error) {
+    console.error('❌ 获取酒馆 API 预设失败:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取当前酒馆使用的模型名称
+ */
+export function getTavernCurrentModel(): string {
+  try {
+    if (typeof SillyTavern !== 'undefined') {
+      // 方法1: 使用 getChatCompletionModel
+      if (typeof SillyTavern.getChatCompletionModel === 'function') {
+        const model = SillyTavern.getChatCompletionModel();
+        if (model) return model;
+      }
+
+      // 方法2: 从 chatCompletionSettings 获取
+      const settings = SillyTavern.chatCompletionSettings;
+      if (settings) {
+        return settings.openai_model || settings.model || '';
+      }
+    }
+    return '';
+  } catch (error) {
+    console.error('❌ 获取酒馆当前模型失败:', error);
+    return '';
+  }
+}
+
 // 读取 SillyTavern 主界面的 API 配置
 export function getTavernApiConfig() {
   try {

@@ -96,6 +96,29 @@
               <span class="slider round"></span>
             </label>
           </div>
+
+          <!-- 显示当前酒馆配置信息 -->
+          <div
+            v-if="settings.use_tavern_api"
+            style="
+              margin-top: 12px;
+              padding: 12px 16px;
+              background: rgba(81, 207, 102, 0.1);
+              border: 1px solid rgba(81, 207, 102, 0.3);
+              border-radius: 8px;
+            "
+          >
+            <div style="color: #51cf66; font-size: 12px; font-weight: 600; margin-bottom: 8px">✅ 当前酒馆配置</div>
+            <div style="color: #aaa; font-size: 11px; line-height: 1.6">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
+                <span style="color: #888">模型:</span>
+                <span style="color: #51cf66; font-weight: 500">{{ tavernCurrentModel || '未检测到' }}</span>
+              </div>
+              <div style="color: #888; font-size: 10px; margin-top: 8px">
+                💡 总结将使用酒馆主界面当前选择的 API 连接发送请求
+              </div>
+            </div>
+          </div>
         </div>
 
         <div v-show="!settings.use_tavern_api">
@@ -1507,14 +1530,33 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { onMounted, ref } from 'vue';
-import { useSettingsStore, useSummaryHistoryStore } from '../settings';
+import { onMounted, ref, watch } from 'vue';
+import { getTavernCurrentModel, useSettingsStore, useSummaryHistoryStore } from '../settings';
 import { useTaskStore } from '../taskStore';
 import { getChatIdSafe, getScriptIdSafe, handleApiError } from '../utils';
 import { isApiConfigValid as checkApiConfig, getApiConfigError } from '../utils/api-config';
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
+
+// 酒馆当前模型
+const tavernCurrentModel = ref<string>('');
+
+// 更新酒馆当前模型显示
+const updateTavernModel = () => {
+  tavernCurrentModel.value = getTavernCurrentModel();
+};
+
+// 监听 use_tavern_api 变化，更新显示
+watch(
+  () => settings.value.use_tavern_api,
+  newVal => {
+    if (newVal) {
+      updateTavernModel();
+    }
+  },
+  { immediate: true },
+);
 const summaryHistoryStore = useSummaryHistoryStore();
 const taskStore = useTaskStore();
 
