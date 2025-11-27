@@ -108,14 +108,39 @@
               border-radius: 8px;
             "
           >
-            <div style="color: #51cf66; font-size: 12px; font-weight: 600; margin-bottom: 8px">✅ 当前酒馆配置</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+              <div style="color: #51cf66; font-size: 12px; font-weight: 600">✅ 当前酒馆配置</div>
+              <button
+                style="
+                  padding: 4px 10px;
+                  background: rgba(81, 207, 102, 0.2);
+                  border: 1px solid rgba(81, 207, 102, 0.4);
+                  border-radius: 4px;
+                  color: #51cf66;
+                  font-size: 10px;
+                  cursor: pointer;
+                "
+                @click="updateTavernModel"
+              >
+                <i class="fa-solid fa-sync"></i> 刷新
+              </button>
+            </div>
             <div style="color: #aaa; font-size: 11px; line-height: 1.6">
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px">
-                <span style="color: #888">模型:</span>
-                <span style="color: #51cf66; font-weight: 500">{{ tavernCurrentModel || '未检测到' }}</span>
+                <span style="color: #888">当前模型:</span>
+                <span style="color: #51cf66; font-weight: 500">{{ tavernCurrentModel || '点击刷新检测' }}</span>
               </div>
-              <div style="color: #888; font-size: 10px; margin-top: 8px">
-                💡 总结将使用酒馆主界面当前选择的 API 连接发送请求
+              <div
+                style="
+                  color: #888;
+                  font-size: 10px;
+                  margin-top: 8px;
+                  padding: 8px;
+                  background: rgba(0, 0, 0, 0.2);
+                  border-radius: 4px;
+                "
+              >
+                💡 <strong>使用方法：</strong>在酒馆主界面切换 API 预设后，插件会自动使用新配置
               </div>
             </div>
           </div>

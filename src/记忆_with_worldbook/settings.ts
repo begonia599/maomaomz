@@ -73,100 +73,32 @@ export function getTavernApiPresets(): Array<{ name: string; value: string }> {
  */
 export function getTavernCurrentModel(): string {
   try {
-    console.log('🔍 开始检测酒馆模型...');
-
-    if (typeof SillyTavern !== 'undefined') {
-      // 方法1: 使用 getChatCompletionModel（尝试不同的 source）
-      if (typeof SillyTavern.getChatCompletionModel === 'function') {
-        // 先不传参数试试
-        let model = SillyTavern.getChatCompletionModel();
-        console.log('📍 getChatCompletionModel() 返回:', model);
-        if (model) return model;
-
-        // 尝试传入不同的 source
-        const sources = ['google', 'openai', 'claude', 'makersuite', 'ai_studio'];
-        for (const source of sources) {
-          try {
-            model = SillyTavern.getChatCompletionModel(source);
-            console.log(`📍 getChatCompletionModel('${source}') 返回:`, model);
-            if (model) return model;
-          } catch (e) {
-            // 忽略
-          }
-        }
-      }
-
-      // 方法1.5: 尝试从 CONNECT_API_MAP 获取
-      if (SillyTavern.CONNECT_API_MAP) {
-        console.log('📍 CONNECT_API_MAP:', Object.keys(SillyTavern.CONNECT_API_MAP));
-      }
-
-      // 方法2: 从 chatCompletionSettings 获取
-      const settings = SillyTavern.chatCompletionSettings;
-      console.log('📍 chatCompletionSettings:', settings);
-      if (settings) {
-        // 检查多种可能的模型字段
-        const model =
-          settings.openai_model ||
-          settings.google_model || // Google AI Studio
-          settings.claude_model || // Claude
-          settings.model ||
-          '';
-        console.log('📍 从 settings 提取的模型:', model);
-        if (model) return model;
-      }
-    }
-
-    // 方法3: 从 localStorage 读取
-    try {
-      const tavernSettings = JSON.parse(localStorage.getItem('TavernAI_Settings') || '{}');
-      console.log('📍 TavernAI_Settings:', Object.keys(tavernSettings));
-      const model =
-        tavernSettings.openai_model ||
-        tavernSettings.google_model ||
-        tavernSettings.claude_model ||
-        tavernSettings.model ||
-        '';
-      console.log('📍 从 localStorage 提取的模型:', model);
+    // 方法1: 使用酒馆 API
+    if (typeof SillyTavern !== 'undefined' && typeof SillyTavern.getChatCompletionModel === 'function') {
+      const model = SillyTavern.getChatCompletionModel();
       if (model) return model;
-    } catch (e) {
-      // 忽略解析错误
     }
 
-    // 方法4: 从 DOM 读取模型选择器（在主页面查找）
+    // 方法2: 从 DOM 读取模型选择器（最可靠）
     const mainDoc = window.parent?.document || document;
-    const selectors = [
-      '#model_google_select',
-      '#model_openai_select',
-      '#model_claude_select',
-      'select[name="model"]',
-      '#openai_model',
-      '#google_model',
-    ];
+    const selectors = ['#model_google_select', '#model_openai_select', '#model_claude_select'];
     for (const sel of selectors) {
-      const el = mainDoc.querySelector(sel) as HTMLSelectElement | HTMLInputElement;
-      if (el && el.value) {
-        console.log('📍 从 DOM 找到模型:', sel, el.value);
-        return el.value;
-      }
+      const el = mainDoc.querySelector(sel) as HTMLSelectElement;
+      if (el && el.value) return el.value;
     }
 
-    // 方法5: 直接从酒馆全局变量获取（通过 parent window）
+    // 方法3: 从 parent window 的 oai_settings 获取
     try {
       const parentWin = window.parent as any;
-      if (parentWin && parentWin.oai_settings) {
+      if (parentWin?.oai_settings) {
         const model =
           parentWin.oai_settings.google_model ||
           parentWin.oai_settings.openai_model ||
-          parentWin.oai_settings.claude_model ||
-          '';
-        if (model) {
-          console.log('📍 从 parent.oai_settings 找到模型:', model);
-          return model;
-        }
+          parentWin.oai_settings.claude_model;
+        if (model) return model;
       }
     } catch (e) {
-      // 跨域限制，忽略
+      /* 跨域限制 */
     }
 
     return '';
