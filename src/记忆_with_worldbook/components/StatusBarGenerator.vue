@@ -47,7 +47,8 @@
           @click="loadTemplate('abo')"
         >
           <i class="fa-solid fa-magic"></i>
-          <span>ABO模板</span>
+          <span class="btn-text-full">快速加载 ABO 模板</span>
+          <span class="btn-text-short">ABO模板</span>
         </button>
         <button
           class="toolbar-btn"
@@ -55,7 +56,8 @@
           @click="showAIDialog"
         >
           <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>AI编辑</span>
+          <span class="btn-text-full">AI 智能编辑</span>
+          <span class="btn-text-short">AI编辑</span>
         </button>
         <button
           class="toolbar-btn"
@@ -63,7 +65,8 @@
           @click="exportRegex"
         >
           <i class="fa-solid fa-download"></i>
-          <span>导出JSON</span>
+          <span class="btn-text-full">导出正则 JSON</span>
+          <span class="btn-text-short">导出JSON</span>
         </button>
         <button
           class="toolbar-btn"
@@ -72,7 +75,8 @@
           @click="clearAll"
         >
           <i class="fa-solid fa-trash"></i>
-          <span>清空</span>
+          <span class="btn-text-full">清空</span>
+          <span class="btn-text-short">清空</span>
         </button>
       </div>
     </div>
@@ -3154,10 +3158,28 @@ function getSafeMaxTokens(requested: number): number {
 
 .toolbar-btn i {
   font-size: 14px;
+  margin-right: 6px;
+}
+
+/* PC端显示完整文字，隐藏短文字 */
+.btn-text-short {
+  display: none;
+}
+
+.btn-text-full {
+  display: inline;
 }
 
 /* 移动端工具栏 */
 @media (max-width: 768px) {
+  /* 移动端显示短文字，隐藏完整文字 */
+  .btn-text-full {
+    display: none;
+  }
+
+  .btn-text-short {
+    display: inline;
+  }
   .toolbar-buttons {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

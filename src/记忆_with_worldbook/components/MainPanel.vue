@@ -436,10 +436,10 @@ const closePanel = () => {
   }
 
   .mobile-tab-btn-active {
-    background: #111827;
-    border-color: #4a9eff;
-    color: #4a9eff;
-    box-shadow: 0 0 0 1px rgba(74, 158, 255, 0.3);
+    background: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
+    box-shadow: none;
   }
 
   .mobile-tab-icon {
