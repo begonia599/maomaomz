@@ -1641,7 +1641,7 @@ import {
   useSummaryHistoryStore,
 } from '../settings';
 import { useTaskStore } from '../taskStore';
-import { getChatIdSafe, getScriptIdSafe, handleApiError } from '../utils';
+import { getChatIdSafe, getScriptIdSafe } from '../utils';
 import { isApiConfigValid as checkApiConfig, getApiConfigError } from '../utils/api-config';
 
 const settingsStore = useSettingsStore();
@@ -2699,6 +2699,131 @@ const handle_summarize = async () => {
   }
 };
 
+// 每批次处理的最大消息数
+const BATCH_SIZE = 50;
+
+// 单批次AI请求处理函数
+const processBatch = async (
+  batchMessages: any[],
+  headers: string[],
+  batchIndex: number,
+  totalBatches: number,
+  apiUrl: string,
+  filteredParams: any,
+): Promise<string[][] | null> => {
+  const messagesText = batchMessages
+    .map((msg, idx) => {
+      const role = msg.role === 'user' ? '用户' : 'AI';
+      return `[消息${idx + 1}] ${role}: ${msg.message}`;
+    })
+    .join('\n\n');
+
+  const systemPrompt = `你是专业的数据提取助手，负责从聊天记录中提取结构化数据并生成表格。
+
+# 核心任务
+从用户提供的聊天记录中，提取与列头相关的信息，生成JSON格式的表格数据。
+
+# 关键原则
+1. **只提取有效信息**：忽略错误消息、系统提示、无关对话
+2. **精准匹配列头**：每一列都要对应列头的含义
+3. **保持结构化**：每行数据必须是数组，长度等于列头数量
+4. **避免空表**：如果聊天内容中确实没有相关信息，生成示例说明"无相关数据"
+
+# 输出格式（严格遵守）
+只输出纯JSON，格式如下：
+{
+  "data": [
+    ["值1", "值2", "值3"],
+    ["值4", "值5", "值6"]
+  ]
+}
+
+# 禁止事项
+❌ 不要输出任何解释、说明、注释
+❌ 不要使用markdown代码块（\`\`\`json）
+❌ 不要复制错误消息作为数据
+❌ 不要改变列头顺序或数量
+
+现在开始提取数据。`;
+
+  const userPrompt = `请从以下聊天记录中提取信息，生成表格数据。
+
+**表格列头**：${headers.join(', ')}
+（共${headers.length}列，每行数据必须包含${headers.length}个值）
+
+**聊天记录**：
+${messagesText}
+
+---
+
+**重要提醒**：
+- 每行数据格式：[${headers.map(h => `"${h}对应的值"`).join(', ')}]
+- 如果某列没有信息，填写"无"或"-"
+- 忽略错误消息、系统提示等无关内容
+- 只返回JSON，不要任何其他文字
+
+立即生成表格JSON：`;
+
+  console.log(`📦 处理批次 ${batchIndex + 1}/${totalBatches}，消息数: ${batchMessages.length}`);
+
+  const batchParams = {
+    ...filteredParams,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
+    ],
+  };
+
+  const response = await fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${settings.value.api_key}`,
+    },
+    body: JSON.stringify(batchParams),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+    throw new Error('AI响应格式错误');
+  }
+
+  const aiResponse = result.choices[0].message.content;
+  console.log(`📝 批次 ${batchIndex + 1} AI响应:`, aiResponse.slice(0, 200));
+
+  // 解析JSON
+  let jsonText = aiResponse.trim();
+  jsonText = jsonText.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+  let jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch && jsonText.trim().startsWith('{')) {
+    jsonMatch = [jsonText.trim()];
+  }
+
+  let parsed;
+  if (jsonMatch) {
+    parsed = JSON.parse(jsonMatch[0]);
+  } else {
+    const dataMatch = jsonText.match(/"data"\s*:\s*\[[\s\S]*\]/);
+    if (dataMatch) {
+      parsed = JSON.parse(`{${dataMatch[0]}}`);
+    } else {
+      throw new Error('无法解析JSON');
+    }
+  }
+
+  if (!parsed.data || !Array.isArray(parsed.data)) {
+    return [];
+  }
+
+  // 验证并过滤有效数据
+  return parsed.data.filter((row: any) => Array.isArray(row) && row.length === headers.length);
+};
+
 const handle_generate_table = async () => {
   let taskId: string | null = null;
   try {
@@ -2901,225 +3026,111 @@ const handle_generate_table = async () => {
       return;
     }
 
-    // 准备AI请求数据
-    const messagesText = chatMessages
-      .map((msg, idx) => {
-        const role = msg.role === 'user' ? '用户' : 'AI';
-        return `[消息${idx + 1}] ${role}: ${msg.message}`;
-      })
-      .join('\n\n');
-
-    const systemPrompt = `你是专业的数据提取助手，负责从聊天记录中提取结构化数据并生成表格。
-
-# 核心任务
-从用户提供的聊天记录中，提取与列头相关的信息，生成JSON格式的表格数据。
-
-# 关键原则
-1. **只提取有效信息**：忽略错误消息、系统提示、无关对话
-2. **精准匹配列头**：每一列都要对应列头的含义
-3. **保持结构化**：每行数据必须是数组，长度等于列头数量
-4. **避免空表**：如果聊天内容中确实没有相关信息，生成示例说明"无相关数据"
-
-# 输出格式（严格遵守）
-只输出纯JSON，格式如下：
-{
-  "data": [
-    ["值1", "值2", "值3"],
-    ["值4", "值5", "值6"]
-  ]
-}
-
-# 禁止事项
-❌ 不要输出任何解释、说明、注释
-❌ 不要使用markdown代码块（\`\`\`json）
-❌ 不要复制错误消息作为数据
-❌ 不要改变列头顺序或数量
-
-现在开始提取数据。`;
-
-    const userPrompt = `请从以下聊天记录中提取信息，生成表格数据。
-
-**表格列头**：${headers.join(', ')}
-（共${headers.length}列，每行数据必须包含${headers.length}个值）
-
-**聊天记录**：
-${messagesText}
-
----
-
-**重要提醒**：
-- 每行数据格式：[${headers.map(h => `"${h}对应的值"`).join(', ')}]
-- 如果某列没有信息，填写"无"或"-"
-- 忽略错误消息、系统提示等无关内容
-- 只返回JSON，不要任何其他文字
-
-立即生成表格JSON：`;
-
-    console.log('发送AI请求...');
-    console.log('📋 System Prompt:', systemPrompt);
-    console.log('📝 User Prompt:', userPrompt.slice(0, 500) + '...');
-
-    console.log('正在发送请求到 AI 服务器...');
-    console.log(`表格列头: ${headers.join(', ')}`);
-
     // 导入规范化函数和参数过滤函数
     const { normalizeApiEndpoint, filterApiParams } = await import('../settings');
     const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
 
-    taskStore.updateTaskProgress(taskId, 30, '准备发送请求到 AI...');
     taskStore.addTaskDetail(taskId, `API 端点: ${apiUrl}`);
     taskStore.addTaskDetail(taskId, `使用模型: ${settings.value.model}`);
 
-    console.log('等待 AI 分析并生成表格...');
-
-    const requestParams = {
+    // 准备基础请求参数
+    const baseParams = {
       model: settings.value.model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: userPrompt,
-        },
-      ],
       max_tokens: settings.value.max_tokens,
-      temperature: 0.3, // 降低温度，提高稳定性
+      temperature: 0.3,
       top_p: settings.value.top_p,
       presence_penalty: settings.value.presence_penalty,
       frequency_penalty: settings.value.frequency_penalty,
     };
+    const filteredParams = filterApiParams(baseParams, settings.value.api_endpoint);
 
-    // 根据 API 提供商过滤参数
-    const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
+    // ========== 分批处理逻辑 ==========
+    const totalMessages = chatMessages.length;
+    const totalBatches = Math.ceil(totalMessages / BATCH_SIZE);
+    const allTableData: string[][] = [];
 
-    // 调用AI生成表格
-    taskStore.updateTaskProgress(taskId, 40, '发送请求到 AI 服务器...');
-    taskStore.addTaskDetail(taskId, '正在等待 AI 响应...');
+    console.log(`📊 消息总数: ${totalMessages}，分为 ${totalBatches} 批处理（每批最多 ${BATCH_SIZE} 条）`);
+    taskStore.addTaskDetail(taskId, `消息总数: ${totalMessages}，分 ${totalBatches} 批处理`);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    if (totalBatches > 1) {
+      window.toastr.info(`消息较多，将分 ${totalBatches} 批处理...`, '', { timeOut: 3000 });
+    }
 
-    if (!response.ok) {
+    let successBatches = 0;
+    let failedBatches = 0;
+
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const startIdx = batchIndex * BATCH_SIZE;
+      const endIdx = Math.min(startIdx + BATCH_SIZE, totalMessages);
+      const batchMessages = chatMessages.slice(startIdx, endIdx);
+
+      // 更新进度（30-90之间分配给各批次）
+      const progressPerBatch = 60 / totalBatches;
+      const currentProgress = 30 + batchIndex * progressPerBatch;
+      taskStore.updateTaskProgress(
+        taskId,
+        Math.round(currentProgress),
+        `处理批次 ${batchIndex + 1}/${totalBatches}...`,
+      );
+      taskStore.addTaskDetail(
+        taskId,
+        `📦 开始处理批次 ${batchIndex + 1}/${totalBatches}（消息 ${startIdx + 1}-${endIdx}）`,
+      );
+
       try {
-        await handleApiError(response);
-      } catch (error: any) {
-        console.error('❌ API请求失败:', error.message);
-        window.toastr.error(
-          `API请求失败！\n\n${error.message}\n\n请检查：\n1. API端点是否正确\n2. API Key是否有效\n3. 网络连接是否正常`,
-          '',
-          { timeOut: 10000 },
+        const batchResult = await processBatch(
+          batchMessages,
+          headers,
+          batchIndex,
+          totalBatches,
+          apiUrl,
+          filteredParams,
         );
-        if (taskId) {
-          taskStore.failTask(taskId, error.message);
+
+        if (batchResult && batchResult.length > 0) {
+          allTableData.push(...batchResult);
+          successBatches++;
+          taskStore.addTaskDetail(taskId, `✅ 批次 ${batchIndex + 1} 完成，提取 ${batchResult.length} 行数据`);
+          console.log(`✅ 批次 ${batchIndex + 1} 完成，提取 ${batchResult.length} 行`);
+        } else {
+          taskStore.addTaskDetail(taskId, `⚠️ 批次 ${batchIndex + 1} 无有效数据`);
+          console.log(`⚠️ 批次 ${batchIndex + 1} 无有效数据`);
         }
-        return;
+      } catch (batchError) {
+        failedBatches++;
+        console.error(`❌ 批次 ${batchIndex + 1} 失败:`, batchError);
+        taskStore.addTaskDetail(taskId, `❌ 批次 ${batchIndex + 1} 失败: ${(batchError as Error).message}`);
+
+        // 单批失败不中断整体流程，继续处理其他批次
+        if (failedBatches >= totalBatches) {
+          // 所有批次都失败了
+          throw new Error('所有批次处理都失败了');
+        }
+      }
+
+      // 批次间延迟，避免API限流
+      if (batchIndex < totalBatches - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
-    taskStore.updateTaskProgress(taskId, 60, '正在解析 AI 响应...');
+    taskStore.updateTaskProgress(taskId, 90, '正在整理表格数据...');
 
-    const result = await response.json();
-    console.log('AI响应:', result);
-
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      const errorMsg = 'AI响应格式错误，请检查API是否为OpenAI兼容格式';
-      console.error('❌ AI响应格式错误:', result);
-      window.toastr.error(errorMsg, '', { timeOut: 8000 });
-      if (taskId) {
-        taskStore.failTask(taskId, errorMsg);
-        taskStore.addTaskDetail(taskId, `响应内容: ${JSON.stringify(result, null, 2).slice(0, 500)}`);
-      }
-      return;
-    }
-
-    const aiResponse = result.choices[0].message.content;
-    console.log('AI返回内容:', aiResponse);
-
-    taskStore.updateTaskProgress(taskId, 80, '正在解析表格数据...');
-
-    // 解析AI返回的JSON
-    let aiTableData;
-    try {
-      // 检查是否是API错误信息（不是JSON）
-      if (
-        aiResponse.includes('API密钥') ||
-        aiResponse.includes('请求失败') ||
-        aiResponse.includes('轮询日志') ||
-        aiResponse.includes('error') ||
-        (!aiResponse.includes('{') && !aiResponse.includes('['))
-      ) {
-        // 这是错误信息，不是JSON数据
-        window.toastr.error(`API调用失败，请检查API配置！\n\n错误信息：\n${aiResponse.slice(0, 200)}`, '', {
-          timeOut: 10000,
-        });
-        console.error('❌ API返回错误信息:', aiResponse);
-        return;
-      }
-
-      // 尝试提取JSON部分（移除可能的markdown代码块标记）
-      let jsonText = aiResponse.trim();
-
-      // 移除markdown代码块
-      jsonText = jsonText
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/, '')
-        .replace(/```\s*$/, '');
-
-      // 提取JSON对象
-      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        aiTableData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('无法找到JSON格式的表格数据');
-      }
-    } catch (parseError) {
-      console.error('解析AI响应失败:', parseError);
-      console.log('AI原始响应:', aiResponse);
-      const errorMsg = `AI返回的数据格式不正确`;
-      window.toastr.error(`AI返回的数据格式不正确！\n\n原始响应：\n${aiResponse.slice(0, 200)}`, '', { timeOut: 8000 });
-      if (taskId) {
-        taskStore.failTask(taskId, errorMsg);
-        taskStore.addTaskDetail(taskId, `解析错误: ${parseError}`);
-        taskStore.addTaskDetail(taskId, `原始响应: ${aiResponse.slice(0, 500)}`);
-      }
-      return;
-    }
-
-    // 验证表格数据
-    if (!aiTableData.data || !Array.isArray(aiTableData.data)) {
-      const errorMsg = 'AI返回的表格数据格式不正确：缺少data数组';
-      window.toastr.error(errorMsg);
+    // 检查是否有数据
+    if (allTableData.length === 0) {
+      const errorMsg = '未能从聊天记录中提取到有效数据';
+      window.toastr.warning(errorMsg);
       if (taskId) taskStore.failTask(taskId, errorMsg);
       return;
     }
 
-    // 验证每行数据的列数是否正确
-    for (let i = 0; i < aiTableData.data.length; i++) {
-      if (!Array.isArray(aiTableData.data[i])) {
-        window.toastr.error(`第${i + 1}行数据格式错误：不是数组`);
-        return;
-      }
-      if (aiTableData.data[i].length !== headers.length) {
-        window.toastr.error(`第${i + 1}行数据列数不匹配：期望${headers.length}列，实际${aiTableData.data[i].length}列`);
-        console.log(`期望列头:`, headers);
-        console.log(`实际数据:`, aiTableData.data[i]);
-        return;
-      }
-    }
-
-    // 组装完整的表格数据（使用用户提供的headers）
+    // 组装完整的表格数据
     const tableData = {
       headers: headers,
-      data: aiTableData.data,
+      data: allTableData,
     };
+
+    console.log(`📊 分批处理完成！成功: ${successBatches}/${totalBatches}，共提取 ${allTableData.length} 行数据`);
 
     // 保存表格（插件环境 - 使用 localStorage，按聊天ID分别存储）
     const chat_id = getChatIdSafe();
