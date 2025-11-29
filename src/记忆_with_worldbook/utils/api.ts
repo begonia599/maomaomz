@@ -1,35 +1,60 @@
 import { APISettings, ChatMessage } from '../types';
 
 /**
- * 获取 SillyTavern API 对象
- * @returns SillyTavern API 对象，如果不可用则返回 null
+ * 获取 SillyTavern 的 generateQuietPrompt 函数
+ * @returns generateQuietPrompt 函数，如果不可用则返回 null
  */
-export function getSillyTavernAPI(): any {
-  // 尝试多种方式获取 SillyTavern API
+export function getGenerateQuietPrompt(): ((prompt: string, ...args: any[]) => Promise<string>) | null {
   const win = window as any;
 
-  // 方法1: 直接从 window 获取
-  if (win.SillyTavern && typeof win.SillyTavern.generateQuietPrompt === 'function') {
-    return win.SillyTavern;
+  // 方法1: 从 SillyTavern.getContext() 获取（推荐方式）
+  try {
+    const st = win.SillyTavern || win.parent?.SillyTavern;
+    if (st && typeof st.getContext === 'function') {
+      const context = st.getContext();
+      if (context && typeof context.generateQuietPrompt === 'function') {
+        console.log('✅ 从 SillyTavern.getContext() 获取到 generateQuietPrompt');
+        return context.generateQuietPrompt.bind(context);
+      }
+    }
+  } catch (e) {
+    console.log('⚠️ 从 getContext 获取失败:', e);
   }
 
-  // 方法2: 从 parent window 获取（iframe 环境）
+  // 方法2: 直接从 SillyTavern 对象获取（旧版本兼容）
   try {
-    const parentWin = window.parent as any;
-    if (parentWin?.SillyTavern && typeof parentWin.SillyTavern.generateQuietPrompt === 'function') {
-      return parentWin.SillyTavern;
+    const st = win.SillyTavern || win.parent?.SillyTavern;
+    if (st && typeof st.generateQuietPrompt === 'function') {
+      console.log('✅ 直接从 SillyTavern 对象获取到 generateQuietPrompt');
+      return st.generateQuietPrompt.bind(st);
+    }
+  } catch (e) {
+    console.log('⚠️ 直接获取失败:', e);
+  }
+
+  // 方法3: 从全局函数获取
+  if (typeof win.generateQuietPrompt === 'function') {
+    console.log('✅ 从全局函数获取到 generateQuietPrompt');
+    return win.generateQuietPrompt;
+  }
+
+  // 方法4: 从 parent window 的全局函数获取
+  try {
+    if (typeof win.parent?.generateQuietPrompt === 'function') {
+      console.log('✅ 从 parent window 获取到 generateQuietPrompt');
+      return win.parent.generateQuietPrompt;
     }
   } catch (e) {
     // 跨域限制
   }
 
-  // 方法3: 检查全局变量
-  if (typeof (globalThis as any).SillyTavern !== 'undefined') {
-    const st = (globalThis as any).SillyTavern;
-    if (typeof st.generateQuietPrompt === 'function') {
-      return st;
-    }
-  }
+  console.log('❌ 无法找到 generateQuietPrompt 函数');
+  console.log('🔍 调试信息:', {
+    'window.SillyTavern': !!win.SillyTavern,
+    'window.SillyTavern.getContext': typeof win.SillyTavern?.getContext,
+    'window.generateQuietPrompt': typeof win.generateQuietPrompt,
+    'parent.SillyTavern': !!win.parent?.SillyTavern,
+  });
 
   return null;
 }
@@ -66,20 +91,14 @@ export async function callAIWithTavernSupport(
   if (settings.use_tavern_api) {
     console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
 
-    const SillyTavern = getSillyTavernAPI();
-    if (!SillyTavern) {
-      console.error('❌ SillyTavern API 不可用，尝试的位置:', {
-        window: !!(window as any).SillyTavern,
-        parent: !!(window.parent as any)?.SillyTavern,
-        globalThis: !!(globalThis as any).SillyTavern,
-      });
+    const generateFn = getGenerateQuietPrompt();
+    if (!generateFn) {
       throw new Error('酒馆 API 不可用，请确保在 SillyTavern 环境中运行，或关闭"使用酒馆 API"选项');
     }
 
     // 合并所有消息
     const fullPrompt = messages.map(m => m.content).join('\n\n');
 
-    const generateFn = SillyTavern.generateQuietPrompt();
     const result = await generateFn(
       fullPrompt,
       false, // quiet_to_loud
