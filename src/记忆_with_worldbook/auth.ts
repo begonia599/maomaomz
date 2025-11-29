@@ -357,6 +357,7 @@ export async function checkAuthorization(): Promise<boolean> {
 
   // 检查是否已有授权码
   const savedCode = localStorage.getItem(STORAGE_KEY);
+  const savedVerified = localStorage.getItem(STORAGE_VERIFIED_KEY);
 
   // 🔥 每次都重新验证，不使用时间缓存
   if (savedCode) {
@@ -378,13 +379,22 @@ export async function checkAuthorization(): Promise<boolean> {
 
         return true;
       } else {
+        // 服务器明确返回验证失败，清除授权码
         console.warn('⚠️ 授权码已失效，需要重新输入');
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_VERIFIED_KEY);
       }
     } catch (error) {
       console.error('❌ 验证授权码时出错:', error);
-      // 验证出错，清除旧数据，继续弹窗流程
+
+      // 🔥 网络错误（不是验证失败）时，如果之前验证成功过，给予宽限期
+      if (savedVerified === 'true') {
+        console.log('⚠️ 网络错误但有历史验证记录，暂时允许使用');
+        (window as any).toastr?.warning('⚠️ 授权验证服务暂时不可用，使用缓存状态', '', { timeOut: 3000 });
+        return true;
+      }
+
+      // 没有历史验证记录，清除数据，继续弹窗流程
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
     }
