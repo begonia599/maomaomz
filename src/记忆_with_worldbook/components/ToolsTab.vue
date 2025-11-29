@@ -4416,13 +4416,22 @@ ${batchInput.value}
 条目名称：${entry.name}
 条目描述：${entry.description}
 
-请直接返回 JSON 格式的世界书条目，包含以下字段：
+# 生成规则（重要！）
+1. content 必须使用简洁的陈述式语言，禁止使用：
+   - 模糊词：似乎、几乎、近乎、好像、仿佛、如同
+   - 八股比喻：像小兔子一样、像小兽
+   - 语气描述：带着xxx的口吻、用xxx的语气
+   - 微表情：嘴角上扬、眼里闪过
+   - 否定转折：不是……而是……
+2. 不要使用 Markdown 格式（# 和 **）
+3. key 关键词要精准，避免过于宽泛
+
+请直接返回 JSON：
 {
-  "name": "条目名称（必填）",
-  "key": ["触发关键词数组"],
-  "content": "条目正文内容",
-  "comment": "条目注释/备注",
-  "enabled": true
+  "name": "条目名称",
+  "key": ["精准关键词1", "关键词2"],
+  "content": "简洁陈述式的条目正文",
+  "comment": "条目备注"
 }`;
 
         // 构建请求参数
@@ -4457,7 +4466,31 @@ ${batchInput.value}
         // 解析生成的条目
         const jsonMatch = response.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          const generatedEntry = JSON.parse(jsonMatch[0]);
+          const aiResult = JSON.parse(jsonMatch[0]);
+          // 补全世界书条目的完整结构（按教程建议设置）
+          const generatedEntry = {
+            name: aiResult.name || entry.name,
+            enabled: true,
+            // 策略：按关键词触发（黄灯）
+            strategy: {
+              type: 'conditional' as const,
+              keys: aiResult.key || [entry.name],
+              keys_secondary: { logic: 'and_any' as const, keys: [] },
+              scan_depth: 'same_as_global' as const,
+            },
+            // 位置：角色定义之后（按教程建议）
+            position: {
+              type: 'after_character_definition' as const,
+              role: 'system' as const,
+              depth: 0,
+            },
+            content: aiResult.content || entry.description,
+            comment: aiResult.comment || '',
+            insertion_order: i + 1, // 按生成顺序排序
+            case_sensitive: false,
+            exclude_recursion: true, // 防止进一步递归（按教程建议）
+            uid: Date.now() + i,
+          };
           batchResults.value.push(generatedEntry);
         }
       } catch (error) {
