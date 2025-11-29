@@ -2621,6 +2621,22 @@
             全部插入到世界书
           </button>
           <button
+            v-if="!isBatchGenerating && batchResults.length > 0"
+            style="
+              padding: 10px 20px;
+              background: #dc3545;
+              border: none;
+              border-radius: 6px;
+              color: white;
+              font-size: 13px;
+              cursor: pointer;
+            "
+            @click="clearBatchResults"
+          >
+            <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
+            清空
+          </button>
+          <button
             v-if="isBatchGenerating"
             style="
               padding: 10px 20px;
@@ -2795,12 +2811,17 @@ const loadToolsData = () => {
       selectedWorldbook.value = savedData.tools_worldbookEntry.selectedWorldbook || '';
       worldbookModifyRequest.value = savedData.tools_worldbookEntry.modifyRequest || '';
       enableWorldbookStreaming.value = savedData.tools_worldbookEntry.enableStreaming || false;
+      // 恢复批量生成结果
+      if (savedData.tools_worldbookEntry.batchResults?.length > 0) {
+        batchResults.value = savedData.tools_worldbookEntry.batchResults;
+      }
       console.log('✅ 已恢复世界书条目数据:', {
         description: worldbookDescription.value.substring(0, 50),
         output: worldbookEntryOutput.value ? '有输出' : '无输出',
         selectedWorldbook: selectedWorldbook.value,
         modifyRequest: worldbookModifyRequest.value.substring(0, 50),
         enableStreaming: enableWorldbookStreaming.value,
+        batchResults: batchResults.value.length,
       });
     }
 
@@ -2875,6 +2896,7 @@ const saveToolsDataImmediate = () => {
         selectedWorldbook: selectedWorldbook.value,
         modifyRequest: worldbookModifyRequest.value,
         enableStreaming: enableWorldbookStreaming.value,
+        batchResults: batchResults.value, // 保存批量生成结果
       },
       tools_worldbookViewer: {
         selectedWorldbook: selectedViewerWorldbook.value,
@@ -4328,12 +4350,19 @@ const clearWorldbookModifyRequest = () => {
 
 // ==================== 批量生成世界书条目 ====================
 
-// 关闭批量生成对话框
+// 关闭批量生成对话框（不清空结果，保留供下次查看）
 const closeBatchDialog = () => {
   showBatchDialog.value = false;
+  // 只清空输入和进度，保留结果
   batchInput.value = '';
-  batchResults.value = [];
   batchProgress.value = { current: 0, total: 0, currentName: '' };
+};
+
+// 清空批量生成结果
+const clearBatchResults = () => {
+  batchResults.value = [];
+  saveToolsDataImmediate();
+  window.toastr.success('批量生成结果已清空');
 };
 
 // 最小化批量生成对话框（后台运行）
@@ -4537,6 +4566,7 @@ ${batchInput.value}
     }
 
     if (batchResults.value.length > 0) {
+      saveToolsDataImmediate(); // 保存批量生成结果
       // 如果对话框已关闭（后台运行），弹出可点击的通知
       if (!showBatchDialog.value) {
         window.toastr.success(`✅ 成功生成 ${batchResults.value.length} 个条目，点击查看`, '批量生成完成', {
@@ -4580,6 +4610,9 @@ const handleBatchInsert = async () => {
     });
 
     window.toastr.success(`已将 ${batchResults.value.length} 个条目插入到「${selectedWorldbook.value}」`);
+    // 插入成功后清空结果
+    batchResults.value = [];
+    saveToolsDataImmediate();
     closeBatchDialog();
   } catch (error) {
     console.error('批量插入失败:', error);
