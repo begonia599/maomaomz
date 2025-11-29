@@ -369,14 +369,7 @@ export async function checkAuthorization(): Promise<boolean> {
       if (result.valid) {
         console.log('✅ 授权验证成功！');
         localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
-
-        // 短暂显示成功消息
-        setTimeout(() => {
-          (window as any).toastr?.success('✅ 授权验证成功！猫猫欢迎你！🐱', '', {
-            timeOut: 2000,
-          });
-        }, 300);
-
+        // 静默成功，不弹提示（避免每次刷新都弹窗）
         return true;
       } else {
         // 服务器明确返回验证失败，清除授权码
