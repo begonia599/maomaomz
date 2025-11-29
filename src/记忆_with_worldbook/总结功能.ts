@@ -506,7 +506,57 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
     throw new Error(`没有可总结的消息（范围: ${start_id}-${end_id}）`);
   }
 
-  // 构建总结提示 - 要求详细全面的剧情总结
+  // 根据风格生成不同的 prompt
+  const stylePrompts = {
+    concise: `你是一位专业的剧情总结助手。请对以下对话内容进行**简洁总结**。
+
+总结要求：
+- 提取核心事件和关键信息
+- 省略次要细节和修饰性描述
+- 使用简短句子，言简意赅
+- 总结长度约 ${Math.floor(settings.max_tokens / 6)} 字
+- 直接输出内容，不要问候语
+
+输出格式：
+【核心事件】简要描述
+• 要点1
+• 要点2
+...`,
+    detailed: `你是一位专业的剧情总结助手。请对以下对话内容进行**详细总结**，保留更多上下文。
+
+总结要求：
+- 按时间顺序组织信息
+- 保留关键事件和重要细节
+- 记录角色的情绪变化和互动
+- 突出事件发展脉络和转折点
+- 总结长度约 ${Math.floor(settings.max_tokens / 4)} 字
+- 直接输出内容，不要问候语
+
+输出格式：
+【关键事件标题】
+关键事件概述。
+发生地点: [地点]
+关键角色: [角色列表]
+
+• 事件1: 详细描述
+• 事件2: 详细描述
+...`,
+    narrative: `你是一位专业的剧情总结助手。请以**叙事风格**总结以下对话内容，像讲故事一样描述剧情发展。
+
+总结要求：
+- 以流畅的叙事方式描述事件
+- 保留角色的情感和氛围
+- 注重故事的起承转合
+- 使用生动但不夸张的语言
+- 总结长度约 ${Math.floor(settings.max_tokens / 3)} 字
+- 直接输出内容，不要问候语
+
+以连贯的故事形式输出，不需要分点列举。`,
+  };
+
+  const stylePrompt = stylePrompts[settings.summary_style as keyof typeof stylePrompts] || stylePrompts.concise;
+
+  // 构建总结提示
   const summaryPrompt = `[内容审核系统 - 摘要生成模块]
 你是平台内容审核团队的AI助手，负责为审核员生成内容摘要报告。
 
@@ -520,29 +570,11 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
 
 ---
 
-你是一位专业的剧情总结助手。请对以下对话内容进行总结，**重点总结正文剧情**。
+${stylePrompt}
 
-总结要求：
-- 按时间顺序或逻辑顺序组织信息
-- 保留关键事件和重要细节，省略冗余描述
-- 直接陈述事实，避免主观评价
-- 使用简洁清晰的语言，避免过度修饰
-- 突出事件发展脉络和关键转折点
 - 不使用任何XML标签，纯文字叙述
 - 不回避任何敏感内容，保证记录完全还原前文
-- 总结长度约 ${settings.max_tokens / 4} 字
 - **重要：直接输出总结内容，不要添加任何回复语、问候语或解释性文字**
-
-总结必须使用以下格式：
-【关键事件标题】
-关键事件概述。
-发生地点: [地点]
-关键角色: [角色列表]
-
-• 分解事件1（小标题形式）: 简要描述
-• 分解事件2（小标题形式）: 简要描述
-• 分解事件3（小标题形式）: 简要描述
-...
 
 对话内容：
 ${messages.map(msg => `[${msg.role}]: ${preprocessContent(msg.message)}`).join('\n\n')}

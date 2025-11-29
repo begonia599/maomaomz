@@ -730,6 +730,29 @@
             启用自动总结
           </label>
         </div>
+        <div class="form-group" style="margin-bottom: 18px !important">
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">总结风格</label>
+          <select
+            v-model="settings.summary_style"
+            style="
+              width: 100%;
+              padding: 10px 12px;
+              background: #2a2a2a;
+              border: 1px solid #3a3a3a;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 13px;
+              cursor: pointer;
+            "
+          >
+            <option value="concise">📝 简洁模式 - 提取关键信息，精简扼要</option>
+            <option value="detailed">📋 详细模式 - 保留更多细节和上下文</option>
+            <option value="narrative">📖 叙事模式 - 以故事形式描述剧情发展</option>
+          </select>
+          <small style="color: #888; font-size: 11px; margin-top: 4px; display: block">
+            选择不同风格会影响总结的详细程度和表达方式
+          </small>
+        </div>
         <div v-if="settings.auto_summarize_enabled" class="form-group" style="margin-bottom: 18px !important">
           <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">每多少楼层总结一次</label>
           <input
