@@ -48,23 +48,15 @@ async function fetchLatestVersion(): Promise<{ version: string; url: string; not
  * 备用方案：使用多个 CDN 源获取 package.json
  */
 async function fetchVersionFromCDN(): Promise<{ version: string; url: string; notes: string } | null> {
-  // 多个备用 CDN 源（raw.githubusercontent 放第一位，无 CDN 缓存）
+  // 直连 GitHub，不走 CDN（避免缓存问题）
   const cdnSources = [
     {
-      name: 'raw.githubusercontent',
+      name: 'GitHub Raw',
       url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/package.json?t=${Date.now()}`,
     },
     {
-      name: 'jsDelivr',
-      url: `https://cdn.jsdelivr.net/gh/${GITHUB_REPO}@main/package.json?t=${Date.now()}`,
-    },
-    {
-      name: 'ghproxy',
-      url: `https://ghproxy.com/https://raw.githubusercontent.com/${GITHUB_REPO}/main/package.json`,
-    },
-    {
-      name: 'fastgit',
-      url: `https://raw.fastgit.org/${GITHUB_REPO}/main/package.json`,
+      name: 'ghproxy (国内加速)',
+      url: `https://ghproxy.com/https://raw.githubusercontent.com/${GITHUB_REPO}/main/package.json?t=${Date.now()}`,
     },
   ];
 
