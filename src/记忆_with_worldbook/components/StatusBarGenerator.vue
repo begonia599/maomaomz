@@ -1719,27 +1719,36 @@ ${xmlInput.value.trim()}
     // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
     const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    let aiResponse: string;
 
-    if (!response.ok) {
-      await handleApiError(response);
+    // 如果启用了"使用酒馆 API"，通过酒馆后端发送请求（绕过 CORS）
+    if (settings.value.use_tavern_api) {
+      console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
+      const { callAIWithTavernSupport } = await import('../utils/api');
+      aiResponse = await callAIWithTavernSupport(requestParams.messages, settings.value);
+    } else {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
+
+      if (!response.ok) {
+        await handleApiError(response);
+      }
+
+      const result = await response.json();
+      console.log('✅ AI 完整响应:', result);
+
+      if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+        throw new Error('AI响应格式错误');
+      }
+
+      aiResponse = result.choices[0].message.content;
     }
-
-    const result = await response.json();
-    console.log('✅ AI 完整响应:', result);
-
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      throw new Error('AI响应格式错误');
-    }
-
-    const aiResponse = result.choices[0].message.content;
     console.log('✅ AI 原始返回:', aiResponse);
 
     // ===== 错误检测 =====
@@ -1871,21 +1880,30 @@ ${modifyInstruction}
     // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
     const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    let aiResponse: string;
 
-    if (!response.ok) {
-      await handleApiError(response);
+    // 如果启用了"使用酒馆 API"，通过酒馆后端发送请求（绕过 CORS）
+    if (settings.value.use_tavern_api) {
+      console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
+      const { callAIWithTavernSupport } = await import('../utils/api');
+      aiResponse = await callAIWithTavernSupport(requestParams.messages, settings.value);
+    } else {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
+
+      if (!response.ok) {
+        await handleApiError(response);
+      }
+
+      const result = await response.json();
+      aiResponse = result.choices[0]?.message?.content || '';
     }
-
-    const result = await response.json();
-    const aiResponse = result.choices[0]?.message?.content || '';
 
     // 解析 JSON
     let jsonText = aiResponse
@@ -2038,28 +2056,37 @@ ${aiFieldDescription.value.trim()}
     // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
     const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    // 调用 AI API
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    let aiResponse: string;
 
-    if (!response.ok) {
-      await handleApiError(response);
+    // 如果启用了"使用酒馆 API"，通过酒馆后端发送请求（绕过 CORS）
+    if (settings.value.use_tavern_api) {
+      console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
+      const { callAIWithTavernSupport } = await import('../utils/api');
+      aiResponse = await callAIWithTavernSupport(requestParams.messages, settings.value);
+    } else {
+      // 调用 AI API
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
+
+      if (!response.ok) {
+        await handleApiError(response);
+      }
+
+      const result = await response.json();
+      console.log('✅ AI 完整响应:', result);
+
+      if (!result.choices || !result.choices[0] || !result.choices[0].message) {
+        throw new Error('AI响应格式错误');
+      }
+
+      aiResponse = result.choices[0].message.content;
     }
-
-    const result = await response.json();
-    console.log('✅ AI 完整响应:', result);
-
-    if (!result.choices || !result.choices[0] || !result.choices[0].message) {
-      throw new Error('AI响应格式错误');
-    }
-
-    const aiResponse = result.choices[0].message.content;
     console.log('✅ AI 原始返回:', aiResponse);
 
     // ===== 错误检测 =====
@@ -2204,21 +2231,30 @@ ${modifyInstruction}
     // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
     const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    let aiResponse: string;
 
-    if (!response.ok) {
-      await handleApiError(response);
+    // 如果启用了"使用酒馆 API"，通过酒馆后端发送请求（绕过 CORS）
+    if (settings.value.use_tavern_api) {
+      console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
+      const { callAIWithTavernSupport } = await import('../utils/api');
+      aiResponse = await callAIWithTavernSupport(requestParams.messages, settings.value);
+    } else {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
+
+      if (!response.ok) {
+        await handleApiError(response);
+      }
+
+      const result = await response.json();
+      aiResponse = result.choices[0]?.message?.content || '';
     }
-
-    const result = await response.json();
-    const aiResponse = result.choices[0]?.message?.content || '';
 
     // 解析 JSON
     let jsonText = aiResponse
@@ -2649,24 +2685,34 @@ ${currentFiles}
     // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
     const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    let resultText: string;
 
-    // 阶段3: 等待响应
-    taskStore.updateTaskProgress(taskId, 50, `等待AI响应 (${settings.value.model})`);
+    // 如果启用了"使用酒馆 API"，通过酒馆后端发送请求（绕过 CORS）
+    if (settings.value.use_tavern_api) {
+      console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
+      const { callAIWithTavernSupport } = await import('../utils/api');
+      resultText = await callAIWithTavernSupport(requestParams.messages, settings.value);
+      taskStore.updateTaskProgress(taskId, 50, `等待AI响应 (${settings.value.model})`);
+    } else {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
 
-    if (!response.ok) {
-      await handleApiError(response);
+      // 阶段3: 等待响应
+      taskStore.updateTaskProgress(taskId, 50, `等待AI响应 (${settings.value.model})`);
+
+      if (!response.ok) {
+        await handleApiError(response);
+      }
+
+      const data = await response.json();
+      resultText = data.choices[0]?.message?.content || '';
     }
-
-    const data = await response.json();
-    const resultText = data.choices[0]?.message?.content || '';
 
     // 阶段4: 解析结果
     taskStore.updateTaskProgress(taskId, 70, '解析AI生成的代码');
@@ -2797,23 +2843,32 @@ FILE_END
     // 根据 API 提供商过滤参数（避免 Gemini 等 API 的 400 错误）
     const filteredParams = filterApiParams(requestParams, settings.value.api_endpoint);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.value.api_key}`,
-      },
-      body: JSON.stringify(filteredParams),
-    });
+    let resultText: string;
 
-    if (!response.ok) {
-      await handleApiError(response);
+    // 如果启用了"使用酒馆 API"，通过酒馆后端发送请求（绕过 CORS）
+    if (settings.value.use_tavern_api) {
+      console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
+      const { callAIWithTavernSupport } = await import('../utils/api');
+      resultText = await callAIWithTavernSupport(requestParams.messages, settings.value);
+    } else {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify(filteredParams),
+      });
+
+      if (!response.ok) {
+        await handleApiError(response);
+      }
+
+      // 阶段3: 接收响应
+
+      const data = await response.json();
+      resultText = data.choices[0]?.message?.content || '';
     }
-
-    // 阶段3: 接收响应
-
-    const data = await response.json();
-    const resultText = data.choices[0]?.message?.content || '';
 
     // 阶段4: 解析文件
 

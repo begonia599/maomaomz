@@ -1,6 +1,38 @@
 import { APISettings, ChatMessage } from '../types';
 
-declare const SillyTavern: any;
+/**
+ * 获取 SillyTavern API 对象
+ * @returns SillyTavern API 对象，如果不可用则返回 null
+ */
+export function getSillyTavernAPI(): any {
+  // 尝试多种方式获取 SillyTavern API
+  const win = window as any;
+
+  // 方法1: 直接从 window 获取
+  if (win.SillyTavern && typeof win.SillyTavern.generateQuietPrompt === 'function') {
+    return win.SillyTavern;
+  }
+
+  // 方法2: 从 parent window 获取（iframe 环境）
+  try {
+    const parentWin = window.parent as any;
+    if (parentWin?.SillyTavern && typeof parentWin.SillyTavern.generateQuietPrompt === 'function') {
+      return parentWin.SillyTavern;
+    }
+  } catch (e) {
+    // 跨域限制
+  }
+
+  // 方法3: 检查全局变量
+  if (typeof (globalThis as any).SillyTavern !== 'undefined') {
+    const st = (globalThis as any).SillyTavern;
+    if (typeof st.generateQuietPrompt === 'function') {
+      return st;
+    }
+  }
+
+  return null;
+}
 
 /**
  * 通用 AI API 调用函数（自动支持酒馆API绕过CORS）
@@ -34,7 +66,13 @@ export async function callAIWithTavernSupport(
   if (settings.use_tavern_api) {
     console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
 
-    if (typeof SillyTavern === 'undefined' || typeof SillyTavern.generateQuietPrompt !== 'function') {
+    const SillyTavern = getSillyTavernAPI();
+    if (!SillyTavern) {
+      console.error('❌ SillyTavern API 不可用，尝试的位置:', {
+        window: !!(window as any).SillyTavern,
+        parent: !!(window.parent as any)?.SillyTavern,
+        globalThis: !!(globalThis as any).SillyTavern,
+      });
       throw new Error('酒馆 API 不可用，请确保在 SillyTavern 环境中运行，或关闭"使用酒馆 API"选项');
     }
 
