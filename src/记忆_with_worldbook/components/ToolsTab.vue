@@ -2623,6 +2623,22 @@
             全部插入到世界书
           </button>
           <button
+            v-if="isBatchGenerating"
+            style="
+              padding: 10px 20px;
+              background: linear-gradient(135deg, #4a9eff 0%, #667eea 100%);
+              border: none;
+              border-radius: 6px;
+              color: white;
+              font-size: 13px;
+              cursor: pointer;
+            "
+            @click="minimizeBatchDialog"
+          >
+            <i class="fa-solid fa-window-minimize" style="margin-right: 6px"></i>
+            后台运行
+          </button>
+          <button
             v-if="!isBatchGenerating"
             style="
               padding: 10px 20px;
@@ -4322,6 +4338,12 @@ const closeBatchDialog = () => {
   batchProgress.value = { current: 0, total: 0, currentName: '' };
 };
 
+// 最小化批量生成对话框（后台运行）
+const minimizeBatchDialog = () => {
+  showBatchDialog.value = false;
+  window.toastr.info('批量生成已转入后台运行，完成后将自动通知', '后台运行', { timeOut: 3000 });
+};
+
 // 批量生成世界书条目
 const handleBatchGenerate = async () => {
   if (!batchInput.value.trim()) {
@@ -4500,7 +4522,19 @@ ${batchInput.value}
     }
 
     if (batchResults.value.length > 0) {
-      window.toastr.success(`成功生成 ${batchResults.value.length} 个条目`);
+      // 如果对话框已关闭（后台运行），弹出可点击的通知
+      if (!showBatchDialog.value) {
+        window.toastr.success(`✅ 成功生成 ${batchResults.value.length} 个条目，点击查看`, '批量生成完成', {
+          timeOut: 0, // 不自动消失
+          extendedTimeOut: 0,
+          closeButton: true,
+          onclick: () => {
+            showBatchDialog.value = true;
+          },
+        });
+      } else {
+        window.toastr.success(`成功生成 ${batchResults.value.length} 个条目`);
+      }
     } else {
       window.toastr.error('所有条目生成失败，请重试');
     }
