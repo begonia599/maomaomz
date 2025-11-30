@@ -41,22 +41,67 @@
         状态栏生成器
       </h3>
       <div class="toolbar-buttons">
-        <button
-          class="toolbar-btn"
-          style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)"
-          @click="loadTemplate('abo')"
-        >
-          <i class="fa-solid fa-magic"></i>
-          <span class="btn-text-full">快速加载 ABO 模板</span>
-          <span class="btn-text-short">ABO模板</span>
-        </button>
+        <!-- 模板下拉菜单 -->
+        <div style="position: relative" class="dropdown-container">
+          <button
+            class="toolbar-btn"
+            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)"
+            @click="showTemplateMenu = !showTemplateMenu"
+          >
+            <i class="fa-solid fa-layer-group"></i>
+            <span class="btn-text-full">预设模板</span>
+            <span class="btn-text-short">模板</span>
+            <i class="fa-solid fa-caret-down" style="margin-left: 4px; font-size: 10px"></i>
+          </button>
+          <div
+            v-if="showTemplateMenu"
+            style="
+              position: absolute;
+              top: 100%;
+              left: 0;
+              margin-top: 4px;
+              background: #2a2a2a;
+              border: 1px solid #3a3a3a;
+              border-radius: 8px;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+              z-index: 100;
+              min-width: 160px;
+              overflow: hidden;
+            "
+          >
+            <div
+              style="padding: 10px 14px; cursor: pointer; color: #e0e0e0; font-size: 13px; transition: background 0.2s"
+              @click="
+                loadTemplate('simple');
+                showTemplateMenu = false;
+              "
+              @mouseenter="$event.target.style.background = '#3a3a3a'"
+              @mouseleave="$event.target.style.background = 'transparent'"
+            >
+              <i class="fa-solid fa-file" style="margin-right: 8px; color: #4a9eff"></i>
+              简单状态栏
+            </div>
+            <div
+              style="padding: 10px 14px; cursor: pointer; color: #e0e0e0; font-size: 13px; transition: background 0.2s"
+              @click="
+                loadTemplate('abo');
+                showTemplateMenu = false;
+              "
+              @mouseenter="$event.target.style.background = '#3a3a3a'"
+              @mouseleave="$event.target.style.background = 'transparent'"
+            >
+              <i class="fa-solid fa-heart" style="margin-right: 8px; color: #ec4899"></i>
+              ABO 设定模板
+            </div>
+          </div>
+        </div>
         <button
           class="toolbar-btn"
           style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
           @click="showAIDialog"
         >
           <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span class="btn-text-full">AI 智能编辑</span>
+          <span class="btn-text-full">AI 编辑界面</span>
           <span class="btn-text-short">AI编辑</span>
         </button>
         <button
@@ -65,8 +110,8 @@
           @click="exportRegex"
         >
           <i class="fa-solid fa-download"></i>
-          <span class="btn-text-full">导出正则 JSON</span>
-          <span class="btn-text-short">导出JSON</span>
+          <span class="btn-text-full">导出 JSON</span>
+          <span class="btn-text-short">导出</span>
         </button>
         <button
           class="toolbar-btn"
@@ -75,8 +120,6 @@
           @click="clearAll"
         >
           <i class="fa-solid fa-trash"></i>
-          <span class="btn-text-full">清空</span>
-          <span class="btn-text-short">清空</span>
         </button>
       </div>
     </div>
@@ -224,74 +267,100 @@
           </div>
         </div>
 
-        <button
-          style="
-            width: 100%;
-            padding: 8px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-          @click="addField"
-        >
-          <i class="fa-solid fa-plus" style="margin-right: 6px"></i>
-          添加字段
-        </button>
+        <!-- 操作按钮组 -->
+        <div style="display: flex; gap: 8px">
+          <button
+            style="
+              flex: 1;
+              padding: 8px;
+              background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+              border: none;
+              border-radius: 6px;
+              color: white;
+              font-size: 11px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+            @click="addField"
+          >
+            <i class="fa-solid fa-plus"></i> 添加
+          </button>
+          <!-- AI 生成下拉菜单 -->
+          <div class="dropdown-container" style="flex: 1; position: relative">
+            <button
+              style="
+                width: 100%;
+                padding: 8px;
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 11px;
+                font-weight: 600;
+                cursor: pointer;
+              "
+              @click="showAiFieldMenu = !showAiFieldMenu"
+            >
+              <i class="fa-solid fa-wand-magic-sparkles"></i> AI生成
+              <i class="fa-solid fa-caret-down" style="margin-left: 2px; font-size: 9px"></i>
+            </button>
+            <div
+              v-if="showAiFieldMenu"
+              style="
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                margin-top: 4px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                z-index: 100;
+                overflow: hidden;
+              "
+            >
+              <div
+                style="padding: 8px 12px; cursor: pointer; color: #e0e0e0; font-size: 12px"
+                @click="
+                  showAiFieldGeneratorDialog();
+                  showAiFieldMenu = false;
+                "
+                @mouseenter="$event.target.style.background = '#3a3a3a'"
+                @mouseleave="$event.target.style.background = 'transparent'"
+              >
+                <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px; color: #10b981"></i>
+                描述生成
+              </div>
+              <div
+                style="padding: 8px 12px; cursor: pointer; color: #e0e0e0; font-size: 12px"
+                @click="
+                  showXmlParseDialog();
+                  showAiFieldMenu = false;
+                "
+                @mouseenter="$event.target.style.background = '#3a3a3a'"
+                @mouseleave="$event.target.style.background = 'transparent'"
+              >
+                <i class="fa-solid fa-code" style="margin-right: 6px; color: #f59e0b"></i>
+                解析 XML
+              </div>
+            </div>
+          </div>
+        </div>
 
         <button
           style="
             width: 100%;
-            padding: 8px;
-            margin-top: 10px;
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-          @click="showXmlParseDialog"
-        >
-          <i class="fa-solid fa-code" style="margin-right: 6px"></i>
-          AI 解析 XML 生成字段
-        </button>
-
-        <button
-          style="
-            width: 100%;
-            padding: 8px;
-            margin-top: 10px;
+            padding: 10px;
+            margin-top: 12px;
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             border: none;
             border-radius: 6px;
             color: white;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-          "
-          @click="showAiFieldGeneratorDialog"
-        >
-          <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px"></i>
-          AI 智能生成字段
-        </button>
-
-        <button
-          style="
-            width: 100%;
-            padding: 8px;
-            margin-top: 10px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
           "
           @click="generateFromFields"
         >
@@ -1293,6 +1362,27 @@ const showAiFieldDialog = ref(false);
 const aiFieldDescription = ref('');
 const isGeneratingFields = ref(false);
 
+// 下拉菜单状态
+const showTemplateMenu = ref(false);
+const showAiFieldMenu = ref(false);
+
+// 点击外部关闭下拉菜单
+const closeDropdowns = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  if (!target.closest('.dropdown-container')) {
+    showTemplateMenu.value = false;
+    showAiFieldMenu.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', closeDropdowns);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdowns);
+});
+
 // AI 生成对比相关
 const showComparison = ref(false);
 const pendingChanges = ref<Array<{ path: string; oldContent: string; newContent: string }>>([]);
@@ -1797,12 +1887,17 @@ ${xmlInput.value.trim()}
       label: field.label || '',
       icon: field.icon || '',
     }));
+
+    // 🔧 修复：重置 name 和 findRegex，避免保留之前模板的设置
+    config.value.name = '角色状态栏';
+    config.value.findRegex = '<-CHARACTER_STATUS->';
+
     taskStore.completeTask(taskId, { fieldCount: validFields.length });
 
     setTimeout(() => {
       showXmlDialog.value = false;
       xmlInput.value = '';
-      toastr.success(`成功解析 ${validFields.length} 个字段！`);
+      toastr.success(`成功解析 ${validFields.length} 个字段！请点击「根据字段生成模板」来生成代码`);
     }, 800);
   } catch (error: any) {
     console.error('❌ XML 解析失败:', error);
@@ -1926,12 +2021,15 @@ ${modifyInstruction}
       icon: field.icon || '',
     }));
 
+    // 🔧 修复：重置 findRegex，确保与新的字段数量匹配
+    config.value.findRegex = '<-CHARACTER_STATUS->';
+
     // 更新原始输入（累积修改）
     originalXmlInput.value += `\n\n【已应用的修改】：${modifyInstruction}`;
 
     setTimeout(() => {
       showXmlModifyDialog.value = false;
-      window.toastr.success('✅ AI 修改完成！');
+      window.toastr.success('✅ AI 修改完成！请点击「根据字段生成模板」来更新代码');
     }, 800);
   } catch (error: any) {
     console.error('AI 修改失败:', error);
@@ -2133,12 +2231,17 @@ ${aiFieldDescription.value.trim()}
       label: field.label || '',
       icon: field.icon || '',
     }));
+
+    // 🔧 修复：重置 name 和 findRegex，避免保留之前模板的设置
+    config.value.name = '角色状态栏';
+    config.value.findRegex = '<-CHARACTER_STATUS->';
+
     taskStore.completeTask(taskId, { fieldCount: validFields.length });
 
     setTimeout(() => {
       showAiFieldDialog.value = false;
       aiFieldDescription.value = '';
-      toastr.success(`成功生成 ${validFields.length} 个字段！`);
+      toastr.success(`成功生成 ${validFields.length} 个字段！请点击「根据字段生成模板」来生成代码`);
     }, 800);
   } catch (error: any) {
     console.error('❌ AI 生成字段失败:', error);
@@ -2275,12 +2378,15 @@ ${modifyInstruction}
       icon: field.icon || '',
     }));
 
+    // 🔧 修复：重置 findRegex，确保与新的字段数量匹配
+    config.value.findRegex = '<-CHARACTER_STATUS->';
+
     // 更新原始输入（累积修改）
     originalFieldDescription.value += `\n\n【已应用的修改】：${modifyInstruction}`;
 
     setTimeout(() => {
       showFieldModifyDialog.value = false;
-      window.toastr.success('✅ AI 修改完成！');
+      window.toastr.success('✅ AI 修改完成！请点击「根据字段生成模板」来更新代码');
     }, 800);
   } catch (error: any) {
     console.error('AI 修改失败:', error);

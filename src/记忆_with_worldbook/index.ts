@@ -529,58 +529,37 @@ $(() => {
 
                 // 只有在没有设置过起始楼层时才设置
                 if (!auto_summary_start_id) {
-                  // 优先使用 TavernHelper 获取消息数量
-                  let last_message_id = 0;
+                  // 🔧 修复：首次开启时检查是否有现有总结历史，保持与 checkAutoSummarize 逻辑一致
+                  const historyKey = `${scriptId}_summary_history_${chatId}`;
+                  const savedHistory = localStorage.getItem(historyKey);
+                  const existingSummaries = savedHistory ? JSON.parse(savedHistory) : [];
 
-                  // 方式1: TavernHelper.getLastMessageId()
-                  if (typeof (window as any).TavernHelper !== 'undefined') {
-                    if (typeof (window as any).TavernHelper.getLastMessageId === 'function') {
-                      try {
-                        last_message_id = (window as any).TavernHelper.getLastMessageId();
-                      } catch (error) {
-                        console.warn('⚠️ TavernHelper.getLastMessageId() 调用失败:', error);
-                        last_message_id = -1;
-                      }
-                    } else if (typeof (window as any).TavernHelper.getChatMessages === 'function') {
-                      try {
-                        const messages = (window as any).TavernHelper.getChatMessages('0-{{lastMessageId}}');
-                        if (Array.isArray(messages) && messages.length > 0) {
-                          last_message_id = messages.length - 1;
-                        }
-                      } catch (error) {
-                        console.warn('⚠️ TavernHelper.getChatMessages() 调用失败:', error);
-                        last_message_id = -1;
-                      }
-                    }
-                  }
-
-                  // 方式2: 降级到 SillyTavern.chat（如果可用）
-                  if (last_message_id < 0 && typeof SillyTavern !== 'undefined' && Array.isArray(SillyTavern.chat)) {
-                    last_message_id = SillyTavern.chat.length - 1;
-                  }
-
-                  // 方式3: 全局 getLastMessageId 函数（如果可用）
-                  if (last_message_id < 0 && typeof (window as any).getLastMessageId === 'function') {
-                    try {
-                      last_message_id = (window as any).getLastMessageId();
-                    } catch (error) {
-                      console.warn('⚠️ getLastMessageId() 调用失败:', error);
-                    }
-                  }
-
-                  if (last_message_id >= 0) {
-                    localStorage.setItem(storageKey, String(last_message_id));
-                    console.log(`✅ 首次开启自动总结，起始楼层设置为: ${last_message_id}`);
-                    window.toastr?.info(`自动总结已开启，将从第 ${last_message_id} 层开始`);
+                  let start_id = 0;
+                  if (Array.isArray(existingSummaries) && existingSummaries.length > 0) {
+                    // 有现有总结，从最后一个总结的结束楼层 + 1 开始
+                    const lastSummary = existingSummaries[0]; // 最新的总结在数组开头
+                    const lastSummaryEnd = lastSummary.end_id || 0;
+                    start_id = lastSummaryEnd + 1;
+                    console.log(`🔄 发现现有总结，起始楼层设置为: ${start_id} (最后总结结束于第 ${lastSummaryEnd} 层)`);
+                    window.toastr?.info(`自动总结已开启，将从第 ${start_id} 层开始（基于现有总结）`);
                   } else {
-                    console.warn('⚠️ 无法获取消息ID，起始楼层设置为 0');
-                    localStorage.setItem(storageKey, '0');
-                    window.toastr?.warning('无法获取当前消息数，起始楼层设置为 0');
+                    // 没有现有总结，从第 0 层开始（包括 AI 开场白）
+                    start_id = 0;
+                    console.log(`🆕 首次开启自动总结，起始楼层设置为: 0（从AI开场白开始）`);
+                    window.toastr?.info(`自动总结已开启，将从第 0 层开始（AI开场白）`);
                   }
+
+                  localStorage.setItem(storageKey, String(start_id));
                 } else {
                   console.log(`✅ 自动总结已开启，使用现有起始楼层: ${auto_summary_start_id}`);
                   window.toastr?.info(`自动总结已开启，起始楼层: ${auto_summary_start_id}`);
                 }
+
+                // 🔧 修复：开启自动总结后立即检查是否需要触发总结
+                console.log('🔄 开启自动总结后立即检查...');
+                setTimeout(() => {
+                  checkAutoSummarize();
+                }, 500); // 延迟 500ms 确保设置已保存
               } catch (error) {
                 console.error('❌ 检查起始楼层失败:', error);
               }
