@@ -331,35 +331,25 @@ ${updateInfo.notes}
         }
       }
 
-      // 方法2: 直接调用 SillyTavern API
+      // 方法2: 直接调用 SillyTavern API（尝试不同参数格式）
       if (!updateSuccess) {
-        try {
-          const response = await fetch('/api/extensions/update', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ extensionName: 'third-party/maomaomz' }),
-          });
-          if (response.ok) {
-            updateSuccess = true;
+        const extensionNames = ['maomaomz', 'third-party/maomaomz'];
+        for (const name of extensionNames) {
+          if (updateSuccess) break;
+          try {
+            console.log(`🔄 尝试更新: ${name}`);
+            const response = await fetch('/api/extensions/update', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ extensionName: name }),
+            });
+            if (response.ok) {
+              updateSuccess = true;
+              console.log(`✅ 更新成功: ${name}`);
+            }
+          } catch (e) {
+            console.warn(`更新失败 (${name}):`, e);
           }
-        } catch (e) {
-          console.warn('直接 API 更新失败，尝试其他方法...', e);
-        }
-      }
-
-      // 方法3: 使用 git pull 方式
-      if (!updateSuccess) {
-        try {
-          const response = await fetch('/api/extensions/install', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: 'https://github.com/mzrodyu/maomaomz' }),
-          });
-          if (response.ok) {
-            updateSuccess = true;
-          }
-        } catch (e) {
-          console.warn('重装更新失败...', e);
         }
       }
 
@@ -387,10 +377,12 @@ ${updateInfo.notes}
       }
 
       // 降级：显示手动更新指引
+      document.getElementById('maomaomz-update-overlay')?.remove();
+
       (window as any).toastr?.warning(
-        `⚠️ 一键更新失败，请手动更新：\n\n1️⃣ 点击左侧【扩展】图标\n2️⃣ 找到【猫猫的记忆管理工具】\n3️⃣ 点击【立即更新】按钮`,
+        `⚠️ 自动更新失败\n\n请尝试以下方法：\n\n方法1：扩展管理\n点击左侧【扩展】→ 找到插件 → 点击【立即更新】\n\n方法2：终端命令\ncd public/scripts/extensions/third-party/maomaomz && git pull`,
         '请手动更新',
-        { timeOut: 10000 },
+        { timeOut: 0, extendedTimeOut: 0, closeButton: true },
       );
     }
   });
