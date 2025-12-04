@@ -1,5 +1,5 @@
 /**
- * 🔐 授权验证模块 - 简化版（带API端点追踪）
+ * 🔐 授权验证模块 - 简化版
  * 作者: mzrodyu
  * ⚠️ 商业化死全家，贩子死全家 ⚠️
  */
@@ -12,7 +12,7 @@ const STORAGE_KEY = 'maomaomz_auth_code';
 const STORAGE_VERIFIED_KEY = 'maomaomz_auth_verified';
 
 /**
- * 获取当前使用的 API 端点（用于追踪商业化倒卖）
+ * 获取当前使用的 API 端点
  */
 function getCurrentApiEndpoint(): string {
   try {
@@ -291,23 +291,6 @@ function showAuthDialog(): Promise<string | null> {
           >
             ✅ 验证授权码
           </button>
-          <button
-            id="authCancelBtn"
-            style="
-              padding: 14px 24px;
-              background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-              border: none;
-              border-radius: 12px;
-              color: #fff;
-              font-size: 16px;
-              font-weight: 600;
-              cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 4px 16px rgba(107, 114, 128, 0.3);
-            "
-          >
-            ❌ 取消
-          </button>
         </div>
         <p style="
           margin-top: 20px;
@@ -326,7 +309,6 @@ function showAuthDialog(): Promise<string | null> {
 
     const input = dialog.querySelector('#authCodeInput') as HTMLInputElement;
     const submitBtn = dialog.querySelector('#authSubmitBtn') as HTMLButtonElement;
-    const cancelBtn = dialog.querySelector('#authCancelBtn') as HTMLButtonElement;
 
     // 自动聚焦输入框
     setTimeout(() => input.focus(), 100);
@@ -339,15 +321,6 @@ function showAuthDialog(): Promise<string | null> {
     submitBtn.addEventListener('mouseleave', () => {
       submitBtn.style.transform = 'translateY(0)';
       submitBtn.style.boxShadow = '0 4px 16px rgba(74, 158, 255, 0.3)';
-    });
-
-    cancelBtn.addEventListener('mouseenter', () => {
-      cancelBtn.style.transform = 'translateY(-2px)';
-      cancelBtn.style.boxShadow = '0 6px 20px rgba(107, 114, 128, 0.5)';
-    });
-    cancelBtn.addEventListener('mouseleave', () => {
-      cancelBtn.style.transform = 'translateY(0)';
-      cancelBtn.style.boxShadow = '0 4px 16px rgba(107, 114, 128, 0.3)';
     });
 
     // 输入框焦点效果
@@ -379,11 +352,7 @@ function showAuthDialog(): Promise<string | null> {
       }
     });
 
-    // 取消按钮事件
-    cancelBtn.addEventListener('click', () => {
-      document.body.removeChild(overlay);
-      resolve(null);
-    });
+    // 🔥 不提供取消按钮，必须输入授权码
   });
 }
 
@@ -423,17 +392,11 @@ export async function checkAuthorization(): Promise<boolean> {
       }
     } catch (error) {
       console.error('❌ 验证授权码时出错:', error);
-
-      // 🔥 网络错误（不是验证失败）时，如果之前验证成功过，给予宽限期
-      if (savedVerified === 'true') {
-        console.log('⚠️ 网络错误但有历史验证记录，暂时允许使用');
-        (window as any).toastr?.warning('⚠️ 授权验证服务暂时不可用，使用缓存状态', '', { timeOut: 3000 });
-        return true;
-      }
-
-      // 没有历史验证记录，清除数据，继续弹窗流程
+      // 🔥 网络错误时不给予宽限期，必须联网验证
+      // 清除数据，强制重新验证
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
+      (window as any).toastr?.error('❌ 无法连接授权服务器，请检查网络连接', '', { timeOut: 5000 });
     }
   }
 
@@ -453,23 +416,11 @@ export async function checkAuthorization(): Promise<boolean> {
     console.log('📝 用户输入结果:', code ? '已输入授权码' : '用户取消');
 
     if (!code) {
-      // 用户取消 - 再次提示
-      console.error('❌ 用户取消了授权');
-
-      const confirmCancel = confirm(
-        '⚠️ 未授权无法使用插件\n\n是否放弃授权？\n\n点击"确定"将禁用插件\n点击"取消"继续输入授权码',
-      );
-
-      if (confirmCancel) {
-        (window as any).toastr?.error('❌ 授权已取消，插件已被禁用', '', {
-          timeOut: 0,
-          extendedTimeOut: 0,
-        });
-        return false;
-      } else {
-        // 用户选择继续，重新显示对话框
-        continue;
-      }
+      // 🔥 用户取消 - 不允许绕过，直接重新显示对话框
+      console.warn('⚠️ 用户取消了授权，重新显示对话框');
+      (window as any).toastr?.warning('⚠️ 必须输入授权码才能使用插件', '', { timeOut: 3000 });
+      // 继续循环，重新显示对话框
+      continue;
     }
 
     attempts++;
