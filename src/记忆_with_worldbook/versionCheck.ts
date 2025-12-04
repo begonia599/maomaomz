@@ -9,13 +9,17 @@ import packageJson from '../../package.json';
 // 当前版本号（从 package.json 读取）
 export const CURRENT_VERSION = packageJson.version;
 
+// 当前构建的 commit hash（构建时注入）
+declare const __GIT_COMMIT_HASH__: string;
+export const CURRENT_COMMIT = typeof __GIT_COMMIT_HASH__ !== 'undefined' ? __GIT_COMMIT_HASH__ : 'unknown';
+
 // GitHub 仓库信息
 const GITHUB_REPO = 'mzrodyu/maomaomz';
 const GITHUB_API_BASE = 'https://api.github.com';
 
 // LocalStorage 键名
 const LAST_CHECK_KEY = 'maomaomz_last_version_check';
-const IGNORED_VERSION_KEY = 'maomaomz_ignored_version';
+const IGNORED_COMMIT_KEY = 'maomaomz_ignored_commit';
 
 // 防止重复检查的标志
 let isCheckingInProgress = false;
@@ -40,36 +44,30 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 /**
- * 从 GitHub 获取最新版本（直接读取 package.json，不依赖 Releases）
+ * 从 GitHub API 获取最新的 commit hash
  */
-async function fetchLatestVersion(): Promise<{ version: string; url: string; notes: string } | null> {
-  // 直接从 CDN/仓库读取 package.json，这样每次 push 代码后就能检测到更新
-  return await fetchVersionFromCDN();
-}
-
-/**
- * 备用方案：使用多个 CDN 源获取 package.json
- */
-async function fetchVersionFromCDN(): Promise<{ version: string; url: string; notes: string } | null> {
-  // 直连 GitHub，不走 CDN（避免缓存问题）
-  const cdnSources = [
+async function fetchLatestCommit(): Promise<{ commit: string; message: string } | null> {
+  const apiSources = [
     {
-      name: 'GitHub Raw',
-      url: `https://raw.githubusercontent.com/${GITHUB_REPO}/main/package.json?t=${Date.now()}`,
+      name: 'GitHub API',
+      url: `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/commits/main?t=${Date.now()}`,
     },
     {
       name: 'ghproxy (国内加速)',
-      url: `https://ghproxy.com/https://raw.githubusercontent.com/${GITHUB_REPO}/main/package.json?t=${Date.now()}`,
+      url: `https://ghproxy.com/${GITHUB_API_BASE}/repos/${GITHUB_REPO}/commits/main?t=${Date.now()}`,
     },
   ];
 
-  for (const source of cdnSources) {
+  for (const source of apiSources) {
     try {
-      console.log(`🔍 正在从 ${source.name} 获取版本信息...`);
+      console.log(`🔍 正在从 ${source.name} 获取最新 commit...`);
 
       const response = await fetch(source.url, {
         cache: 'no-store',
         signal: AbortSignal.timeout(8000),
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+        },
       });
 
       if (!response.ok) {
@@ -78,12 +76,14 @@ async function fetchVersionFromCDN(): Promise<{ version: string; url: string; no
       }
 
       const data = await response.json();
-      console.log(`✅ 从 ${source.name} 成功获取版本:`, data.version);
+      const shortHash = data.sha?.substring(0, 7) || 'unknown';
+      const message = data.commit?.message?.split('\n')[0] || '无描述';
+
+      console.log(`✅ 从 ${source.name} 成功获取 commit: ${shortHash}`);
 
       return {
-        version: data.version,
-        url: `https://github.com/${GITHUB_REPO}/releases/latest`,
-        notes: `最新版本: ${data.version}\n\n请前往 GitHub 查看详细更新日志`,
+        commit: shortHash,
+        message: message,
       };
     } catch (error: any) {
       console.warn(`⚠️ ${source.name} 请求失败:`, error.message || error);
@@ -91,18 +91,20 @@ async function fetchVersionFromCDN(): Promise<{ version: string; url: string; no
     }
   }
 
-  console.error('❌ 所有 CDN 源都无法访问');
+  console.error('❌ 所有 API 源都无法访问');
   return null;
 }
 
 /**
- * 检查更新
+ * 检查更新（基于 commit hash）
  * @param force 是否强制检查（忽略检查间隔）
  */
 export async function checkForUpdates(force: boolean = false): Promise<{
   hasUpdate: boolean;
   latestVersion?: string;
+  latestCommit?: string;
   currentVersion: string;
+  currentCommit: string;
   updateUrl?: string;
   notes?: string;
 } | null> {
@@ -123,35 +125,40 @@ export async function checkForUpdates(force: boolean = false): Promise<{
     }
 
     console.log('🔍 检查更新中...');
+    console.log(`📌 当前 commit: ${CURRENT_COMMIT}`);
 
-    const latest = await fetchLatestVersion();
+    const latest = await fetchLatestCommit();
 
     if (!latest) {
-      console.warn('⚠️ 无法获取版本信息');
+      console.warn('⚠️ 无法获取最新 commit 信息');
       return null;
     }
 
     // 保存检查时间
     localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
 
-    // 比较版本
-    const hasUpdate = compareVersions(latest.version, CURRENT_VERSION) > 0;
+    // 比较 commit hash（不同则有更新）
+    const hasUpdate = latest.commit !== CURRENT_COMMIT && CURRENT_COMMIT !== 'unknown';
+
+    console.log(`📌 远程 commit: ${latest.commit}, 本地 commit: ${CURRENT_COMMIT}, 有更新: ${hasUpdate}`);
 
     // 检查是否被忽略
     if (!force) {
-      const ignoredVersion = localStorage.getItem(IGNORED_VERSION_KEY);
-      if (ignoredVersion === latest.version) {
-        console.log(`ℹ️ 版本 ${latest.version} 已被用户忽略`);
+      const ignoredCommit = localStorage.getItem(IGNORED_COMMIT_KEY);
+      if (ignoredCommit === latest.commit) {
+        console.log(`ℹ️ commit ${latest.commit} 已被用户忽略`);
         return null;
       }
     }
 
     return {
       hasUpdate,
-      latestVersion: latest.version,
+      latestVersion: CURRENT_VERSION,
+      latestCommit: latest.commit,
       currentVersion: CURRENT_VERSION,
-      updateUrl: latest.url,
-      notes: latest.notes,
+      currentCommit: CURRENT_COMMIT,
+      updateUrl: `https://github.com/${GITHUB_REPO}`,
+      notes: `最新提交: ${latest.message}\n\n本地: ${CURRENT_COMMIT} → 远程: ${latest.commit}`,
     };
   } catch (error) {
     console.error('❌ 检查更新失败:', error);
@@ -164,7 +171,9 @@ export async function checkForUpdates(force: boolean = false): Promise<{
  */
 export function showUpdateDialog(updateInfo: {
   latestVersion: string;
+  latestCommit?: string;
   currentVersion: string;
+  currentCommit?: string;
   updateUrl: string;
   notes: string;
 }): void {
@@ -367,9 +376,11 @@ ${updateInfo.notes}
   });
 
   document.getElementById('maomaomz-update-ignore')?.addEventListener('click', () => {
-    // 标记此版本为已忽略
-    localStorage.setItem(IGNORED_VERSION_KEY, updateInfo.latestVersion);
-    (window as any).toastr?.warning(`已忽略版本 ${updateInfo.latestVersion}，不再提示`);
+    // 标记此 commit 为已忽略
+    if (updateInfo.latestCommit) {
+      localStorage.setItem(IGNORED_COMMIT_KEY, updateInfo.latestCommit);
+    }
+    (window as any).toastr?.warning(`已忽略此更新 (${updateInfo.latestCommit || updateInfo.latestVersion})，不再提示`);
     document.getElementById('maomaomz-update-overlay')?.remove();
   });
 }
@@ -388,11 +399,13 @@ export async function autoCheckUpdates(): Promise<void> {
   try {
     const result = await checkForUpdates(false);
 
-    if (result && result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
-      console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
+    if (result && result.hasUpdate && result.updateUrl && result.notes) {
+      console.log(`✨ 发现新更新: ${result.currentCommit} → ${result.latestCommit}`);
       showUpdateDialog({
-        latestVersion: result.latestVersion,
+        latestVersion: result.latestVersion || CURRENT_VERSION,
+        latestCommit: result.latestCommit,
         currentVersion: result.currentVersion,
+        currentCommit: result.currentCommit,
         updateUrl: result.updateUrl,
         notes: result.notes,
       });
@@ -429,19 +442,25 @@ export async function manualCheckUpdates(): Promise<void> {
       return;
     }
 
-    if (result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
-      console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
+    if (result.hasUpdate && result.updateUrl && result.notes) {
+      console.log(`✨ 发现新更新: ${result.currentCommit} → ${result.latestCommit}`);
       showUpdateDialog({
-        latestVersion: result.latestVersion,
+        latestVersion: result.latestVersion || CURRENT_VERSION,
+        latestCommit: result.latestCommit,
         currentVersion: result.currentVersion,
+        currentCommit: result.currentCommit,
         updateUrl: result.updateUrl,
         notes: result.notes,
       });
     } else {
-      console.log(`✅ 已是最新版本: ${result.currentVersion}`);
-      (window as any).toastr?.success(`✅ 已是最新版本 v${result.currentVersion}`, '无需更新', {
-        preventDuplicates: true,
-      });
+      console.log(`✅ 已是最新版本: ${result.currentCommit}`);
+      (window as any).toastr?.success(
+        `✅ 已是最新版本 v${result.currentVersion} (${result.currentCommit})`,
+        '无需更新',
+        {
+          preventDuplicates: true,
+        },
+      );
     }
   } finally {
     isCheckingInProgress = false;

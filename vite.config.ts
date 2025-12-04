@@ -1,10 +1,20 @@
 import vue from '@vitejs/plugin-vue';
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 import unpluginAutoImport from 'unplugin-auto-import/vite';
 import { VueUseComponentsResolver, VueUseDirectiveResolver } from 'unplugin-vue-components/resolvers';
 import unpluginVueComponents from 'unplugin-vue-components/vite';
 import { defineConfig } from 'vite';
 import pluginExternal from 'vite-plugin-external';
+
+// 获取当前 git commit hash
+function getGitCommitHash(): string {
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch {
+    return 'unknown';
+  }
+}
 
 const externals = {
   jquery: '$',
@@ -106,5 +116,9 @@ export default defineConfig(({ mode }) => ({
           },
 
     target: 'esnext',
+  },
+
+  define: {
+    __GIT_COMMIT_HASH__: JSON.stringify(getGitCommitHash()),
   },
 }));
