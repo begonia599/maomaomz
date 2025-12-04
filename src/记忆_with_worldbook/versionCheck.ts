@@ -17,6 +17,9 @@ const GITHUB_API_BASE = 'https://api.github.com';
 const LAST_CHECK_KEY = 'maomaomz_last_version_check';
 const IGNORED_VERSION_KEY = 'maomaomz_ignored_version';
 
+// 防止重复检查的标志
+let isCheckingInProgress = false;
+
 /**
  * 版本比较
  * 返回: 1 表示 v1 > v2, -1 表示 v1 < v2, 0 表示相等
@@ -375,16 +378,27 @@ ${updateInfo.notes}
  * 自动检查更新（静默，不强制）
  */
 export async function autoCheckUpdates(): Promise<void> {
-  const result = await checkForUpdates(false);
+  // 防止重复检查
+  if (isCheckingInProgress) {
+    console.log('⏳ 已在检查更新中，跳过自动检查');
+    return;
+  }
 
-  if (result && result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
-    console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
-    showUpdateDialog({
-      latestVersion: result.latestVersion,
-      currentVersion: result.currentVersion,
-      updateUrl: result.updateUrl,
-      notes: result.notes,
-    });
+  isCheckingInProgress = true;
+  try {
+    const result = await checkForUpdates(false);
+
+    if (result && result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
+      console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
+      showUpdateDialog({
+        latestVersion: result.latestVersion,
+        currentVersion: result.currentVersion,
+        updateUrl: result.updateUrl,
+        notes: result.notes,
+      });
+    }
+  } finally {
+    isCheckingInProgress = false;
   }
 }
 
@@ -392,31 +406,44 @@ export async function autoCheckUpdates(): Promise<void> {
  * 手动检查更新（强制，显示结果）
  */
 export async function manualCheckUpdates(): Promise<void> {
-  console.log('🔍 手动检查更新...');
-  (window as any).toastr?.info('正在检查更新...', '版本检测', { timeOut: 3000 });
-
-  const result = await checkForUpdates(true);
-
-  if (!result) {
-    console.error('❌ 无法获取版本信息');
-    (window as any).toastr?.error(
-      '❌ 无法获取版本信息\n\n可能原因：\n1. GitHub API 访问受限\n2. 网络连接问题\n3. CDN 访问失败\n\n请稍后重试或查看控制台了解详情',
-      '检查失败',
-      { timeOut: 8000 },
-    );
+  // 防止重复检查
+  if (isCheckingInProgress) {
+    console.log('⏳ 已在检查更新中，跳过重复请求');
     return;
   }
 
-  if (result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
-    console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
-    showUpdateDialog({
-      latestVersion: result.latestVersion,
-      currentVersion: result.currentVersion,
-      updateUrl: result.updateUrl,
-      notes: result.notes,
-    });
-  } else {
-    console.log(`✅ 已是最新版本: ${result.currentVersion}`);
-    (window as any).toastr?.success(`✅ 已是最新版本 v${result.currentVersion}`, '无需更新');
+  isCheckingInProgress = true;
+  console.log('🔍 手动检查更新...');
+  (window as any).toastr?.info('正在检查更新...', '版本检测', { timeOut: 3000, preventDuplicates: true });
+
+  try {
+    const result = await checkForUpdates(true);
+
+    if (!result) {
+      console.error('❌ 无法获取版本信息');
+      (window as any).toastr?.error(
+        '❌ 无法获取版本信息\n\n可能原因：\n1. GitHub API 访问受限\n2. 网络连接问题\n3. CDN 访问失败\n\n请稍后重试或查看控制台了解详情',
+        '检查失败',
+        { timeOut: 8000 },
+      );
+      return;
+    }
+
+    if (result.hasUpdate && result.latestVersion && result.updateUrl && result.notes) {
+      console.log(`✨ 发现新版本: ${result.latestVersion} (当前: ${result.currentVersion})`);
+      showUpdateDialog({
+        latestVersion: result.latestVersion,
+        currentVersion: result.currentVersion,
+        updateUrl: result.updateUrl,
+        notes: result.notes,
+      });
+    } else {
+      console.log(`✅ 已是最新版本: ${result.currentVersion}`);
+      (window as any).toastr?.success(`✅ 已是最新版本 v${result.currentVersion}`, '无需更新', {
+        preventDuplicates: true,
+      });
+    }
+  } finally {
+    isCheckingInProgress = false;
   }
 }
