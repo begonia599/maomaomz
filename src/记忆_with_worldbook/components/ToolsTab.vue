@@ -3717,26 +3717,55 @@ const refreshGreetingCharInfo = () => {
 // 从酒馆用户设定加载人设
 const loadPersonaFromTavern = () => {
   try {
+    // 方式1: 从 TavernHelper 获取
     const tav = (window as any).TavernHelper;
     if (tav?.getPersona) {
-      greetingUserPersona.value = tav.getPersona() || '';
-      return;
+      const p = tav.getPersona();
+      if (p) {
+        greetingUserPersona.value = p;
+        console.log('✅ 从 TavernHelper.getPersona 获取用户人设');
+        return;
+      }
     }
-    // 降级：从 SillyTavern 获取
-    const st = (window as any).SillyTavern;
+
+    // 方式2: 从 SillyTavern context 获取
+    const st = (window as any).SillyTavern || (window as any).parent?.SillyTavern;
     if (st?.getContext) {
       const ctx = st.getContext();
-      greetingUserPersona.value = ctx?.persona || ctx?.user_persona || '';
+      console.log('🔍 SillyTavern context keys:', Object.keys(ctx || {}));
+
+      // 尝试多种可能的字段名
+      const personaText =
+        ctx?.persona || ctx?.user_persona || ctx?.personaDescription || ctx?.default_persona || ctx?.name1 || '';
+      if (personaText) {
+        greetingUserPersona.value = personaText;
+        console.log('✅ 从 SillyTavern context 获取用户人设');
+        return;
+      }
+
+      // 尝试从 personas 数组获取当前激活的
+      if (ctx?.personas && ctx?.persona_id) {
+        const activePersona = ctx.personas.find((p: any) => p.id === ctx.persona_id);
+        if (activePersona?.description) {
+          greetingUserPersona.value = activePersona.description;
+          console.log('✅ 从 personas 数组获取用户人设');
+          return;
+        }
+      }
+    }
+
+    // 方式3: 直接从全局变量获取
+    const win = window as any;
+    const power_user = win.power_user || win.parent?.power_user;
+    if (power_user?.persona_description) {
+      greetingUserPersona.value = power_user.persona_description;
+      console.log('✅ 从 power_user.persona_description 获取用户人设');
       return;
     }
-    // 再降级：从 parent 获取
-    const pst = (window as any).parent?.SillyTavern;
-    if (pst?.getContext) {
-      const ctx = pst.getContext();
-      greetingUserPersona.value = ctx?.persona || ctx?.user_persona || '';
-    }
-  } catch {
-    console.warn('获取酒馆用户人设失败');
+
+    console.warn('⚠️ 未能获取用户人设');
+  } catch (e) {
+    console.warn('获取酒馆用户人设失败:', e);
   }
 };
 
@@ -3761,11 +3790,54 @@ const loadPersonaFromWorldbook = async () => {
     return;
   }
   try {
+    console.log('🔍 尝试加载世界书条目:', greetingPersonaWorldbook.value);
+
+    // 方式1: 从 TavernHelper 获取
     const tav = (window as any).TavernHelper;
     if (tav?.getWorldBookEntries) {
       const entries = await tav.getWorldBookEntries(greetingPersonaWorldbook.value);
-      greetingPersonaEntries.value = entries || [];
+      if (entries?.length) {
+        greetingPersonaEntries.value = entries;
+        console.log('✅ 从 TavernHelper 获取世界书条目:', entries.length);
+        return;
+      }
     }
+
+    // 方式2: 从 SillyTavern API 获取
+    const st = (window as any).SillyTavern || (window as any).parent?.SillyTavern;
+    if (st?.getContext) {
+      const ctx = st.getContext();
+      // 尝试获取世界书数据
+      const worldInfos = ctx?.worldInfo || ctx?.world_info;
+      if (worldInfos) {
+        const wb = worldInfos[greetingPersonaWorldbook.value];
+        if (wb?.entries) {
+          const entries = Object.values(wb.entries) as any[];
+          greetingPersonaEntries.value = entries;
+          console.log('✅ 从 SillyTavern context 获取世界书条目:', entries.length);
+          return;
+        }
+      }
+    }
+
+    // 方式3: 通过 fetch API 获取
+    try {
+      const response = await fetch(`/api/worldinfo/get?name=${encodeURIComponent(greetingPersonaWorldbook.value)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.entries) {
+          const entries = Object.values(data.entries) as any[];
+          greetingPersonaEntries.value = entries;
+          console.log('✅ 从 API 获取世界书条目:', entries.length);
+          return;
+        }
+      }
+    } catch (apiError) {
+      console.log('⚠️ API 获取失败，尝试其他方式');
+    }
+
+    console.warn('⚠️ 未能获取世界书条目');
+    greetingPersonaEntries.value = [];
   } catch (error) {
     console.error('加载世界书条目失败:', error);
     greetingPersonaEntries.value = [];
