@@ -1943,6 +1943,69 @@
           ></textarea>
         </div>
 
+        <!-- 角色类型快捷选择 -->
+        <div class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            角色类型（可选）：
+          </label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button
+              v-for="preset in characterPresets"
+              :key="preset.value"
+              style="
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+                transition: all 0.2s;
+                border: 1px solid #3a3a3a;
+              "
+              :style="{
+                background: characterPreset === preset.value ? preset.color + '20' : '#2a2a2a',
+                borderColor: characterPreset === preset.value ? preset.color : '#3a3a3a',
+                color: characterPreset === preset.value ? preset.color : '#ccc',
+              }"
+              @click="characterPreset = characterPreset === preset.value ? '' : preset.value"
+            >
+              {{ preset.icon }} {{ preset.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 生成风格选择 -->
+        <div class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            生成风格：
+          </label>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <label
+              v-for="style in characterStyles"
+              :key="style.value"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                background: #2a2a2a;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              :style="{
+                background: characterStyle === style.value ? style.color + '20' : '#2a2a2a',
+                border: characterStyle === style.value ? '1px solid ' + style.color : '1px solid #3a3a3a',
+              }"
+            >
+              <input v-model="characterStyle" type="radio" :value="style.value" style="display: none" />
+              <i :class="style.icon" :style="{ color: style.color }"></i>
+              <span style="color: #e0e0e0; font-size: 12px">{{ style.label }}</span>
+            </label>
+          </div>
+          <p style="margin: 8px 0 0 0; color: #888; font-size: 11px">
+            {{ characterStyleDescription }}
+          </p>
+        </div>
+
         <!-- 流式传输开关 -->
         <div class="form-group" style="margin: 15px 0">
           <label style="display: flex; align-items: center; gap: 8px; color: #ccc; font-size: 13px; cursor: pointer">
@@ -2779,6 +2842,48 @@ const modifyRequest = ref('');
 const isModifyingCharacter = ref(false);
 const enableCharacterStreaming = ref(false); // 角色卡生成是否启用流式传输
 const characterProgressPercent = ref(0); // 角色卡生成进度
+const characterStyle = ref<'compact' | 'standard' | 'detailed'>('standard'); // 生成风格
+const characterPreset = ref(''); // 角色类型预设
+
+// 角色类型预设
+const characterPresets = [
+  { value: 'romance', label: '恋爱对象', icon: '💕', color: '#ff6b9d' },
+  { value: 'villain', label: '反派BOSS', icon: '👿', color: '#dc3545' },
+  { value: 'sidekick', label: '搞笑配角', icon: '🤡', color: '#ffc107' },
+  { value: 'mystery', label: '神秘人物', icon: '🎭', color: '#6f42c1' },
+  { value: 'mentor', label: '导师长辈', icon: '🧙', color: '#20c997' },
+  { value: 'rival', label: '竞争对手', icon: '⚔️', color: '#fd7e14' },
+] as const;
+
+// 生成风格选项
+const characterStyles = [
+  {
+    value: 'compact',
+    label: '简洁',
+    icon: 'fa-solid fa-compress',
+    color: '#10b981',
+    desc: '精简核心信息，适合配角或快速创建',
+  },
+  {
+    value: 'standard',
+    label: '标准',
+    icon: 'fa-solid fa-file-alt',
+    color: '#17a2b8',
+    desc: '完整的角色卡，适合主要角色',
+  },
+  {
+    value: 'detailed',
+    label: '详细',
+    icon: 'fa-solid fa-book-open',
+    color: '#6f42c1',
+    desc: '深度挖掘角色内心，适合核心角色',
+  },
+] as const;
+
+// 生成风格描述
+const characterStyleDescription = computed(() => {
+  return characterStyles.find(s => s.value === characterStyle.value)?.desc || '';
+});
 
 // 世界书条目生成工具相关
 const worldbookDescription = ref('');
@@ -2874,11 +2979,12 @@ const loadToolsData = () => {
       characterCardOutput.value = savedData.tools_characterCard.output || '';
       modifyRequest.value = savedData.tools_characterCard.modifyRequest || '';
       enableCharacterStreaming.value = savedData.tools_characterCard.enableStreaming || false;
+      characterStyle.value = savedData.tools_characterCard.style || 'standard';
+      characterPreset.value = savedData.tools_characterCard.preset || '';
       console.log('✅ 已恢复角色卡数据:', {
         description: characterDescription.value.substring(0, 50),
-        output: characterCardOutput.value.substring(0, 50),
-        modifyRequest: modifyRequest.value.substring(0, 50),
-        enableStreaming: enableCharacterStreaming.value,
+        style: characterStyle.value,
+        preset: characterPreset.value,
       });
     }
 
@@ -2968,6 +3074,8 @@ const saveToolsDataImmediate = () => {
         output: characterCardOutput.value,
         modifyRequest: modifyRequest.value,
         enableStreaming: enableCharacterStreaming.value,
+        style: characterStyle.value,
+        preset: characterPreset.value,
       },
       tools_worldbookEntry: {
         description: worldbookDescription.value,
@@ -3316,6 +3424,84 @@ const clearAntiClicheModifyRequest = () => {
   window.toastr.success('修改需求已清空');
 };
 
+// 根据风格和预设生成角色卡提示词
+const getCharacterCardPrompt = (style: 'compact' | 'standard' | 'detailed', preset: string): string => {
+  // 角色类型特定指导
+  const presetGuide: Record<string, string> = {
+    romance: '【恋爱对象】重点塑造：情感细腻度、亲密关系中的行为模式、恋爱观和底线、撩拨与被撩时的反应差异。',
+    villain: '【反派BOSS】重点塑造：行恶动机的合理性、黑化前的经历、对正义/规则的理解、是否有底线、迷人的危险感。',
+    sidekick: '【搞笑配角】重点塑造：独特的幽默感来源、与主角的化学反应、认真时刻的反差、让人记住的口头禅/行为。',
+    mystery: '【神秘人物】重点塑造：神秘感的来源、隐藏的秘密层次、透露信息的节奏、真实身份与表象的反差。',
+    mentor: '【导师长辈】重点塑造：智慧的来源和局限、教导方式、年轻时的样子、对后辈的真实情感、自己未完成的遗憾。',
+    rival: '【竞争对手】重点塑造：竞争动机、对主角的复杂情感（敬佩/嫉妒/惺惺相惜）、实力对比、可能的和解或决裂。',
+  };
+
+  const presetText = preset && presetGuide[preset] ? `\n\n${presetGuide[preset]}` : '';
+
+  if (style === 'compact') {
+    return `你是角色设计师，生成简洁版角色卡。${presetText}
+
+# 输出格式（YAML，纯中文）
+\`\`\`yaml
+基础信息:
+  姓名: "全名"
+  年龄: 数字
+  性别: "男/女"
+  身份: "职业+当前状态"
+  外貌: "整体印象+2-3个特征"
+
+性格核心:
+  主要特质: "1个核心性格+具体表现"
+  性格矛盾: "1组内在冲突"
+  情绪特点: "情绪基调+触发点"
+
+对话风格:
+  说话方式: "语气+习惯+1个例子"
+  口头禅: ["1-2个"]
+
+背景简述: "家庭+重要经历+当前困境，3-5句话"
+
+对{{user}}: "初次态度+相处模式"
+\`\`\`
+
+要求：简洁但有血有肉，每句话都有信息量。`;
+  }
+
+  if (style === 'detailed') {
+    return `你是专业角色设计师，生成深度角色卡。${presetText}
+
+# 核心原则
+1. 角色必须像真实存在的人，复杂且矛盾
+2. 用具体行为展现性格，不用空洞标签
+3. 深挖内心世界：动机、恐惧、欲望、自我欺骗
+
+# 输出格式（YAML，纯中文，完整版+心理深度）
+包含：基础信息、外貌身材、性格心理、对话风格、背景经历、人际关系、行为模式、内在动机、情绪管理、成长弧线
+
+额外要求：
+- 内在动机：核心驱动、深层需求、价值排序、自我欺骗
+- 情绪管理：失控阈值、恢复机制、脆弱时刻
+- 成长空间：可能的改变方向、需要什么契机
+- 关系动态：与{{user}}关系可能的5个发展阶段
+
+写得像在解析一个真实的人，不是填表格。`;
+  }
+
+  // standard（默认）- 使用原有完整提示词
+  return `你是一位专业的角色设计师，擅长创造真实、立体的角色。${presetText}
+
+# 核心原则
+1. 真实性第一：有优点也有缺点，有逻辑也有矛盾
+2. 避免刻板印象：拒绝空洞标签
+3. 展现而非告知：用具体行为展现性格
+4. 矛盾与冲突：性格要有张力
+
+# 输出格式（YAML，纯中文）
+包含：基础信息、外貌身材、性格心理、对话风格、背景经历、人际关系、行为模式
+
+记住：你在创造一个人，不是填写表格。`;
+};
+
 // 角色卡生成工具相关函数
 const handleGenerateCharacterCard = async () => {
   if (!characterDescription.value.trim()) {
@@ -3326,143 +3512,18 @@ const handleGenerateCharacterCard = async () => {
   try {
     isGeneratingCharacter.value = true;
     characterProgressPercent.value = 0;
-    window.toastr.info('AI正在生成角色卡，请稍候...');
+    const styleLabel = characterStyles.find(s => s.value === characterStyle.value)?.label || '标准';
+    window.toastr.info(`AI正在生成${styleLabel}角色卡...`);
 
     const requestPayload = {
       model: settings.value.model || 'gpt-3.5-turbo',
-      max_tokens: settings.value.max_tokens || 16000,
+      max_tokens: characterStyle.value === 'compact' ? 4000 : characterStyle.value === 'detailed' ? 16000 : 8000,
       temperature: 0.8,
       stream: enableCharacterStreaming.value,
       messages: [
         {
           role: 'system',
-          content: `你是一位专业的角色设计师，擅长创造真实、立体、有血有肉的角色。
-
-# 核心原则
-1. **真实性第一**：角色必须像真实存在的人，有优点也有缺点，有逻辑也有矛盾
-2. **避免刻板印象**：拒绝"温柔体贴"、"成熟稳重"、"活泼开朗"等空洞标签
-3. **展现而非告知**：用具体行为、习惯、反应来展现性格，而非直接描述
-4. **矛盾与冲突**：性格要有张力，内心要有挣扎，行为要有动机
-
-# 输出格式
-严格使用 YAML 格式，纯中文，结构如下：
-
-\`\`\`yaml
-基础信息:
-  姓名: "全名（只写中文，不带英文）"
-  年龄: 具体数字
-  出生年月: "YYYY年MM月"
-  性别: "男/女"
-  第二性别: "Alpha/Beta/Omega/无"
-  身高体重: "用描述性词语，如'身材高挑''体型匀称''略显瘦削'，禁用数字和单位"
-  信息素: "如适用ABO设定，描述气味和特征，否则写'无'"
-  性取向: "明确但自然的描述"
-  恋爱经验: "具体描述过往经历和对感情的态度，不要写'丰富'这种模糊词"
-  身份职业: "具体职业+当前状态，如'互联网公司产品经理，正处于职业瓶颈期'"
-  标志性特征:
-    微信昵称: "符合角色性格的昵称"
-    头像: "简短描述，体现性格"
-    其他: "1-2个独特的外在特征"
-
-外貌与身材:
-  整体印象: "第一眼给人的感觉，用生动的比喻"
-  面容特征:
-    发型发色: "具体描述+日常打理习惯"
-    肤色肤质: "不只说白/黑，要有质感描述"
-    眼睛: "形状+神态+眼神特点（如'总是微微眯起，带着审视'）"
-    五官: "1-2个最突出的特点+细节"
-  穿搭风格: "日常3种场景的穿着+品味倾向+为什么这样穿"
-  声音气质: "音色+语速+说话习惯（如'会在句尾拖长音''习惯用鼻音哼声'）"
-  习惯动作: "3-5个自然的小动作，注明在什么情况下会做"
-
-性格与心理:
-  核心性格:
-    主导特质: "1个最核心的性格特点，用行为模式解释"
-    次要特质: "2-3个补充特质，说明如何体现"
-    隐藏面: "不轻易展现但确实存在的一面"
-  性格矛盾: "至少1组内在矛盾（如：渴望亲密却害怕受伤，追求完美却容易自我怀疑）"
-  情绪模式:
-    基线情绪: "日常的情绪基调，不要用'平和''稳定'这种词"
-    易触发点: "具体场景+为什么会触发"
-    情绪表现: "高兴/生气/难过时的具体表现，要有细节"
-    自我调节: "心情不好时会做什么，效果如何"
-  压力应对: "面对压力的第一反应+长期策略+极限状态"
-  自我认知: "TA如何看待自己+与他人眼中形象的差异"
-
-对话风格:
-  语言特征: "用词习惯+句式特点+说话节奏，给出具体例子"
-  对不同对象:
-    熟人: "如何说话+举例"
-    生人: "如何说话+举例"
-    上级/长辈: "如何说话+举例"
-    下属/晚辈: "如何说话+举例"
-  情绪化时: "生气时语气如何变化+难过时说话方式+兴奋时的特点"
-  口头禅: ["2-3个符合角色的口头禅，要自然"]
-  言外之意: "常用的委婉表达或暗示方式"
-
-背景经历:
-  家庭背景: "家庭结构+成长环境+家庭氛围+对性格的影响"
-  教育经历: "学习经历+成绩表现+对知识/权威的态度"
-  重要事件:
-    - "具体事件1+当时年龄+如何影响了TA"
-    - "具体事件2+当时年龄+如何影响了TA"
-    - "具体事件3+当时年龄+如何影响了TA"
-  转折点: "人生中最重要的改变+前后对比"
-  当前状况: "具体的生活状态+面临的问题+应对方式"
-  未来规划: "想要什么+为什么想要+有何行动"
-
-人际关系:
-  对{{user}}: "初次见面的态度+相处模式+内心真实想法+可能的发展"
-  社交模式: "喜欢什么样的社交+讨厌什么+社交能量来源"
-  群体定位: "在团体中的角色+如何获得这个位置+是否满意"
-  关系处理: "如何建立关系+如何维持关系+如何结束关系"
-  冲突模式: "冲突时第一反应+沟通方式+底线在哪"
-
-行为模式:
-  日常习惯: "3-5个具体的生活习惯+背后原因"
-  决策模式: "做决定的方式+考虑因素+犹豫点"
-  主动行为: "TA会主动去做的事+动机"
-  回避行为: "TA避免做的事+为什么回避"
-  应激反应: "突发情况的本能反应+事后如何处理"
-  行为底线: "绝对不会做的事+为什么"
-
-内在动机:
-  核心驱动: "推动TA行动的最深层原因（不是'想成功'这种泛泛之谈）"
-  深层需求: "TA真正缺失和渴望的（可能自己都未意识到）"
-  价值排序: "TA认为最重要的3-5个价值观，按优先级排序"
-  内在冲突: "价值观之间的矛盾+如何权衡"
-  隐秘想法: "不愿说出口的真实想法+为什么隐藏"
-  自我欺骗: "TA对自己撒的谎+真相是什么"
-
-情绪管理:
-  失控阈值: "什么情况会失控+失控时的表现"
-  恢复机制: "如何平复下来+需要多久+谁能帮助"
-  情绪模式: "是压抑型/爆发型/渐进型"
-  脆弱时刻: "什么时候最脆弱+会向谁示弱"
-\`\`\`
-
-# 写作要求
-
-## ✅ 这样写（好例子）：
-- "会在紧张时咬指甲，咬到出血也不自觉"
-- "表面上说无所谓，但会在深夜反复刷对方的社交账号"
-- "习惯在句尾加'吧''呢'这些不确定的语气词，显得不够坚定"
-- "对陌生人冷淡，但遇到流浪猫会蹲下来哄半天"
-
-## ❌ 不要这样写（坏例子）：
-- "性格温柔善良" → 太空洞，要写具体行为
-- "是个负责任的人" → 太抽象，要写如何体现
-- "很关心朋友" → 太笼统，要写具体怎么关心
-- "成熟稳重" → 太刻板，真人有复杂性
-
-## 关键原则：
-1. **每个描述都要有"为什么"**：不只说TA是什么样，要说为什么是这样
-2. **展现矛盾**：真实的人都有自相矛盾的地方
-3. **具体场景**：用"会在XX情况下做XX"而非"是个XX的人"
-4. **避免完美**：缺陷和局限让角色真实
-5. **语言生动**：用比喻、对比、细节，不要用形容词堆砌
-
-现在请根据用户描述，创造一个真实可信的角色。记住：你在创造一个人，不是填写表格。`,
+          content: getCharacterCardPrompt(characterStyle.value, characterPreset.value),
         },
         {
           role: 'user',
