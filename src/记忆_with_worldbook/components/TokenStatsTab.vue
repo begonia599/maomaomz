@@ -11,6 +11,26 @@
       <div style="display: flex; align-items: center; gap: 8px">
         <span v-if="stats" style="font-size: 11px; color: #888"> 上次计算: {{ lastUpdatedText }} </span>
         <button
+          style="
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            background: #10b981;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          "
+          title="打开酒馆的提示词查看器查看精确值"
+          @click="openPromptInspector"
+        >
+          <i class="fa-solid fa-eye"></i>
+          精确统计
+        </button>
+        <button
           :disabled="loading"
           style="
             padding: 8px 14px;
@@ -28,7 +48,7 @@
           @click="handleRefresh"
         >
           <i :class="loading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-rotate'"></i>
-          {{ loading ? '重新计算中...' : '重新计算' }}
+          {{ loading ? '重新计算中...' : '粗略估算' }}
         </button>
       </div>
     </div>
@@ -74,14 +94,14 @@
             border: 1px solid #333;
           "
         >
-          <div style="font-size: 12px; color: #aaa; margin-bottom: 4px">总 Tokens（估算）</div>
+          <div style="font-size: 12px; color: #aaa; margin-bottom: 4px">总 Tokens（粗略估算）</div>
           <div style="font-size: 22px; font-weight: 700; color: #f97316">
             {{ formatNumber(stats.totalTokens) }}
           </div>
-          <div style="font-size: 11px; color: #777; margin-top: 4px">
-            角色卡 + 蓝灯世界书 + 聊天 + 预设
+          <div style="font-size: 11px; color: #ef4444; margin-top: 4px">
+            ⚠️ 此数值仅供参考，可能与实际发送不符
             <br />
-            <span style="color: #888">💡 绿灯/向量条目需触发才计入，精确值请用「提示词查看器」</span>
+            <span style="color: #888">💡 精确值请使用酒馆的「提示词查看器」(Ctrl+P)</span>
           </div>
         </div>
 
@@ -952,9 +972,9 @@ async function calculateTokenStats(): Promise<void> {
           console.warn('[TokenStats] 获取 max_context 失败:', e);
         }
 
-        // 计算非聊天内容占用的 token（预设 + 角色卡 + 世界书 + 人设）
+        // 计算非聊天内容占用的 token（预设 + 角色卡 + 蓝灯世界书 + 人设）
         const nonChatTokens =
-          local.systemPromptTokens + local.characterCardTokens + local.lorebookTokens + local.personaTokens;
+          local.systemPromptTokens + local.characterCardTokens + local.totalConstantTokens + local.personaTokens;
         const availableForChat = Math.max(0, maxContext - nonChatTokens);
         console.log(
           '[TokenStats] 上下文限制:',
@@ -1018,6 +1038,32 @@ async function calculateTokenStats(): Promise<void> {
 
 function handleRefresh() {
   void calculateTokenStats();
+}
+
+// 打开酒馆的提示词查看器
+function openPromptInspector() {
+  try {
+    const w = window as any;
+    // 尝试多种方式打开提示词查看器
+    // 1. 直接调用 showPromptInspector
+    if (typeof w.showPromptInspector === 'function') {
+      w.showPromptInspector();
+      return;
+    }
+    // 2. 通过 jQuery 点击按钮
+    if (w.jQuery) {
+      const btn = w.jQuery('#option_prompt_manager');
+      if (btn.length) {
+        btn.click();
+        return;
+      }
+    }
+    // 3. 直接模拟快捷键 Ctrl+P（可能不生效）
+    w.toastr?.info('请按 Ctrl+P 打开提示词查看器');
+  } catch (e) {
+    console.error('打开提示词查看器失败:', e);
+    (window as any).toastr?.warning('请手动按 Ctrl+P 打开提示词查看器');
+  }
 }
 
 // 注：事件监听在此环境不可用，只能使用估算值
