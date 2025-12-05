@@ -752,6 +752,296 @@
       </div>
     </div>
 
+    <!-- Token 压缩工具 -->
+    <div class="tool-section">
+      <div
+        class="section-header"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px 20px;
+          background: linear-gradient(
+            135deg,
+            rgba(30, 30, 30, 0.95) 0%,
+            rgba(38, 38, 38, 0.9) 50%,
+            rgba(30, 30, 30, 0.95) 100%
+          );
+          border: 1px solid rgba(220, 53, 69, 0.3);
+          border-radius: 12px;
+          margin-bottom: 4px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        "
+        @click="toggleToolExpanded('tokenCompress')"
+      >
+        <h4
+          style="
+            margin: 0;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          "
+        >
+          <i class="fa-solid fa-compress" style="color: #dc3545; font-size: 18px"></i>
+          Token 压缩
+        </h4>
+        <i
+          :class="isToolExpanded('tokenCompress') ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'"
+          style="color: #888; font-size: 14px; transition: transform 0.3s ease"
+        ></i>
+      </div>
+
+      <div v-show="isToolExpanded('tokenCompress')" class="section-content" style="padding: 20px">
+        <div class="tool-description" style="margin-bottom: 15px">
+          <p style="margin: 0 0 8px 0; color: #ccc; font-size: 12px">
+            <i class="fa-solid fa-info-circle" style="margin-right: 6px; color: #dc3545"></i>
+            精简角色卡/世界书内容，在保留核心信息的前提下减少 Token 消耗。
+          </p>
+        </div>
+
+        <!-- 读取来源 -->
+        <div class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            读取内容：
+          </label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button
+              style="
+                padding: 6px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 4px;
+                color: #17a2b8;
+                font-size: 11px;
+                cursor: pointer;
+              "
+              @click="loadTokenCompressFromChar('description')"
+            >
+              📝 角色描述
+            </button>
+            <button
+              style="
+                padding: 6px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 4px;
+                color: #17a2b8;
+                font-size: 11px;
+                cursor: pointer;
+              "
+              @click="loadTokenCompressFromChar('personality')"
+            >
+              💭 角色性格
+            </button>
+            <button
+              style="
+                padding: 6px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 4px;
+                color: #17a2b8;
+                font-size: 11px;
+                cursor: pointer;
+              "
+              @click="loadTokenCompressFromChar('scenario')"
+            >
+              🎬 场景
+            </button>
+            <select
+              v-model="tokenCompressWorldbook"
+              style="
+                padding: 6px 10px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 4px;
+                color: #10b981;
+                font-size: 11px;
+              "
+              @change="loadTokenCompressFromWorldbook"
+            >
+              <option value="">📚 从世界书读取...</option>
+              <option v-for="wb in availableWorldbooks" :key="wb" :value="wb">{{ wb }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="form-group" style="margin: 15px 0">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+            <label style="color: #ccc; font-size: 13px; font-weight: 500">原始内容：</label>
+            <span style="color: #dc3545; font-size: 12px; font-weight: 600">
+              约 {{ tokenCompressInputTokens }} tokens
+            </span>
+          </div>
+          <textarea
+            v-model="tokenCompressInput"
+            placeholder="粘贴或读取需要压缩的内容..."
+            style="
+              width: 100%;
+              height: 120px;
+              padding: 12px;
+              background: #2a2a2a;
+              border: 1px solid #3a3a3a;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 13px;
+              resize: vertical;
+              font-family: inherit;
+            "
+          ></textarea>
+        </div>
+
+        <!-- 压缩强度 -->
+        <div class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            压缩强度：
+          </label>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <label
+              v-for="level in tokenCompressLevels"
+              :key="level.value"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                background: #2a2a2a;
+                border-radius: 8px;
+                cursor: pointer;
+              "
+              :style="{
+                background: tokenCompressLevel === level.value ? level.color + '20' : '#2a2a2a',
+                border: tokenCompressLevel === level.value ? '1px solid ' + level.color : '1px solid #3a3a3a',
+              }"
+            >
+              <input v-model="tokenCompressLevel" type="radio" :value="level.value" style="display: none" />
+              <span style="color: #e0e0e0; font-size: 12px">{{ level.label }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 进度条 -->
+        <div v-if="isCompressingToken && tokenCompressProgress > 0" style="margin: 15px 0">
+          <div style="width: 100%; height: 8px; background: #2a2a2a; border-radius: 4px; overflow: hidden">
+            <div
+              :style="{
+                width: tokenCompressProgress + '%',
+                height: '100%',
+                background: '#dc3545',
+                transition: 'width 0.3s',
+              }"
+            ></div>
+          </div>
+          <p style="margin: 5px 0 0 0; color: #dc3545; font-size: 11px; text-align: center">
+            压缩中... {{ tokenCompressProgress.toFixed(0) }}%
+          </p>
+        </div>
+
+        <div class="button-group" style="display: flex; gap: 12px; margin-bottom: 15px">
+          <button
+            :disabled="isCompressingToken || !tokenCompressInput.trim()"
+            style="
+              padding: 10px 20px;
+              background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+              border: none;
+              border-radius: 8px;
+              color: white;
+              font-size: 13px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+            @click="handleTokenCompress"
+          >
+            <i class="fa-solid fa-compress" style="margin-right: 6px"></i>
+            {{ isCompressingToken ? '压缩中...' : '压缩' }}
+          </button>
+          <button
+            style="
+              padding: 10px 20px;
+              background: #3a3a3a;
+              border: none;
+              border-radius: 8px;
+              color: #ccc;
+              font-size: 13px;
+              cursor: pointer;
+            "
+            @click="
+              tokenCompressInput = '';
+              tokenCompressOutput = '';
+            "
+          >
+            <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
+            清空
+          </button>
+        </div>
+
+        <!-- 输出区域 -->
+        <div v-if="tokenCompressOutput" class="output-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
+            <h5 style="margin: 0; color: #fff; font-size: 14px; font-weight: 600">
+              <i class="fa-solid fa-check-circle" style="margin-right: 6px; color: #28a745"></i>
+              压缩结果：
+            </h5>
+            <div style="display: flex; gap: 12px; align-items: center">
+              <span style="color: #28a745; font-size: 12px; font-weight: 600">
+                约 {{ tokenCompressOutputTokens }} tokens
+              </span>
+              <span
+                style="
+                  padding: 4px 8px;
+                  background: rgba(40, 167, 69, 0.2);
+                  border-radius: 4px;
+                  color: #28a745;
+                  font-size: 11px;
+                  font-weight: 600;
+                "
+              >
+                节省 {{ tokenCompressSaved }}%
+              </span>
+            </div>
+          </div>
+          <div
+            style="
+              background: #1e1e1e;
+              border: 1px solid #3a3a3a;
+              border-radius: 6px;
+              padding: 15px;
+              color: #e0e0e0;
+              font-size: 13px;
+              line-height: 1.6;
+              white-space: pre-wrap;
+              max-height: 200px;
+              overflow-y: auto;
+            "
+          >
+            {{ tokenCompressOutput }}
+          </div>
+
+          <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap">
+            <button
+              style="
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 12px;
+                cursor: pointer;
+              "
+              @click="copyToClipboard(tokenCompressOutput, '压缩结果已复制')"
+            >
+              <i class="fa-solid fa-copy" style="margin-right: 6px"></i>
+              复制
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 开场白生成工具 -->
     <div class="tool-section">
       <div
@@ -3567,6 +3857,19 @@ const npcInsertWorldbook = ref('');
 const npcContext = ref(''); // NPC 生成的背景参考
 const npcContextWorldbook = ref(''); // 选择的世界书
 
+// Token 压缩工具相关
+const tokenCompressInput = ref('');
+const tokenCompressOutput = ref('');
+const isCompressingToken = ref(false);
+const tokenCompressProgress = ref(0);
+const tokenCompressWorldbook = ref('');
+const tokenCompressLevel = ref<'light' | 'moderate' | 'aggressive'>('moderate');
+const tokenCompressLevels = [
+  { value: 'light', label: '轻度 (保留细节)', color: '#10b981' },
+  { value: 'moderate', label: '适度 (平衡)', color: '#ffc107' },
+  { value: 'aggressive', label: '激进 (极简)', color: '#dc3545' },
+];
+
 const characterInsertPositions = [
   { value: 'description', label: '📝 角色描述 (Description)', type: 'char' },
   { value: 'personality', label: '💭 角色性格 (Personality)', type: 'char' },
@@ -4219,6 +4522,147 @@ const clearAntiClicheModifyRequest = () => {
   antiClicheModifyRequest.value = '';
   saveToolsDataImmediate();
   window.toastr.success('修改需求已清空');
+};
+
+// Token 估算函数（简单估算：中文约 2 token/字，英文约 0.75 token/word）
+const estimateTokens = (text: string): number => {
+  if (!text) return 0;
+  const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+  const englishWords = (text.match(/[a-zA-Z]+/g) || []).length;
+  const numbers = (text.match(/\d+/g) || []).length;
+  const punctuation = (text.match(/[^\w\s\u4e00-\u9fff]/g) || []).length;
+  return Math.ceil(chineseChars * 2 + englishWords * 0.75 + numbers * 0.5 + punctuation * 0.5);
+};
+
+// Token 压缩相关计算属性
+const tokenCompressInputTokens = computed(() => estimateTokens(tokenCompressInput.value));
+const tokenCompressOutputTokens = computed(() => estimateTokens(tokenCompressOutput.value));
+const tokenCompressSaved = computed(() => {
+  if (!tokenCompressInputTokens.value || !tokenCompressOutputTokens.value) return 0;
+  const saved =
+    ((tokenCompressInputTokens.value - tokenCompressOutputTokens.value) / tokenCompressInputTokens.value) * 100;
+  return Math.max(0, saved).toFixed(0);
+});
+
+// 从角色卡读取内容到 Token 压缩
+const loadTokenCompressFromChar = (field: string) => {
+  try {
+    const tav = (window as any).TavernHelper;
+    if (tav?.getCharData) {
+      const char = tav.getCharData('current');
+      if (char) {
+        const fieldMap: Record<string, string> = {
+          description: char.description || char.data?.description || '',
+          personality: char.personality || char.data?.personality || '',
+          scenario: char.scenario || char.data?.scenario || '',
+        };
+        const content = fieldMap[field] || '';
+        if (content) {
+          tokenCompressInput.value = content;
+          window.toastr.success(`已读取角色卡 ${field}`);
+        } else {
+          window.toastr.warning(`角色卡 ${field} 为空`);
+        }
+        return;
+      }
+    }
+    window.toastr.warning('请先选择一个角色');
+  } catch (e) {
+    console.error('读取角色卡失败:', e);
+    window.toastr.error('读取失败');
+  }
+};
+
+// 从世界书读取内容到 Token 压缩
+const loadTokenCompressFromWorldbook = async () => {
+  if (!tokenCompressWorldbook.value) return;
+
+  try {
+    const tav = (window as any).TavernHelper;
+    if (tav?.getWorldbook) {
+      const entries = await tav.getWorldbook(tokenCompressWorldbook.value);
+      if (entries?.length) {
+        const allContent = entries
+          .filter((e: any) => e.content)
+          .map((e: any) => `【${e.name || e.comment || '条目'}】\n${e.content}`)
+          .join('\n\n');
+        if (allContent) {
+          tokenCompressInput.value = allContent;
+          window.toastr.success(`已读取 ${entries.length} 个条目`);
+        } else {
+          window.toastr.warning('世界书条目内容为空');
+        }
+      } else {
+        window.toastr.warning('世界书没有条目');
+      }
+    }
+  } catch (e) {
+    console.error('读取世界书失败:', e);
+    window.toastr.error('读取失败');
+  } finally {
+    tokenCompressWorldbook.value = '';
+  }
+};
+
+// Token 压缩处理
+const handleTokenCompress = async () => {
+  if (!tokenCompressInput.value.trim()) {
+    window.toastr.warning('请输入需要压缩的内容');
+    return;
+  }
+
+  try {
+    isCompressingToken.value = true;
+    tokenCompressProgress.value = 0;
+    window.toastr.info('正在压缩...');
+
+    const levelPrompts: Record<string, string> = {
+      light: '轻度精简：删除明显冗余和重复内容，保留所有细节和描写，只减少约 10-20% 的长度',
+      moderate: '适度精简：在保留核心信息的前提下，精简冗长描述，合并相似内容，减少约 30-40% 的长度',
+      aggressive: '激进精简：只保留最核心的信息和关键设定，删除所有非必要的描写和细节，尽可能减少长度',
+    };
+
+    const systemPrompt = `你是一个专业的文本压缩专家。请按照以下要求压缩文本：
+
+${levelPrompts[tokenCompressLevel.value]}
+
+要求：
+1. 保持原文的核心信息和逻辑
+2. 保持原文的格式结构（如果有标题、分段等）
+3. 不要改变原文的语气和风格
+4. 直接输出压缩后的内容，不要解释`;
+
+    const requestPayload = {
+      model: settings.value.model,
+      max_tokens: 4000,
+      temperature: 0.3,
+      stream: true,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `请压缩以下内容：\n\n${tokenCompressInput.value}` },
+      ],
+    };
+
+    let compressedText = '';
+
+    if (settings.value.use_tavern_api) {
+      compressedText = await callAIWithTavernSupport(requestPayload.messages, settings.value, {
+        onProgress: p => (tokenCompressProgress.value = p),
+      });
+    } else {
+      compressedText = await generateWithStreaming(requestPayload, tokenCompressProgress);
+    }
+
+    tokenCompressOutput.value = cleanCharacterCardOutput(compressedText);
+    saveToolsDataImmediate();
+    window.toastr.success('压缩完成！');
+  } catch (error) {
+    console.error('Token 压缩失败:', error);
+    window.toastr.error(translateError(error, '压缩'));
+  } finally {
+    isCompressingToken.value = false;
+    tokenCompressProgress.value = 0;
+  }
 };
 
 // 读取 NPC 背景参考
