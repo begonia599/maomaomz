@@ -425,18 +425,34 @@ function sourceTotal(s: SourceStats): number {
 function getTokenCount(text: string | null | undefined): number {
   if (!text || typeof text !== 'string') return 0;
   try {
-    // 插件在 iframe 中，需要访问父窗口的 SillyTavern
-    const parentWindow = window.parent as any;
-    if (parentWindow?.SillyTavern && typeof parentWindow.SillyTavern.getTokenCount === 'function') {
-      return parentWindow.SillyTavern.getTokenCount(text);
-    }
-    // 备用：当前窗口
     const w = window as any;
-    if (w.SillyTavern && typeof w.SillyTavern.getTokenCount === 'function') {
-      return w.SillyTavern.getTokenCount(text);
+
+    // 方法1: 直接 SillyTavern（插件可能直接注入）
+    if (w.SillyTavern?.getTokenCount) {
+      const result = w.SillyTavern.getTokenCount(text);
+      return result;
     }
+
+    // 方法2: 父窗口 SillyTavern
+    const pw = window.parent as any;
+    if (pw?.SillyTavern?.getTokenCount) {
+      const result = pw.SillyTavern.getTokenCount(text);
+      return result;
+    }
+
+    // 方法3: TavernHelper
+    if (w.TavernHelper?.getTokenCount) {
+      return w.TavernHelper.getTokenCount(text);
+    }
+
+    // 方法4: 全局 getTokenCount
+    if (typeof w.getTokenCount === 'function') {
+      return w.getTokenCount(text);
+    }
+
+    console.warn('[TokenStats] 未找到可用的 tokenizer');
   } catch (e) {
-    console.warn('SillyTavern.getTokenCount 调用失败:', e);
+    console.warn('getTokenCount 调用失败:', e);
   }
   return 0;
 }
