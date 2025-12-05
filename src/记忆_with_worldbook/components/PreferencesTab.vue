@@ -27,17 +27,7 @@
       </h4>
 
       <!-- 自动弹出面板 -->
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px;
-          background: #1e1e1e;
-          border-radius: 8px;
-          margin-bottom: 12px;
-        "
-      >
+      <div class="setting-item">
         <div style="flex: 1">
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">刷新时自动弹出面板</div>
           <div style="color: #888; font-size: 12px">页面刷新后自动显示猫猫的小破烂面板</div>
@@ -49,17 +39,7 @@
       </div>
 
       <!-- 显示任务中心 -->
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px;
-          background: #1e1e1e;
-          border-radius: 8px;
-          margin-bottom: 12px;
-        "
-      >
+      <div class="setting-item">
         <div style="flex: 1">
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示任务中心</div>
           <div style="color: #888; font-size: 12px">在界面右下角显示任务进度和状态</div>
@@ -71,16 +51,7 @@
       </div>
 
       <!-- 显示最小化图标 -->
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 15px;
-          background: #1e1e1e;
-          border-radius: 8px;
-        "
-      >
+      <div class="setting-item" style="margin-bottom: 0">
         <div style="flex: 1">
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示最小化图标</div>
           <div style="color: #888; font-size: 12px">在页面右上角显示猫猫头快捷图标</div>
@@ -92,26 +63,28 @@
       </div>
 
       <!-- 主题色选择 -->
-      <div style="padding: 15px; background: #1e1e1e; border-radius: 8px; margin-top: 12px">
+      <div
+        style="
+          padding: 15px;
+          background: linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(40, 40, 40, 0.9) 100%);
+          border-radius: 10px;
+          margin-top: 12px;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        "
+      >
         <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 12px">
-          <i class="fa-solid fa-palette" style="margin-right: 8px; color: #8b5cf6"></i>
+          <i class="fa-solid fa-palette" style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"></i>
           主题色
         </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px">
           <div
             v-for="color in themeColors"
             :key="color.value"
             :title="color.name"
-            :style="{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              background: color.value,
-              cursor: 'pointer',
-              border: preferences.themeColor === color.value ? '3px solid #fff' : '3px solid transparent',
-              boxShadow: preferences.themeColor === color.value ? '0 0 0 2px ' + color.value : 'none',
-              transition: 'all 0.2s ease',
-            }"
+            class="color-picker-item"
+            :class="{ 'color-picker-active': preferences.themeColor === color.value }"
+            :style="{ '--picker-color': color.value }"
             @click="
               preferences.themeColor = color.value;
               savePreferences();
@@ -398,5 +371,66 @@ input:checked + .toggle-slider:before {
 
 .toggle-slider:hover {
   opacity: 0.9;
+}
+
+/* 设置项卡片 */
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #1e1e1e;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+.setting-item:hover {
+  background: linear-gradient(135deg, #252525 0%, #2a2a2a 100%);
+  border-color: var(--maomaomz-theme-color, #4a9eff);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateX(4px);
+}
+
+/* 主题色选择器 */
+.color-picker-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--picker-color);
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.color-picker-item:hover {
+  transform: scale(1.15) translateY(-2px);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--picker-color) 50%, transparent);
+}
+
+.color-picker-item:active {
+  transform: scale(0.95);
+}
+
+.color-picker-active {
+  border-color: #fff;
+  box-shadow:
+    0 0 0 3px var(--picker-color),
+    0 4px 15px color-mix(in srgb, var(--picker-color) 60%, transparent);
+  transform: scale(1.1);
+}
+
+.color-picker-active::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 </style>
