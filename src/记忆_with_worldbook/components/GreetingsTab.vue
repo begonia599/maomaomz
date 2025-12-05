@@ -103,6 +103,29 @@
           <i class="fa-solid fa-wand-magic-sparkles"></i> AI生成界面样式
         </button>
         <button
+          v-if="greetings.length > 0"
+          class="mini-button"
+          style="
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          "
+          @click="showAiGreetingDialog = true"
+          @mouseenter="($event.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'"
+          @mouseleave="($event.currentTarget as HTMLElement).style.transform = 'translateY(0)'"
+        >
+          <i class="fa-solid fa-comment-dots"></i> AI生成开场白
+        </button>
+        <button
           class="mini-button refresh-button"
           style="
             padding: 6px 12px;
@@ -572,6 +595,23 @@
       @confirm="generateStyleWithAI"
     />
 
+    <!-- AI生成开场白内容对话框 -->
+    <AIModifyDialog
+      :show="showAiGreetingDialog"
+      :is-modifying="isGeneratingGreeting"
+      title="AI 生成开场白内容"
+      :description="aiGreetingDialogDesc"
+      :progress="isGeneratingGreeting ? progressWithElapsedTime : undefined"
+      :examples="[
+        '生成一个日常约会的开场白',
+        '生成一个悬疑冒险的开场场景',
+        '生成一个浪漫邂逅的开场',
+        '生成一个校园相遇的开场白',
+      ]"
+      @close="showAiGreetingDialog = false"
+      @confirm="generateGreetingWithAI"
+    />
+
     <!-- 查看开场白原文对话框 -->
     <div
       v-if="showOriginalDialog"
@@ -803,6 +843,7 @@ import { z } from 'zod';
 import { normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { useTaskStore } from '../taskStore';
 import { copyToClipboard, getScriptIdSafe, handleApiError } from '../utils';
+import { callAIWithTavernSupport } from '../utils/api';
 import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import AIGenerateDialog from './AIGenerateDialog.vue';
 import AIModifyDialog from './AIModifyDialog.vue';
@@ -848,6 +889,8 @@ const showOriginalDialog = ref(false);
 const originalGreetingContent = ref('');
 const showAiStyleDialog = ref(false); // 显示AI生成样式对话框
 const isGeneratingStyle = ref(false); // 正在生成样式
+const showAiGreetingDialog = ref(false); // 显示AI生成开场白对话框
+const isGeneratingGreeting = ref(false); // 正在生成开场白
 
 // AI 生成进度状态
 interface AIProgress {
@@ -910,6 +953,39 @@ const progressWithElapsedTime = computed(() => {
     elapsedTime: elapsed,
   };
 });
+
+// AI 生成开场白对话框描述（动态显示角色和用户信息）
+const aiGreetingDialogDesc = computed(() => {
+  const char = getCurrentCharacter();
+  const persona = getUserPersona();
+  let desc = '根据角色卡和用户人设生成新的开场白内容。';
+  if (char?.name) {
+    desc += `\n\n📌 当前角色：${char.name}`;
+  }
+  if (persona) {
+    desc += `\n👤 用户人设：${persona.substring(0, 50)}${persona.length > 50 ? '...' : ''}`;
+  }
+  return desc;
+});
+
+// 获取用户人设
+function getUserPersona(): string {
+  try {
+    const tav = (window as any).TavernHelper;
+    if (tav?.getPersona) {
+      return tav.getPersona() || '';
+    }
+    // 降级：从 SillyTavern 获取
+    const st = (window as any).SillyTavern;
+    if (st?.getContext) {
+      const ctx = st.getContext();
+      return ctx?.user_persona || ctx?.persona || '';
+    }
+    return '';
+  } catch {
+    return '';
+  }
+}
 
 // 获取当前角色卡（插件环境 - 使用 TavernHelper）
 function getCurrentCharacter() {
@@ -1748,6 +1824,158 @@ ${switchGreetingCode}
   } finally {
     stopElapsedTimer(); // 停止耗时计算
     isGeneratingStyle.value = false;
+  }
+}
+
+// AI 生成开场白内容
+async function generateGreetingWithAI(userRequest: string) {
+  if (!userRequest.trim()) {
+    toastr.warning('请输入生成需求');
+    return;
+  }
+
+  const taskId = taskStore.createTask('greeting_generate', '生成开场白内容');
+  aiProgress.value.startTime = Date.now();
+  aiProgress.value.total = 4;
+  updateProgress(0, '准备中', '正在读取角色和用户设定...');
+  startElapsedTimer();
+
+  if (!isApiConfigValid(settings.value.api_endpoint, settings.value.api_key)) {
+    toastr.error(getApiConfigError(settings.value.api_endpoint));
+    showAiGreetingDialog.value = false;
+    stopElapsedTimer();
+    taskStore.failTask(taskId, 'API 未配置');
+    return;
+  }
+
+  isGeneratingGreeting.value = true;
+
+  try {
+    updateProgress(1, '读取设定', '正在读取角色卡和用户人设...');
+    taskStore.updateTaskProgress(taskId, 20, '读取设定');
+
+    // 获取角色卡信息
+    const char = getCurrentCharacter();
+    if (!char) {
+      throw new Error('未找到角色卡，请先选择一个角色');
+    }
+
+    // 收集角色信息
+    const charInfo = {
+      name: char.name || '未知角色',
+      description: char.description || char.data?.description || '',
+      personality: char.personality || char.data?.personality || '',
+      scenario: char.scenario || char.data?.scenario || '',
+      first_mes: char.first_mes || char.data?.first_mes || '',
+      mes_example: char.mes_example || char.data?.mes_example || '',
+    };
+
+    // 获取用户人设
+    const persona = getUserPersona();
+
+    updateProgress(2, '调用AI', '正在生成开场白...');
+    taskStore.updateTaskProgress(taskId, 40, '调用AI');
+
+    const systemPrompt = `你是一个专业的角色扮演开场白编写专家。根据角色设定和用户人设，创作一段高质量的开场白。
+
+【角色信息】
+角色名：${charInfo.name}
+角色描述：${charInfo.description || '无'}
+角色性格：${charInfo.personality || '无'}
+场景设定：${charInfo.scenario || '无'}
+${charInfo.mes_example ? `对话示例：${charInfo.mes_example.substring(0, 500)}` : ''}
+
+【用户人设】
+${persona || '无特定人设'}
+
+【参考开场白】
+${charInfo.first_mes ? charInfo.first_mes.substring(0, 800) : '无'}
+
+【写作要求】
+1. 开场白要符合角色性格和场景设定
+2. 要自然地引入用户，让用户有参与感
+3. 描写要生动，有画面感
+4. 长度适中，200-500字左右
+5. 不要使用括号包裹动作描写，使用自然的叙述方式
+6. 直接输出开场白内容，不要任何解释或标记`;
+
+    const userPrompt = `请根据以上角色和用户设定，生成一个新的开场白。
+
+用户的具体要求：${userRequest}
+
+请直接输出开场白内容：`;
+
+    // 调用 API
+    let generatedGreeting: string;
+    if (settings.value.use_tavern_api) {
+      generatedGreeting = await callAIWithTavernSupport(
+        [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        settings.value,
+      );
+    } else {
+      const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${settings.value.api_key}`,
+        },
+        body: JSON.stringify({
+          model: settings.value.model,
+          max_tokens: settings.value.max_tokens || 2000,
+          temperature: 0.85,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API 请求失败: ${response.status}`);
+      }
+
+      const data = await response.json();
+      generatedGreeting = data.choices?.[0]?.message?.content?.trim() || '';
+    }
+
+    if (!generatedGreeting) {
+      throw new Error('AI 未返回有效内容');
+    }
+
+    updateProgress(3, '处理结果', '正在处理生成的开场白...');
+    taskStore.updateTaskProgress(taskId, 70, '处理结果');
+
+    // 清理内容
+    generatedGreeting = generatedGreeting.replace(/^```.*?\n?|```$/gm, '').trim();
+
+    updateProgress(4, '完成', '开场白生成完成！');
+    taskStore.updateTaskProgress(taskId, 100, '完成');
+
+    // 显示结果并让用户选择如何使用
+    const elapsed = ((Date.now() - aiProgress.value.startTime) / 1000).toFixed(1);
+
+    // 复制到剪贴板
+    await copyToClipboard(generatedGreeting, '');
+    toastr.success(`开场白已生成并复制到剪贴板！耗时 ${elapsed} 秒\n\n请手动粘贴到角色卡的开场白中。`, '', {
+      timeOut: 8000,
+    });
+
+    taskStore.completeTask(taskId, { length: generatedGreeting.length });
+
+    setTimeout(() => {
+      showAiGreetingDialog.value = false;
+    }, 500);
+  } catch (error) {
+    console.error('❌ [开场白生成] 失败:', error);
+    toastr.error('生成失败: ' + (error as Error).message);
+    taskStore.failTask(taskId, (error as Error).message);
+  } finally {
+    stopElapsedTimer();
+    isGeneratingGreeting.value = false;
   }
 }
 
