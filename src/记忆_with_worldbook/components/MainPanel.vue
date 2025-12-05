@@ -183,8 +183,9 @@
           gap: '8px',
           position: 'relative',
           background: activeTab === tab.key ? '#1a1a1a' : 'transparent',
-          color: activeTab === tab.key ? '#4a9eff' : '#999',
-          borderBottom: activeTab === tab.key ? '2px solid #4a9eff' : '2px solid transparent',
+          color: activeTab === tab.key ? 'var(--maomaomz-theme-color, #4a9eff)' : '#999',
+          borderBottom:
+            activeTab === tab.key ? '2px solid var(--maomaomz-theme-color, #4a9eff)' : '2px solid transparent',
           fontSize: '13px',
           fontWeight: '500',
         }"
@@ -205,7 +206,7 @@
         padding: 0;
         min-height: 0;
         scrollbar-width: thin;
-        scrollbar-color: #4a9eff #2a2a2a;
+        scrollbar-color: var(--maomaomz-theme-color, #4a9eff) #2a2a2a;
       "
     >
       <component :is="currentComponent" :key="activeTab" v-bind="componentProps" />

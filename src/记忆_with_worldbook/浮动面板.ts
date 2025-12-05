@@ -676,6 +676,11 @@ $(() => {
         const prefs = JSON.parse(prefsStr);
         // 如果设置中明确指定了 autoShowPanel，使用该值；否则默认 true
         shouldAutoShow = prefs.autoShowPanel !== undefined ? prefs.autoShowPanel : true;
+        // 应用主题色
+        if (prefs.themeColor) {
+          document.documentElement.style.setProperty('--maomaomz-theme-color', prefs.themeColor);
+          console.log('🎨 主题色已初始化:', prefs.themeColor);
+        }
       }
     } catch (e) {
       console.warn('读取偏好设置失败:', e);

@@ -90,6 +90,35 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
+
+      <!-- 主题色选择 -->
+      <div style="padding: 15px; background: #1e1e1e; border-radius: 8px; margin-top: 12px">
+        <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 12px">
+          <i class="fa-solid fa-palette" style="margin-right: 8px; color: #8b5cf6"></i>
+          主题色
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+          <div
+            v-for="color in themeColors"
+            :key="color.value"
+            :title="color.name"
+            :style="{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              background: color.value,
+              cursor: 'pointer',
+              border: preferences.themeColor === color.value ? '3px solid #fff' : '3px solid transparent',
+              boxShadow: preferences.themeColor === color.value ? '0 0 0 2px ' + color.value : 'none',
+              transition: 'all 0.2s ease',
+            }"
+            @click="
+              preferences.themeColor = color.value;
+              savePreferences();
+            "
+          ></div>
+        </div>
+      </div>
     </div>
 
     <!-- 通知设置 -->
@@ -180,7 +209,20 @@ interface Preferences {
   showMinimizeIcon: boolean;
   showSuccessToast: boolean;
   showErrorToast: boolean;
+  themeColor: string;
 }
+
+// 主题色预设
+const themeColors = [
+  { name: '天空蓝', value: '#4a9eff' },
+  { name: '薄荷绿', value: '#10b981' },
+  { name: '梦幻紫', value: '#8b5cf6' },
+  { name: '珊瑚橙', value: '#f97316' },
+  { name: '樱花粉', value: '#ec4899' },
+  { name: '柠檬黄', value: '#eab308' },
+  { name: '宝石红', value: '#ef4444' },
+  { name: '青瓷色', value: '#06b6d4' },
+];
 
 // 默认偏好设置
 const defaultPreferences: Preferences = {
@@ -189,6 +231,7 @@ const defaultPreferences: Preferences = {
   showMinimizeIcon: true,
   showSuccessToast: true,
   showErrorToast: true,
+  themeColor: '#4a9eff',
 };
 
 // 偏好设置状态
@@ -234,6 +277,10 @@ const applyPreferences = () => {
   try {
     // 保存到全局，供其他模块使用
     (window as any).maomaomzPreferences = preferences;
+
+    // 应用主题色 CSS 变量
+    document.documentElement.style.setProperty('--maomaomz-theme-color', preferences.themeColor);
+    console.log('🎨 主题色已更新:', preferences.themeColor);
 
     // 立即应用任务管理器显示状态
     try {
@@ -342,7 +389,7 @@ onMounted(() => {
 }
 
 input:checked + .toggle-slider {
-  background: linear-gradient(135deg, #4a9eff 0%, #5ab0ff 100%);
+  background: var(--maomaomz-theme-color, #4a9eff);
 }
 
 input:checked + .toggle-slider:before {
