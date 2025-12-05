@@ -569,8 +569,8 @@
               @change="onPersonaEntryChange"
             >
               <option value="">选择用户人设条目...</option>
-              <option v-for="entry in greetingPersonaEntries" :key="entry.uid" :value="entry.uid">
-                {{ entry.comment || entry.key?.join(', ') || '无标题' }}
+              <option v-for="(entry, idx) in greetingPersonaEntries" :key="idx" :value="idx">
+                {{ entry.name || entry.comment || entry.strategy?.keys?.join(', ') || `条目 ${idx + 1}` }}
               </option>
             </select>
           </div>
@@ -3792,67 +3792,39 @@ const loadPersonaFromWorldbook = async () => {
   try {
     console.log('🔍 尝试加载世界书条目:', greetingPersonaWorldbook.value);
 
-    // 方式1: 从 TavernHelper 获取
+    // 使用 TavernHelper.getWorldbook() 获取
     const tav = (window as any).TavernHelper;
-    if (tav?.getWorldBookEntries) {
-      const entries = await tav.getWorldBookEntries(greetingPersonaWorldbook.value);
+    if (tav?.getWorldbook) {
+      const entries = await tav.getWorldbook(greetingPersonaWorldbook.value);
       if (entries?.length) {
         greetingPersonaEntries.value = entries;
-        console.log('✅ 从 TavernHelper 获取世界书条目:', entries.length);
+        console.log('✅ 从 TavernHelper.getWorldbook 获取世界书条目:', entries.length);
+        window.toastr.success(`已加载 ${entries.length} 个条目`);
         return;
       }
     }
 
-    // 方式2: 从 SillyTavern API 获取
-    const st = (window as any).SillyTavern || (window as any).parent?.SillyTavern;
-    if (st?.getContext) {
-      const ctx = st.getContext();
-      // 尝试获取世界书数据
-      const worldInfos = ctx?.worldInfo || ctx?.world_info;
-      if (worldInfos) {
-        const wb = worldInfos[greetingPersonaWorldbook.value];
-        if (wb?.entries) {
-          const entries = Object.values(wb.entries) as any[];
-          greetingPersonaEntries.value = entries;
-          console.log('✅ 从 SillyTavern context 获取世界书条目:', entries.length);
-          return;
-        }
-      }
-    }
-
-    // 方式3: 通过 fetch API 获取
-    try {
-      const response = await fetch(`/api/worldinfo/get?name=${encodeURIComponent(greetingPersonaWorldbook.value)}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.entries) {
-          const entries = Object.values(data.entries) as any[];
-          greetingPersonaEntries.value = entries;
-          console.log('✅ 从 API 获取世界书条目:', entries.length);
-          return;
-        }
-      }
-    } catch (apiError) {
-      console.log('⚠️ API 获取失败，尝试其他方式');
-    }
-
     console.warn('⚠️ 未能获取世界书条目');
+    window.toastr.warning('无法加载世界书条目');
     greetingPersonaEntries.value = [];
   } catch (error) {
     console.error('加载世界书条目失败:', error);
+    window.toastr.error('加载失败');
     greetingPersonaEntries.value = [];
   }
 };
 
 // 选择世界书条目作为用户人设
 const onPersonaEntryChange = () => {
-  if (!greetingPersonaEntry.value) {
+  if (greetingPersonaEntry.value === '' || greetingPersonaEntry.value === null) {
     greetingUserPersona.value = '';
     return;
   }
-  const entry = greetingPersonaEntries.value.find(e => e.uid === greetingPersonaEntry.value);
+  const idx = Number(greetingPersonaEntry.value);
+  const entry = greetingPersonaEntries.value[idx];
   if (entry) {
     greetingUserPersona.value = entry.content || '';
+    console.log('✅ 选择世界书条目:', entry.name || entry.comment || `条目 ${idx + 1}`);
   }
   saveToolsDataImmediate();
 };
