@@ -226,6 +226,7 @@
               </div>
               <div style="color: #999; font-size: 11px; line-height: 1.6">
                 • <strong>OpenAI 官方:</strong> https://api.openai.com/v1<br />
+                • <strong>DeepSeek:</strong> https://api.deepseek.com（模型: deepseek-chat / deepseek-reasoner）<br />
                 • <strong>Gemini AI Studio:</strong> https://generativelanguage.googleapis.com/v1beta/openai/<br />
                 • <strong>NewAPI / One API:</strong> https://你的服务器/v1<br />
                 • <strong>本地模型 (Ollama):</strong> http://localhost:11434/v1<br />

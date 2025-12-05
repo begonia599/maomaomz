@@ -220,6 +220,14 @@ export async function fetchAvailableModels(): Promise<string[]> {
   const baseUrl = settings.api_endpoint.trim();
   console.log('📍 原始端点:', baseUrl);
 
+  // 检查是否是 DeepSeek 端点（DeepSeek 不支持 /models 接口，直接返回已知模型）
+  if (baseUrl.includes('api.deepseek.com')) {
+    console.log('🔮 检测到 DeepSeek 端点，返回已知模型列表');
+    const deepseekModels = ['deepseek-chat', 'deepseek-reasoner'];
+    console.log(`🎉 DeepSeek 可用模型: ${deepseekModels.join(', ')}`);
+    return deepseekModels;
+  }
+
   // 检查是否是本地端点，如果是则优先使用酒馆后端获取模型列表
   const endpointType = detectEndpointType(baseUrl);
   const isLocalEndpoint = endpointType === 'local' || endpointType === 'reverse-proxy';
