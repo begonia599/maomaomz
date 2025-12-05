@@ -132,20 +132,7 @@ export async function checkForUpdates(force: boolean = false): Promise<{
   notes?: string;
 } | null> {
   try {
-    // 检查是否需要跳过（非强制且最近检查过）
-    if (!force) {
-      const lastCheck = localStorage.getItem(LAST_CHECK_KEY);
-      if (lastCheck) {
-        const lastCheckTime = parseInt(lastCheck);
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000;
-
-        if (now - lastCheckTime < oneDay) {
-          console.log('ℹ️ 距离上次检查不到24小时，跳过自动检查');
-          return null;
-        }
-      }
-    }
+    // 每次打开都检查更新（不再限制间隔）
 
     console.log('🔍 检查更新中...');
     console.log(`📌 当前 commit: ${CURRENT_COMMIT}`);
@@ -156,9 +143,6 @@ export async function checkForUpdates(force: boolean = false): Promise<{
       console.warn('⚠️ 无法获取最新 commit 信息');
       return null;
     }
-
-    // 保存检查时间
-    localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
 
     // 获取远程版本号
     const remoteVersion = await fetchRemoteVersion();
