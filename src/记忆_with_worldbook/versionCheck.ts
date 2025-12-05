@@ -275,46 +275,25 @@ ${updateInfo.notes}
           </div>
         </div>
 
-        <div style="display: flex; gap: 12px;">
+        <div style="text-align: center;">
           <button id="maomaomz-update-now" style="
-            flex: 1;
-            padding: 16px;
+            width: 100%;
+            padding: 18px;
             background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
             border: none;
             border-radius: 12px;
             color: #fff;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
           " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(74, 158, 255, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(74, 158, 255, 0.3)';">
-            🚀 立即更新
+            🚀 立即更新（必须更新才能继续使用）
           </button>
-          <button id="maomaomz-update-later" style="
-            padding: 16px 24px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            color: #aaa;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-          " onmouseover="this.style.background='rgba(255, 255, 255, 0.1)'; this.style.color='#fff';" onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'; this.style.color='#aaa';">
-            稍后提醒
-          </button>
-          <button id="maomaomz-update-ignore" style="
-            padding: 16px 24px;
-            background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #666;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-          " onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.color='#999';" onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.color='#666';">
-            忽略此版本
-          </button>
+          <p style="color: #888; font-size: 12px; margin-top: 12px;">
+            ⚠️ 检测到新版本，请先更新后再使用插件
+          </p>
         </div>
       </div>
     </div>
@@ -419,21 +398,7 @@ ${updateInfo.notes}
     }
   });
 
-  document.getElementById('maomaomz-update-later')?.addEventListener('click', () => {
-    // 清除检查时间，下次启动会再次检查
-    localStorage.removeItem(LAST_CHECK_KEY);
-    (window as any).toastr?.info('下次启动时会再次提醒您更新');
-    document.getElementById('maomaomz-update-overlay')?.remove();
-  });
-
-  document.getElementById('maomaomz-update-ignore')?.addEventListener('click', () => {
-    // 标记此 commit 为已忽略
-    if (updateInfo.latestCommit) {
-      localStorage.setItem(IGNORED_COMMIT_KEY, updateInfo.latestCommit);
-    }
-    (window as any).toastr?.warning(`已忽略此更新 (${updateInfo.latestCommit || updateInfo.latestVersion})，不再提示`);
-    document.getElementById('maomaomz-update-overlay')?.remove();
-  });
+  // 强制更新：不提供跳过选项
 }
 
 /**
