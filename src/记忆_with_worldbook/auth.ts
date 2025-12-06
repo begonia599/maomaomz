@@ -116,7 +116,7 @@ function getCurrentApiEndpoint(): string {
 /**
  * 验证授权码（带API端点追踪）
  */
-async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: string; banned?: boolean }> {
+async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: string }> {
   try {
     // 获取当前使用的 API 端点
     const apiEndpoint = getCurrentApiEndpoint();
@@ -447,13 +447,6 @@ export async function checkAuthorization(): Promise<boolean> {
         localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
         // 静默成功，不弹提示（避免每次刷新都弹窗）
         return true;
-      } else if (result.banned) {
-        // 🔥 API 端点被禁用 - 直接阻止，不允许重试
-        console.error('⛔ API 端点已被禁用！');
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(STORAGE_VERIFIED_KEY);
-        showBannedDialog(result.message);
-        return false;
       } else {
         // 服务器明确返回验证失败，清除授权码
         console.warn('⚠️ 授权码已失效，需要重新输入');
@@ -510,11 +503,6 @@ export async function checkAuthorization(): Promise<boolean> {
         timeOut: 3000,
       });
       return true;
-    } else if (result.banned) {
-      // 🔥 API 端点被禁用 - 直接阻止，不允许重试
-      console.error('⛔ API 端点已被禁用！');
-      showBannedDialog(result.message);
-      return false;
     } else {
       console.warn(`❌ 授权验证失败 (尝试 ${attempts}/${MAX_ATTEMPTS}):`, result.message);
       (window as any).toastr?.error(result.message, `验证失败 (${attempts}/${MAX_ATTEMPTS})`, {

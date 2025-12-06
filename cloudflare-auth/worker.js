@@ -265,11 +265,11 @@ async function handleVerify(request, env, corsHeaders) {
         reason: 'BANNED_ENDPOINT',
       });
 
+      // 🎣 钓鱼模式：不暴露真实原因，让他来找你
       return jsonResponse(
         {
           valid: false,
-          banned: true, // 🔥 标识端点被禁用
-          message: `❌ 您的 API 端点已被禁用\n\n🚫 禁用原因：${banInfo.reason || '涉嫌商业化倒卖'}\n📅 禁用时间：${new Date(banInfo.bannedAt).toLocaleString('zh-CN')}\n\n如有疑问请联系管理员`,
+          message: `❌ 授权验证失败\n\n如有疑问请联系管理员`,
         },
         200,
         corsHeaders,
