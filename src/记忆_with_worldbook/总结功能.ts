@@ -267,19 +267,20 @@ export async function fetchAvailableModels(): Promise<string[]> {
   }
 
   // 检查是否是 Gemini OpenAI 兼容端点（不支持 /models 接口，直接返回已知模型）
-  if (
-    baseUrl.includes('generativelanguage.googleapis.com') ||
-    baseUrl.includes('/v1beta/openai') ||
-    baseUrl.includes('aiplatform.googleapis.com')
-  ) {
+  if (baseUrl.includes('generativelanguage.googleapis.com') || baseUrl.includes('aiplatform.googleapis.com')) {
     return [
+      'gemini-2.5-pro-preview-06-05',
+      'gemini-2.5-flash-preview-05-20',
+      'gemini-2.5-pro',
+      'gemini-2.5-flash',
       'gemini-2.0-flash',
       'gemini-2.0-flash-lite',
+      'gemini-2.0-flash-exp',
       'gemini-1.5-pro',
       'gemini-1.5-flash',
       'gemini-1.5-flash-8b',
-      'gemini-2.5-pro-preview-06-05',
-      'gemini-2.5-flash-preview-05-20',
+      'gemini-exp-1206',
+      'learnlm-1.5-pro-experimental',
     ];
   }
 
