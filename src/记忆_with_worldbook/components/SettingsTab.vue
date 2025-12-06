@@ -2533,18 +2533,33 @@ const handle_fetch_models = async () => {
     // 显示详细的错误信息
     const errorMessage = (error as Error).message;
 
-    // 如果错误信息很长，显示简短版本
-    if (errorMessage.length > 200) {
+    // 检查是否是本地反代
+    const isLocal =
+      settings.value.api_endpoint?.includes('127.0.0.1') ||
+      settings.value.api_endpoint?.includes('localhost') ||
+      settings.value.api_endpoint?.includes('192.168.');
+
+    if (isLocal) {
+      // 本地反代的专门提示
+      window.toastr.warning(
+        '📝 本地反代可能不支持 /models 接口\n\n' +
+          '请直接在下方输入框中手动输入模型名称，例如：\n' +
+          '• gpt-4o-mini\n' +
+          '• claude-3-sonnet\n' +
+          '• gemini-2.0-flash',
+      );
+    } else if (errorMessage.length > 200) {
       window.toastr.error(
         '❌ 拉取模型失败\n\n' +
           '请打开浏览器控制台（F12）查看详细的调试信息\n\n' +
           '可能的原因：\n' +
           '• API 不支持 /v1/models 接口\n' +
           '• API Key 权限不足\n' +
-          '• 网络连接问题或 CORS 限制',
+          '• 网络连接问题或 CORS 限制\n\n' +
+          '💡 可以直接手动输入模型名称',
       );
     } else {
-      window.toastr.error(`❌ 拉取模型失败\n\n${errorMessage}`);
+      window.toastr.error(`❌ 拉取模型失败\n\n${errorMessage}\n\n💡 可以直接手动输入模型名称`);
     }
 
     console.error('📋 完整错误信息:', errorMessage);

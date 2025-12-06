@@ -120,48 +120,77 @@ export const KNOWN_PROVIDERS = {
   },
 };
 
+// 判断是否为本地/局域网地址
+function isLocalAddress(hostname: string): boolean {
+  // localhost 和 127.0.0.1
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return true;
+  }
+  // .local 结尾
+  if (hostname.endsWith('.local')) {
+    return true;
+  }
+  // 192.168.x.x 局域网
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return true;
+  }
+  // 10.x.x.x 内网
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return true;
+  }
+  // 172.16-31.x.x 内网
+  if (/^172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+    return true;
+  }
+  return false;
+}
+
 // 检测端点类型
 export function detectEndpointType(endpoint: string): ApiEndpointType {
   try {
     const url = new URL(endpoint);
 
-    // 检查已知的 API 提供商（优先检查，包括本地反代）
-    for (const [, config] of Object.entries(KNOWN_PROVIDERS)) {
-      if (config.pattern.test(endpoint)) {
+    // 1. 先检查已知的官方 API 提供商（排除本地相关的）
+    const officialProviders = ['openai', 'anthropic', 'google', 'groq', 'together', 'deepseek'];
+    for (const provider of officialProviders) {
+      const config = KNOWN_PROVIDERS[provider as keyof typeof KNOWN_PROVIDERS];
+      if (config && config.pattern.test(endpoint)) {
         return config.type;
       }
     }
 
-    // 本地地址带非标准端口，通常是反向代理
-    if (
-      (url.hostname === 'localhost' || url.hostname === '127.0.0.1') &&
-      url.port &&
-      !['80', '443', '11434', '1234'].includes(url.port)
-    ) {
-      return 'reverse-proxy';
-    }
-
-    // 本地地址（标准端口）
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname.endsWith('.local')) {
+    // 2. 检查是否是本地/局域网地址
+    if (isLocalAddress(url.hostname)) {
+      // 检查特定的本地服务（LM Studio, Ollama, Neural Proxy 等）
+      if (/:(11434)$/.test(url.host)) {
+        return 'local'; // Ollama
+      }
+      if (/:(1234)$/.test(url.host)) {
+        return 'local'; // LM Studio
+      }
+      // 带非标准端口的本地地址，通常是反向代理
+      if (url.port && !['80', '443'].includes(url.port)) {
+        return 'reverse-proxy';
+      }
       return 'local';
     }
 
-    // Cloudflare Worker
+    // 3. Cloudflare Worker
     if (url.hostname.endsWith('.workers.dev') || url.hostname.endsWith('.pages.dev')) {
       return 'cloudflare';
     }
 
-    // 已知的 CORS 代理
+    // 4. 已知的 CORS 代理
     if (CORS_PROXIES.some(proxy => proxy.url && endpoint.includes(proxy.url))) {
       return 'cors-proxy';
     }
 
-    // 反向代理特征
+    // 5. 反向代理特征（非标准端口）
     if (url.port && url.port !== '80' && url.port !== '443') {
       return 'reverse-proxy';
     }
 
-    // 特殊路径模式（可能是反向代理）
+    // 6. 特殊路径模式（可能是反向代理）
     if (url.pathname.includes('/proxy/') || url.pathname.includes('/api/v1/')) {
       return 'reverse-proxy';
     }

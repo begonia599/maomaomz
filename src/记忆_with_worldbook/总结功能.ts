@@ -3,16 +3,58 @@ import { detectEndpointType } from './utils/api-config';
 import { preprocessContent } from './utils/content-filter';
 
 /**
- * 通过酒馆后端获取模型列表（绕过 CORS）
- * 使用 /api/backends/chat-completions/status 端点
+ * 直接请求本地反代获取模型列表
+ * 很多本地反代（如 Neural Proxy、one-api）已经配置了 CORS，可以直接访问
  */
-async function fetchModelsViaTavern(apiUrl: string): Promise<string[]> {
+async function fetchModelsDirectly(apiUrl: string, apiKey?: string): Promise<string[]> {
+  const baseUrl = apiUrl.replace(/\/+$/, '');
+  const possibleEndpoints = [
+    baseUrl + '/models',
+    baseUrl.replace(/\/v1$/, '') + '/v1/models',
+    baseUrl.replace(/\/v1$/, '') + '/models',
+  ];
+
+  const uniqueEndpoints = [...new Set(possibleEndpoints)];
+
+  for (const endpoint of uniqueEndpoints) {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey && apiKey.trim()) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      const response = await fetch(endpoint, { method: 'GET', headers });
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      let models: string[] = [];
+      if (data.data && Array.isArray(data.data)) {
+        models = data.data.map((m: any) => m.id || m.name || m).filter(Boolean);
+      } else if (Array.isArray(data)) {
+        models = data.map((m: any) => m.id || m.name || m).filter(Boolean);
+      } else if (data.models && Array.isArray(data.models)) {
+        models = data.models.map((m: any) => m.id || m.name || m).filter(Boolean);
+      }
+
+      if (models.length > 0) return models;
+    } catch {
+      // 静默处理
+    }
+  }
+
+  return [];
+}
+
+/**
+ * 通过酒馆后端获取模型列表（绕过 CORS）
+ * 尝试多种酒馆代理方式
+ */
+async function fetchModelsViaTavern(apiUrl: string, apiKey?: string): Promise<string[]> {
   const tavernOrigin = window.location.origin;
+  const baseUrl = apiUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '');
 
-  console.log('🔄 通过酒馆后端获取模型列表:', apiUrl);
-
+  // 方法 1: 使用 custom 源
   try {
-    // 使用酒馆的 status 端点获取模型列表
     const response = await fetch(`${tavernOrigin}/api/backends/chat-completions/status`, {
       method: 'POST',
       headers: {
@@ -20,24 +62,47 @@ async function fetchModelsViaTavern(apiUrl: string): Promise<string[]> {
         ...(typeof SillyTavern !== 'undefined' && SillyTavern.getRequestHeaders ? SillyTavern.getRequestHeaders() : {}),
       },
       body: JSON.stringify({
-        chat_completion_source: 'makersuite', // 使用 Google AI Studio 源，支持反代
-        reverse_proxy: apiUrl.replace(/\/v1\/?$/, ''), // 移除 /v1 后缀
-        proxy_password: '', // 反代不需要密码
+        chat_completion_source: 'custom',
+        custom_url: baseUrl,
+        custom_include_headers: apiKey ? `Authorization: Bearer ${apiKey}` : '',
       }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      console.log('✅ 酒馆返回模型数据:', data);
-
       if (data.data && Array.isArray(data.data)) {
-        return data.data.map((m: any) => m.id || m.name || m).filter(Boolean);
+        const models = data.data.map((m: any) => m.id || m.name || m).filter(Boolean);
+        if (models.length > 0) return models;
       }
-    } else {
-      console.log('⚠️ 酒馆 status 端点返回错误:', response.status);
     }
-  } catch (error) {
-    console.log('⚠️ 通过酒馆获取模型失败:', error);
+  } catch {
+    // 静默处理
+  }
+
+  // 方法 2: 使用 openai 源
+  try {
+    const response = await fetch(`${tavernOrigin}/api/backends/chat-completions/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(typeof SillyTavern !== 'undefined' && SillyTavern.getRequestHeaders ? SillyTavern.getRequestHeaders() : {}),
+      },
+      body: JSON.stringify({
+        chat_completion_source: 'openai',
+        reverse_proxy: baseUrl,
+        proxy_password: apiKey || '',
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.data && Array.isArray(data.data)) {
+        const models = data.data.map((m: any) => m.id || m.name || m).filter(Boolean);
+        if (models.length > 0) return models;
+      }
+    }
+  } catch {
+    // 静默处理
   }
 
   return [];
@@ -51,32 +116,22 @@ async function smartFetch(url: string, options: RequestInit = {}): Promise<Respo
   const endpointType = detectEndpointType(url);
   const isLocalEndpoint = endpointType === 'local' || endpointType === 'reverse-proxy';
 
-  console.log(`🔍 端点类型: ${endpointType}, 是否本地: ${isLocalEndpoint}`);
-
   // 对于本地端点（包括本地反代），先尝试直接请求
-  // 很多本地反代（如 Neural Proxy）已经配置了 CORS 头，可以直接访问
   if (isLocalEndpoint) {
-    console.log('🔄 本地端点，先尝试直接请求...');
     try {
       const response = await fetch(url, options);
-      console.log('✅ 本地端点直接请求成功');
       return response;
     } catch (directError) {
-      console.log('⚠️ 本地直接请求失败 (CORS?):', directError);
       // 本地直接请求失败，尝试酒馆后端代理
-      console.log('🔄 尝试使用酒馆后端代理...');
       return await tavernProxyFetch(url, options);
     }
   }
 
   // 对于远程端点，先尝试直接请求，如果失败（可能是 CORS）则使用代理
   try {
-    console.log('🔄 远程端点，尝试直接请求...');
     const response = await fetch(url, options);
     return response;
   } catch (directError) {
-    console.log('⚠️ 直接请求失败，尝试使用酒馆后端代理...', directError);
-    // 直接请求失败（可能是 CORS），尝试使用酒馆后端代理
     return await tavernProxyFetch(url, options);
   }
 }
@@ -88,8 +143,6 @@ async function tavernProxyFetch(url: string, options: RequestInit = {}): Promise
   const tavernOrigin = window.location.origin;
 
   try {
-    console.log('🔄 尝试通过酒馆后端代理:', tavernOrigin);
-
     // 方法 1: 使用酒馆的 /api/backends/chat-completions/generate 端点
     // 这是酒馆用于 OpenAI 兼容 API 的标准代理方式
     if (options.method === 'POST' && url.includes('/chat/completions')) {
@@ -98,10 +151,7 @@ async function tavernProxyFetch(url: string, options: RequestInit = {}): Promise
         const headers = (options.headers as Record<string, string>) || {};
         const apiKey = headers['Authorization']?.replace('Bearer ', '') || '';
 
-        // 从 URL 中提取基础地址（移除 /chat/completions 和 /v1）
         const baseUrl = url.replace(/\/chat\/completions\/?$/, '').replace(/\/v1\/?$/, '');
-
-        console.log('🔗 使用酒馆 generate 代理，基础 URL:', baseUrl);
 
         const proxyResponse = await fetch(`${tavernOrigin}/api/backends/chat-completions/generate`, {
           method: 'POST',
@@ -122,18 +172,14 @@ async function tavernProxyFetch(url: string, options: RequestInit = {}): Promise
         });
 
         if (proxyResponse.ok) {
-          console.log('✅ 成功通过酒馆 generate 代理');
           return proxyResponse;
-        } else {
-          const errText = await proxyResponse.text().catch(() => '');
-          console.log('⚠️ generate 代理返回错误:', proxyResponse.status, errText.substring(0, 200));
         }
-      } catch (e) {
-        console.log('⚠️ generate 代理不可用:', e);
+      } catch {
+        // 静默处理
       }
     }
 
-    // 方法 2: 使用酒馆的 /api/backends/chat-completions 端点（兼容旧版）
+    // 方法 2: 使用酒馆的 /api/backends/chat-completions 端点
     if (options.method === 'POST' && url.includes('/chat/completions')) {
       try {
         const body = options.body ? JSON.parse(options.body as string) : {};
@@ -155,11 +201,10 @@ async function tavernProxyFetch(url: string, options: RequestInit = {}): Promise
         });
 
         if (proxyResponse.ok) {
-          console.log('✅ 成功通过酒馆 chat-completions 代理');
           return proxyResponse;
         }
-      } catch (e) {
-        console.log('⚠️ chat-completions 代理不可用:', e);
+      } catch {
+        // 静默处理
       }
     }
 
@@ -179,13 +224,10 @@ async function tavernProxyFetch(url: string, options: RequestInit = {}): Promise
     });
 
     if (proxyResponse.ok) {
-      console.log('✅ 成功通过酒馆通用代理');
       return proxyResponse;
     }
-
-    console.log('⚠️ 酒馆代理返回错误:', proxyResponse.status);
-  } catch (proxyError) {
-    console.log('⚠️ 酒馆代理失败:', proxyError);
+  } catch {
+    // 静默处理
   }
 
   // 所有代理方式都失败，抛出详细错误
@@ -218,35 +260,51 @@ export async function fetchAvailableModels(): Promise<string[]> {
 
   // 使用 normalizeApiEndpoint 获取 models 端点
   const baseUrl = settings.api_endpoint.trim();
-  console.log('📍 原始端点:', baseUrl);
 
   // 检查是否是 DeepSeek 端点（DeepSeek 不支持 /models 接口，直接返回已知模型）
   if (baseUrl.includes('api.deepseek.com')) {
-    console.log('🔮 检测到 DeepSeek 端点，返回已知模型列表');
-    const deepseekModels = ['deepseek-chat', 'deepseek-reasoner'];
-    console.log(`🎉 DeepSeek 可用模型: ${deepseekModels.join(', ')}`);
-    return deepseekModels;
+    return ['deepseek-chat', 'deepseek-reasoner'];
   }
 
-  // 检查是否是本地端点，如果是则优先使用酒馆后端获取模型列表
+  // 检查是否是 Gemini OpenAI 兼容端点（不支持 /models 接口，直接返回已知模型）
+  if (
+    baseUrl.includes('generativelanguage.googleapis.com') ||
+    baseUrl.includes('/v1beta/openai') ||
+    baseUrl.includes('aiplatform.googleapis.com')
+  ) {
+    return [
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-pro',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-2.5-pro-preview-06-05',
+      'gemini-2.5-flash-preview-05-20',
+    ];
+  }
+
+  // 检查是否是本地端点
   const endpointType = detectEndpointType(baseUrl);
   const isLocalEndpoint = endpointType === 'local' || endpointType === 'reverse-proxy';
 
   if (isLocalEndpoint) {
-    console.log('🏠 检测到本地端点，尝试通过酒馆后端获取模型列表...');
-    const models = await fetchModelsViaTavern(baseUrl);
+    // 1. 先直接请求（很多本地反代已配置 CORS）
+    let models = await fetchModelsDirectly(baseUrl, settings.api_key);
     if (models.length > 0) {
-      console.log(`🎉 通过酒馆后端成功获取 ${models.length} 个模型:`, models);
       return models;
     }
-    console.log('⚠️ 酒馆后端未返回模型，尝试其他方式...');
+
+    // 2. 直接请求失败，尝试通过酒馆后端
+    models = await fetchModelsViaTavern(baseUrl, settings.api_key);
+    if (models.length > 0) {
+      return models;
+    }
   }
 
   // 尝试规范化为 /models 端点
   let modelsUrl: string;
   try {
     modelsUrl = normalizeApiEndpoint(baseUrl, '/models');
-    console.log('🔗 规范化的 models 端点:', modelsUrl);
   } catch (e) {
     throw new Error(`API 端点格式不正确: ${baseUrl}`);
   }
@@ -267,15 +325,11 @@ export async function fetchAvailableModels(): Promise<string[]> {
     new URL(modelsUrl).origin + '/models',
   ];
 
-  console.log('🔍 尝试的模型端点:', possibleEndpoints);
-
   const errors: string[] = [];
   let hasCorsError = false;
 
   for (const modelsUrl of possibleEndpoints) {
     try {
-      console.log(`📡 正在请求: ${modelsUrl}`);
-
       // 构建请求头（API Key 可选）
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -290,33 +344,24 @@ export async function fetchAvailableModels(): Promise<string[]> {
         headers,
       });
 
-      console.log(`📊 响应状态: ${response.status} ${response.statusText}`);
-
       if (!response.ok) {
         const errorText = await response.text();
         errors.push(`${modelsUrl}: ${response.status} - ${errorText.substring(0, 100)}`);
-        console.log(`❌ 端点返回错误: ${response.status}`);
-        console.log(`错误详情: ${errorText.substring(0, 200)}`);
         continue;
       }
 
       const contentType = response.headers.get('content-type');
-      console.log(`📄 内容类型: ${contentType}`);
-
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
         errors.push(`${modelsUrl}: 非 JSON 响应 - ${text.substring(0, 100)}`);
-        console.log(`❌ 返回非 JSON 内容:`, text.substring(0, 200));
         continue;
       }
 
       const data = await response.json();
-      console.log('✅ API 返回数据:', JSON.stringify(data, null, 2));
 
       // OpenAI 兼容 API 返回格式: { data: [...] }
       if (data.data && Array.isArray(data.data)) {
         const models = data.data.map((model: any) => model.id || model.name || model).filter(Boolean);
-        console.log(`🎉 成功获取 ${models.length} 个模型:`, models);
         if (models.length > 0) {
           return models;
         }
@@ -325,7 +370,6 @@ export async function fetchAvailableModels(): Promise<string[]> {
       // 直接返回数组
       if (Array.isArray(data)) {
         const models = data.map((model: any) => model.id || model.name || model).filter(Boolean);
-        console.log(`🎉 成功获取 ${models.length} 个模型:`, models);
         if (models.length > 0) {
           return models;
         }
@@ -334,27 +378,21 @@ export async function fetchAvailableModels(): Promise<string[]> {
       // 有些 API 可能返回 { models: [...] }
       if (data.models && Array.isArray(data.models)) {
         const models = data.models.map((model: any) => model.id || model.name || model).filter(Boolean);
-        console.log(`🎉 成功获取 ${models.length} 个模型:`, models);
         if (models.length > 0) {
           return models;
         }
       }
 
       errors.push(`${modelsUrl}: 响应格式无法识别 - ${JSON.stringify(data).substring(0, 100)}`);
-      console.log('❌ 响应格式未识别');
     } catch (e) {
       const errMsg = (e as Error).message;
       if (errMsg.includes('Failed to fetch') || errMsg.includes('CORS')) {
         hasCorsError = true;
       }
       errors.push(`${modelsUrl}: ${errMsg}`);
-      console.log(`❌ 请求失败:`, e);
       continue;
     }
   }
-
-  console.error('❌ 所有端点都失败了，详细错误:');
-  errors.forEach((err, i) => console.error(`  ${i + 1}. ${err}`));
 
   let errorMessage =
     `无法从 API 获取模型列表。尝试了 ${possibleEndpoints.length} 个端点均失败。\n\n` +
@@ -398,8 +436,6 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
   let apiUrl: string;
   try {
     apiUrl = normalizeApiEndpoint(baseUrl);
-    console.log('📍 原始端点:', baseUrl);
-    console.log('🔗 规范化的 API URL:', apiUrl);
   } catch (e) {
     throw new Error(`API 端点格式不正确: ${baseUrl}`);
   }
@@ -426,27 +462,21 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
     ) {
       try {
         const range = `${start_id}-${end_id}`;
-        console.log('📋 获取消息范围:', range);
         const msgs = (window as any).TavernHelper.getChatMessages(range);
         if (Array.isArray(msgs) && msgs.length > 0) {
           messages.push(...msgs);
-          console.log('✅ 获取到消息数量:', msgs.length);
           messagesRetrieved = true;
         }
 
-        // 如果从0开始获取不到消息，尝试从1开始
         if (start_id === 0 && (!Array.isArray(msgs) || msgs.length === 0)) {
-          console.log('⚠️ 从0开始未获取到消息，尝试从1开始...');
           const newRange = `1-${end_id}`;
           const newMsgs = (window as any).TavernHelper.getChatMessages(newRange);
           if (Array.isArray(newMsgs) && newMsgs.length > 0) {
             messages.push(...newMsgs);
-            console.log(`✅ 修改范围后(${newRange})获取到消息数量:`, newMsgs.length);
             messagesRetrieved = true;
           }
         }
-      } catch (e) {
-        console.warn('⚠️ TavernHelper.getChatMessages() 调用失败:', e);
+      } catch {
         messagesRetrieved = false;
       }
     }
@@ -458,7 +488,6 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
       (window as any).SillyTavern.chat &&
       Array.isArray((window as any).SillyTavern.chat)
     ) {
-      console.log('📝 尝试从 SillyTavern.chat 获取消息...');
       const chat = (window as any).SillyTavern.chat;
       const startIdx = Math.max(0, start_id);
       const endIdx = Math.min(chat.length - 1, end_id);
@@ -477,16 +506,11 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
           });
         }
       }
-      if (skippedHidden > 0) {
-        console.log(`⏭️ 跳过了 ${skippedHidden} 条隐藏的消息`);
-      }
-      console.log(`✅ 通过 SillyTavern.chat 获取到 ${messages.length} 条消息`);
       messagesRetrieved = true;
     }
 
-    // 方式3: 使用全局 chat 变量（如果可用）
+    // 方式3: 使用全局 chat 变量
     if (!messagesRetrieved && typeof (window as any).chat !== 'undefined' && Array.isArray((window as any).chat)) {
-      console.log('📝 尝试从全局 chat 变量获取消息...');
       const chat = (window as any).chat;
       const startIdx = Math.max(0, start_id);
       const endIdx = Math.min(chat.length - 1, end_id);
@@ -505,10 +529,6 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
           });
         }
       }
-      if (skippedHidden > 0) {
-        console.log(`⏭️ 跳过了 ${skippedHidden} 条隐藏的消息`);
-      }
-      console.log(`✅ 通过全局 chat 获取到 ${messages.length} 条消息`);
       messagesRetrieved = true;
     }
 
@@ -516,7 +536,6 @@ export async function summarizeMessages(start_id: number, end_id: number): Promi
       throw new Error('无法获取聊天消息：请确保在支持的聊天环境中使用（如 SillyTavern）');
     }
   } catch (error) {
-    console.error('❌ 获取消息失败:', error);
     throw new Error('获取消息失败: ' + (error as Error).message);
   }
 
@@ -604,45 +623,25 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
 
 直接输出总结内容，不要任何回复语：`;
 
-  // 如果启用了"使用酒馆 API"，直接通过酒馆后端发送请求（绕过 CORS）
+  // 如果启用了“使用酒馆 API”，直接通过酒馆后端发送请求
   if (settings.use_tavern_api) {
-    console.log('🍺 使用酒馆 API 发送总结请求（绕过 CORS）...');
-
     if (typeof SillyTavern === 'undefined' || typeof SillyTavern.generateQuietPrompt !== 'function') {
-      throw new Error('酒馆 API 不可用，请确保在 SillyTavern 环境中运行，或关闭"使用酒馆 API"选项');
+      throw new Error('酒馆 API 不可用，请确保在 SillyTavern 环境中运行，或关闭“使用酒馆 API”选项');
     }
 
     try {
-      // 使用酒馆的 generateQuietPrompt API，它会通过酒馆后端发送请求
       const generateFn = SillyTavern.generateQuietPrompt();
-      const result = await generateFn(
-        summaryPrompt, // quiet_prompt
-        false, // quiet_to_loud
-        true, // skip_wian (跳过世界书)
-        undefined, // quiet_image
-        undefined, // quiet_name
-        settings.max_tokens, // response_length
-      );
+      const result = await generateFn(summaryPrompt, false, true, undefined, undefined, settings.max_tokens);
 
       if (!result || result.trim() === '') {
         throw new Error('酒馆 API 返回了空结果');
       }
 
-      console.log('✅ 通过酒馆 API 成功获取总结');
       return result;
     } catch (e) {
-      console.error('❌ 酒馆 API 调用失败:', e);
       throw new Error(`酒馆 API 调用失败: ${(e as Error).message}\n\n请确保酒馆主界面已配置好 API 连接。`);
     }
   }
-
-  console.log('准备调用 API，URL:', apiUrl);
-  console.log('请求体:', {
-    model: settings.model,
-    messages: [{ role: 'user', content: summaryPrompt }],
-    max_tokens: settings.max_tokens,
-    temperature: settings.temperature,
-  });
 
   // 导入参数过滤函数
   const { filterApiParams } = await import('./settings');
@@ -682,7 +681,6 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
       body: JSON.stringify(filteredParams),
     });
   } catch (e) {
-    console.error('smartFetch 调用失败:', e);
     throw new Error(`无法连接到 API: ${(e as Error).message}`);
   }
 
@@ -729,13 +727,6 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
       }
     }
 
-    console.error('❌ API 请求失败详情:', {
-      status: response.status,
-      statusText: response.statusText,
-      errorMessage,
-      errorDetails: errorDetails.substring(0, 500),
-    });
-
     throw new Error(userFriendlyMessage);
   }
 
@@ -758,10 +749,25 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
     }
     throw new Error(`API 响应解析失败: ${parseErrorMsg}`);
   }
-  console.log('✅ API 返回的完整数据:', JSON.stringify(data, null, 2));
 
   // 尝试多种可能的返回格式
   let summary_content: string | null = null;
+
+  // 先检测内容过滤/安全拦截（在尝试提取内容之前）
+  const finishReason = data.choices?.[0]?.finish_reason;
+  if (finishReason === 'content_filter' || finishReason === 'PROHIBITED_CONTENT') {
+    throw new Error(
+      `❌ 内容被 AI 安全过滤器拦截\n\n` +
+        `API 返回了 finish_reason: "${finishReason}"\n\n` +
+        `这通常意味着：\n` +
+        `• 输入内容可能包含敏感词汇或主题\n` +
+        `• 请求的输出被认为不符合安全准则\n\n` +
+        `建议：\n` +
+        `• 检查并修改输入内容，避免敏感词汇\n` +
+        `• 尝试换一个模型或 API 服务\n` +
+        `• 如使用 Gemini，可尝试调整安全设置`,
+    );
+  }
 
   // 格式 1: OpenAI 标准格式 { choices: [{ message: { content: "..." } }] }
   if (data.choices && data.choices[0] && data.choices[0].message?.content) {
@@ -789,25 +795,6 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
   }
 
   if (!summary_content) {
-    console.error('❌ 无法从返回数据中提取总结内容');
-    console.error('📋 API 返回的完整数据结构:', JSON.stringify(data, null, 2));
-
-    // 检测内容过滤/安全拦截
-    const finishReason = data.choices?.[0]?.finish_reason;
-    if (finishReason === 'content_filter' || finishReason === 'PROHIBITED_CONTENT') {
-      throw new Error(
-        `❌ 内容被 AI 安全过滤器拦截\n\n` +
-          `API 返回了 finish_reason: "${finishReason}"\n\n` +
-          `这通常意味着：\n` +
-          `• 输入内容可能包含敏感词汇或主题\n` +
-          `• 请求的输出被认为不符合安全准则\n\n` +
-          `建议：\n` +
-          `• 检查并修改输入内容，避免敏感词汇\n` +
-          `• 尝试换一个模型或 API 服务\n` +
-          `• 如使用 Gemini，可尝试调整安全设置`,
-      );
-    }
-
     throw new Error(
       `API 返回数据格式不符合预期。\n\n` +
         `期望格式: { choices: [{ message: { content: "..." } }] }\n\n` +
@@ -816,7 +803,6 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
     );
   }
 
-  console.log('✅ 成功提取总结内容');
   return summary_content;
 }
 
@@ -828,12 +814,10 @@ ${messages.map(msg => `[${msg.role === 'user' ? userName : charName}]: ${preproc
 export async function summarizeText(prompt: string): Promise<string> {
   const settings = useSettingsStore().settings;
 
-  // 如果启用了"使用酒馆 API"，直接通过酒馆后端发送请求
+  // 如果启用了“使用酒馆 API”，直接通过酒馆后端发送请求
   if (settings.use_tavern_api) {
-    console.log('🍺 使用酒馆 API 发送请求（绕过 CORS）...');
-
     if (typeof SillyTavern === 'undefined' || typeof SillyTavern.generateQuietPrompt !== 'function') {
-      throw new Error('酒馆 API 不可用，请确保在 SillyTavern 环境中运行，或关闭"使用酒馆 API"选项');
+      throw new Error('酒馆 API 不可用，请确保在 SillyTavern 环境中运行，或关闭“使用酒馆 API”选项');
     }
 
     try {
@@ -844,10 +828,8 @@ export async function summarizeText(prompt: string): Promise<string> {
         throw new Error('酒馆 API 返回了空结果');
       }
 
-      console.log('✅ 通过酒馆 API 成功获取结果');
       return result;
     } catch (e) {
-      console.error('❌ 酒馆 API 调用失败:', e);
       throw new Error(`酒馆 API 调用失败: ${(e as Error).message}`);
     }
   }
@@ -864,8 +846,6 @@ export async function summarizeText(prompt: string): Promise<string> {
   } catch (e) {
     throw new Error(`API 端点格式不正确: ${baseUrl}`);
   }
-
-  console.log('🔄 发送文本给 AI 处理...');
 
   // 构造请求体
   const requestBody = {
