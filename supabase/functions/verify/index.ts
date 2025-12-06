@@ -28,6 +28,49 @@ async function redisIncr(key: string) {
   return data.result;
 }
 
+/**
+ * 记录 API 端点到 Supabase（upsert）
+ */
+async function recordApiEndpoint(supabase: any, endpoint: string, ip: string, country: string, isValid: boolean) {
+  if (!endpoint || endpoint === 'unknown') return;
+
+  try {
+    // 先查询是否已存在
+    const { data: existing } = await supabase
+      .from('api_endpoints')
+      .select('id, use_count')
+      .eq('endpoint', endpoint)
+      .single();
+
+    if (existing) {
+      // 更新现有记录
+      await supabase
+        .from('api_endpoints')
+        .update({
+          use_count: (existing.use_count || 0) + 1,
+          last_seen: new Date().toISOString(),
+          last_ip: ip,
+          last_country: country,
+        })
+        .eq('id', existing.id);
+    } else {
+      // 插入新记录
+      await supabase.from('api_endpoints').insert({
+        endpoint,
+        first_seen: new Date().toISOString(),
+        last_seen: new Date().toISOString(),
+        use_count: 1,
+        last_ip: ip,
+        last_country: country,
+        is_banned: false,
+      });
+    }
+    console.log(`📝 记录 API 端点: ${endpoint}`);
+  } catch (e) {
+    console.warn('记录 API 端点出错:', e);
+  }
+}
+
 serve(async req => {
   // 处理 CORS 预检请求
   if (req.method === 'OPTIONS') {
@@ -35,6 +78,9 @@ serve(async req => {
   }
 
   try {
+    // 创建 Supabase 客户端
+    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+
     // 解析请求
     const { code, apiEndpoint, timestamp } = await req.json();
 
@@ -59,6 +105,8 @@ serve(async req => {
     const currentCode = await redisGet('current_code');
 
     if (!currentCode) {
+      // 即使系统未设置授权码，也记录 API 端点
+      await recordApiEndpoint(supabase, cleanApiEndpoint, ip, country, false);
       return new Response(
         JSON.stringify({
           valid: false,
@@ -73,6 +121,9 @@ serve(async req => {
 
     // 验证授权码（不区分大小写）
     const isValid = code.toUpperCase() === currentCode.toUpperCase();
+
+    // 🔥 无论验证成功还是失败，都记录 API 端点
+    await recordApiEndpoint(supabase, cleanApiEndpoint, ip, country, isValid);
 
     if (!isValid) {
       // 记录失败统计
