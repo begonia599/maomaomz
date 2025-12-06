@@ -242,10 +242,6 @@ async function handleVerify(request, env, corsHeaders) {
       return jsonResponse({ valid: false, message: '❌ 授权码不能为空' }, 400, corsHeaders);
     }
 
-    // 获取请求的 IP 地址
-    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const country = request.headers.get('CF-IPCountry') || 'unknown';
-
     // 🔥 清理API端点数据（防止前端发送对象）
     let cleanApiEndpoint = 'unknown';
     if (apiEndpoint && typeof apiEndpoint === 'string' && apiEndpoint !== '[object Object]') {
@@ -265,8 +261,6 @@ async function handleVerify(request, env, corsHeaders) {
         code,
         isValid: false,
         apiEndpoint: cleanApiEndpoint,
-        ip,
-        country,
         timestamp: timestamp || new Date().toISOString(),
         reason: 'BANNED_ENDPOINT',
       });
@@ -279,6 +273,15 @@ async function handleVerify(request, env, corsHeaders) {
         200,
         corsHeaders,
       );
+    }
+
+    // 🔥 无论验证成功还是失败，都记录 API 端点（用于抓商业化）
+    if (cleanApiEndpoint !== 'unknown' && cleanApiEndpoint !== '[object HTMLSelectElement]') {
+      try {
+        await recordApiEndpoint(env, cleanApiEndpoint);
+      } catch (logError) {
+        console.warn('记录API端点失败:', logError);
+      }
     }
 
     // 获取当前有效的授权码
@@ -298,15 +301,12 @@ async function handleVerify(request, env, corsHeaders) {
     // 验证授权码（不区分大小写）
     const isValid = code.toUpperCase() === currentCode.toUpperCase();
 
-    // ⚡ 性能优化：只在失败时记录详细日志，减少 KV 写入
     if (!isValid) {
       // 记录失败的详细日志
       await logVerification(env, {
         code,
         isValid: false,
         apiEndpoint: cleanApiEndpoint,
-        ip,
-        country,
         timestamp: timestamp || new Date().toISOString(),
       });
 
@@ -323,18 +323,11 @@ async function handleVerify(request, env, corsHeaders) {
       );
     }
 
-    // 验证成功：只记录必要的统计数据
+    // 验证成功：记录统计
     try {
-      // 简单计数，减少写入
       await incrementStats(env, 'success');
-
-      // 只记录 API 端点（用于抓商业化）
-      if (cleanApiEndpoint !== 'unknown' && cleanApiEndpoint !== '[object HTMLSelectElement]') {
-        await recordApiEndpoint(env, cleanApiEndpoint, ip, country);
-      }
     } catch (logError) {
-      // 日志失败不影响验证结果
-      console.warn('记录日志失败（可能超过 KV 限制）:', logError);
+      console.warn('记录统计失败:', logError);
     }
 
     return jsonResponse(
@@ -1460,8 +1453,9 @@ async function recordCodeUsage(env, code, apiEndpoint, ip, country) {
 
 /**
  * 记录API端点使用情况（用于抓第三方商业化）
+ * 不记录IP，只记录端点使用统计
  */
-async function recordApiEndpoint(env, apiEndpoint, ip, country) {
+async function recordApiEndpoint(env, apiEndpoint) {
   try {
     const endpointsStr = await redisGet('api_endpoints');
     const endpoints = endpointsStr ? JSON.parse(endpointsStr) : {};
@@ -1470,20 +1464,6 @@ async function recordApiEndpoint(env, apiEndpoint, ip, country) {
       // API端点已存在，更新统计
       endpoints[apiEndpoint].lastAccess = new Date().toISOString();
       endpoints[apiEndpoint].accessCount = (endpoints[apiEndpoint].accessCount || 0) + 1;
-
-      // 记录使用这个端点的IP（用于追踪）
-      if (!endpoints[apiEndpoint].ips) {
-        endpoints[apiEndpoint].ips = {};
-      }
-      if (!endpoints[apiEndpoint].ips[ip]) {
-        endpoints[apiEndpoint].ips[ip] = {
-          country: country,
-          firstSeen: new Date().toISOString(),
-          count: 0,
-        };
-      }
-      endpoints[apiEndpoint].ips[ip].count += 1;
-      endpoints[apiEndpoint].ips[ip].lastSeen = new Date().toISOString();
     } else {
       // 新的API端点
       endpoints[apiEndpoint] = {
@@ -1491,18 +1471,11 @@ async function recordApiEndpoint(env, apiEndpoint, ip, country) {
         firstAccess: new Date().toISOString(),
         lastAccess: new Date().toISOString(),
         accessCount: 1,
-        ips: {
-          [ip]: {
-            country: country,
-            firstSeen: new Date().toISOString(),
-            lastSeen: new Date().toISOString(),
-            count: 1,
-          },
-        },
       };
     }
 
     await redisSet('api_endpoints', JSON.stringify(endpoints));
+    console.log(`📝 记录 API 端点: ${apiEndpoint}`);
   } catch (error) {
     console.error('记录API端点失败:', error);
   }
