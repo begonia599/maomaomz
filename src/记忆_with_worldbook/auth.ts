@@ -168,6 +168,67 @@ async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: 
 }
 
 /**
+ * 显示需要联网对话框（无法关闭，强制阻止离线使用）
+ */
+function showNetworkRequiredDialog(): void {
+  const overlay = document.createElement('div');
+  overlay.id = 'maomaomz-network-overlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999999 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+  `;
+
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    border: 3px solid #f59e0b;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(245, 158, 11, 0.3);
+    color: #e0e0e0;
+    text-align: center;
+  `;
+
+  dialog.innerHTML = `
+    <div style="font-size: 80px; margin-bottom: 20px;">🌐</div>
+    <h2 style="margin: 0 0 20px 0; font-size: 28px; color: #f59e0b;">
+      需要网络连接
+    </h2>
+    <p style="color: #ccc; font-size: 16px; line-height: 1.8; margin-bottom: 20px;">
+      本插件需要联网验证授权<br>
+      请检查网络连接后刷新页面
+    </p>
+    <button onclick="location.reload()" style="
+      padding: 15px 40px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    ">🔄 刷新页面</button>
+    <p style="color: #666; font-size: 12px; margin-top: 20px;">
+      ⚠️ 禁止离线使用，必须联网验证
+    </p>
+  `;
+
+  overlay.appendChild(dialog);
+  document.body.appendChild(overlay);
+}
+
+/**
  * 显示端点被禁用对话框（无法关闭，强制阻止使用）
  */
 function showBannedDialog(message: string): void {
@@ -455,11 +516,11 @@ export async function checkAuthorization(): Promise<boolean> {
       }
     } catch (error) {
       console.error('❌ 验证授权码时出错:', error);
-      // 🔥 网络错误时不给予宽限期，必须联网验证
-      // 清除数据，强制重新验证
+      // 🔥 网络错误 = 直接阻止，必须联网才能用
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
-      (window as any).toastr?.error('❌ 无法连接授权服务器，请检查网络连接', '', { timeOut: 5000 });
+      showNetworkRequiredDialog();
+      return false;
     }
   }
 
