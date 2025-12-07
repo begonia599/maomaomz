@@ -128,7 +128,7 @@ function getCurrentApiEndpoint(): string {
       }
     }
 
-    // 🔥 方法 4: 获取 API 类型 + 聊天补全源作为标识
+    // 🔥 方法 4: 根据 API 类型推断官方端点
     if (!apiUrl) {
       const parentWin = window.parent as any;
       const win = window as any;
@@ -138,11 +138,37 @@ function getCurrentApiEndpoint(): string {
         apiType = apiType.value;
       }
 
-      // 同时获取聊天补全源
+      // 获取聊天补全源
       const oaiSettings = parentWin?.oai_settings || win?.oai_settings;
       const chatSource = oaiSettings?.chat_completion_source;
 
-      if (apiType && typeof apiType === 'string' && apiType !== '[object Object]') {
+      // 🔥 根据 API 类型推断实际端点
+      if (apiType && typeof apiType === 'string') {
+        const officialEndpoints: Record<string, string> = {
+          openai: 'api.openai.com',
+          claude: 'api.anthropic.com',
+          google: 'generativelanguage.googleapis.com',
+          cohere: 'api.cohere.ai',
+          mistral: 'api.mistral.ai',
+          groq: 'api.groq.com',
+          openrouter: 'openrouter.ai',
+          novel: 'api.novelai.net',
+        };
+
+        // 检查是否有自定义端点（反代）
+        const reverseProxy = oaiSettings?.reverse_proxy;
+        if (reverseProxy && reverseProxy.includes('.')) {
+          console.log('🔍 从 oai_settings.reverse_proxy 获取:', reverseProxy);
+          return reverseProxy;
+        }
+
+        // 返回官方端点或 API 类型标识
+        const officialUrl = officialEndpoints[apiType.toLowerCase()];
+        if (officialUrl) {
+          console.log('🔍 推断官方端点:', officialUrl);
+          return `[官方:${officialUrl}]`;
+        }
+
         const identifier = chatSource ? `[${apiType}:${chatSource}]` : `[API:${apiType}]`;
         console.log('🔍 使用 API 类型作为标识:', identifier);
         return identifier;
