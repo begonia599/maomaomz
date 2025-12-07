@@ -390,7 +390,12 @@ async function handleVerify(request, env, corsHeaders) {
       await incrementStats(env, 'failed');
 
       // 🔥 记录端点（失败）
-      if (cleanApiEndpoint !== 'unknown' && cleanApiEndpoint !== '[object HTMLSelectElement]') {
+      const invalidEndpoints = ['unknown', '[object HTMLSelectElement]', 'admin', 'null', 'undefined', ''];
+      if (
+        cleanApiEndpoint &&
+        !invalidEndpoints.includes(cleanApiEndpoint.toLowerCase()) &&
+        cleanApiEndpoint.includes('.')
+      ) {
         try {
           await recordApiEndpoint(env, cleanApiEndpoint, 'failed', code);
         } catch (logError) {
@@ -416,7 +421,12 @@ async function handleVerify(request, env, corsHeaders) {
     }
 
     // 🔥 记录端点（成功）
-    if (cleanApiEndpoint !== 'unknown' && cleanApiEndpoint !== '[object HTMLSelectElement]') {
+    const invalidEndpoints2 = ['unknown', '[object HTMLSelectElement]', 'admin', 'null', 'undefined', ''];
+    if (
+      cleanApiEndpoint &&
+      !invalidEndpoints2.includes(cleanApiEndpoint.toLowerCase()) &&
+      cleanApiEndpoint.includes('.')
+    ) {
       try {
         await recordApiEndpoint(env, cleanApiEndpoint, 'success', code);
       } catch (logError) {
