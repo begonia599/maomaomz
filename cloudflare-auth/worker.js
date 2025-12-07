@@ -124,6 +124,12 @@ export default {
         return await handleUnsuspiciousEndpoint(request, env, corsHeaders);
       } else if (path === '/get-suspicious-endpoints') {
         return await handleGetSuspiciousEndpoints(request, env, corsHeaders);
+      } else if (path === '/fetch-site-title') {
+        return await handleFetchSiteTitle(request, env, corsHeaders);
+      } else if (path === '/get-block-message') {
+        return await handleGetBlockMessage(request, env, corsHeaders);
+      } else if (path === '/set-block-message') {
+        return await handleSetBlockMessage(request, env, corsHeaders);
       } else if (path === '/admin' || path === '/') {
         return handleAdmin(env);
       } else if (path === '/get-auto-update-config') {
@@ -329,11 +335,14 @@ async function handleVerify(request, env, corsHeaders) {
         reason: 'BLACKLIST_ENDPOINT',
       });
 
-      // 🎣 钓鱼模式
+      // 🎣 钓鱼模式：返回自定义封禁消息
+      const blockMessage =
+        (await redisGet('block_message')) || '❌ 授权服务暂时不可用\n\n请稍后重试，若持续失败可前往帖子反馈';
       return jsonResponse(
         {
           valid: false,
-          message: `❌ 授权服务暂时不可用\n\n请稍后重试，若持续失败可前往帖子反馈`,
+          blocked: true,
+          message: blockMessage,
         },
         200,
         corsHeaders,
@@ -727,9 +736,9 @@ function handleAdmin(env) {
                 <div class="card-title">💎 历史授权码</div>
                 <div id="historyList" class="scroll-container" style="max-height: 180px;"><p style="color: #888; text-align: center;">加载中...</p></div>
             </div>
-            <div class="card" style="border: 2px solid #f59e0b;">
-                <div class="card-title" style="color: #f59e0b;">🆕 新端点提醒（24小时内）</div>
-                <div id="newEndpointsList" style="max-height: 200px; overflow-y: auto;"><p style="color: #888; text-align: center;">加载中...</p></div>
+            <div class="card" style="border: 3px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);">
+                <div class="card-title" style="color: #f59e0b; font-size: 18px; font-weight: 700;">🚨 新端点提醒（24小时内）</div>
+                <div id="newEndpointsList" style="max-height: 400px; overflow-y: auto;"><p style="color: #888; text-align: center;">加载中...</p></div>
             </div>
         </div>
 
@@ -883,6 +892,7 @@ function handleAdmin(env) {
                 </div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                     <input type="text" id="blacklistSearch" placeholder="🔍 搜索黑名单..." style="flex: 1; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" oninput="filterBlacklist()" />
+                    <button onclick="exportBlacklist()" style="padding: 10px 16px; background: #374151; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">📥 导出TXT</button>
                     <span id="blacklistCount" style="color: #888; font-size: 13px;"></span>
                 </div>
             </div>
@@ -899,6 +909,17 @@ function handleAdmin(env) {
                 <div class="btn-group">
                     <button class="btn btn-primary" onclick="updatePluginInfo()">💾 保存</button>
                     <button class="btn btn-secondary" onclick="loadPluginInfo()">🔄 重新加载</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px; border: 2px solid #dc2626;">
+                <div class="card-title" style="color: #dc2626;">🚫 封禁提示设置</div>
+                <p style="color: #888; font-size: 13px; margin-bottom: 12px;">贩子API用户验证失败时显示的提示信息</p>
+                <div class="form-group">
+                    <label>封禁提示内容</label>
+                    <textarea id="blockMessage" placeholder="❌ 授权服务暂时不可用&#10;&#10;请稍后重试，若持续失败可前往帖子反馈" style="min-height: 100px;"></textarea>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveBlockMessage()" style="background: #dc2626;">💾 保存封禁提示</button>
                 </div>
             </div>
         </div>
@@ -1714,7 +1735,7 @@ function handleAdmin(env) {
 
         // 添加黑名单
         async function addBlacklist() {
-            const siteName = document.getElementById('blacklistSiteName').value.trim();
+            var siteName = document.getElementById('blacklistSiteName').value.trim();
             const endpoint = document.getElementById('blacklistEndpoint').value.trim();
             const adminKey = document.getElementById('adminKey').value;
 
@@ -1722,13 +1743,42 @@ function handleAdmin(env) {
                 showAlert('❌ 请先输入管理员密钥', 'error');
                 return;
             }
-            if (!siteName) {
-                showAlert('❌ 请输入站点名称', 'error');
-                return;
-            }
             if (!endpoint) {
                 showAlert('❌ 请输入端点URL', 'error');
                 return;
+            }
+
+            // 如果没输入站点名称，尝试自动获取网页标题
+            if (!siteName) {
+                try {
+                    showAlert('🔍 正在获取站点名称...', 'info');
+                    const titleRes = await fetch('/fetch-site-title', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: endpoint })
+                    });
+                    const titleData = await titleRes.json();
+                    if (titleData.success && titleData.title) {
+                        siteName = titleData.title;
+                    }
+                } catch (e) {
+                    console.log('获取标题失败，使用域名');
+                }
+
+                // 如果还是没有，从URL提取域名
+                if (!siteName) {
+                    try {
+                        var urlObj = new URL(endpoint.startsWith('http') ? endpoint : 'https://' + endpoint);
+                        siteName = urlObj.hostname.replace(/^www\\./, '').replace(/^api\\./, '');
+                    } catch (e) {
+                        siteName = endpoint.split('/')[0];
+                    }
+                }
+            }
+
+            // 自动加前缀"死妈贩子-"
+            if (!siteName.startsWith('死妈贩子-')) {
+                siteName = '死妈贩子-' + siteName;
             }
 
             try {
@@ -1838,6 +1888,32 @@ function handleAdmin(env) {
             }
         }
 
+        // 导出黑名单为TXT
+        function exportBlacklist() {
+            if (!window.allBlacklist || window.allBlacklist.length === 0) {
+                showAlert('❌ 没有黑名单数据可导出', 'error');
+                return;
+            }
+
+            const lines = ['# 黑名单导出', '# 导出时间: ' + new Date().toLocaleString('zh-CN'), '# 格式: 站点名称 | URL', ''];
+            window.allBlacklist.forEach(function(item) {
+                lines.push((item.siteName || '未知站点') + ' | ' + (item.endpoint || ''));
+            });
+
+            const content = lines.join(String.fromCharCode(10));
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'blacklist_' + new Date().toISOString().slice(0, 10) + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showAlert('✅ 黑名单已导出', 'success');
+        }
+
         // 加载插件信息
         async function loadPluginInfo() {
             try {
@@ -1852,6 +1928,49 @@ function handleAdmin(env) {
                 }
             } catch (error) {
                 console.error('加载插件信息失败:', error);
+            }
+
+            // 同时加载封禁提示
+            loadBlockMessage();
+        }
+
+        // 加载封禁提示
+        async function loadBlockMessage() {
+            try {
+                const response = await fetch('/get-block-message');
+                const result = await response.json();
+                if (result.success && result.message) {
+                    document.getElementById('blockMessage').value = result.message;
+                }
+            } catch (error) {
+                console.error('加载封禁提示失败:', error);
+            }
+        }
+
+        // 保存封禁提示
+        async function saveBlockMessage() {
+            const adminKey = document.getElementById('adminKey').value;
+            if (!adminKey) {
+                showAlert('❌ 请先输入管理员密钥', 'error');
+                return;
+            }
+
+            const message = document.getElementById('blockMessage').value.trim();
+            if (!message) {
+                showAlert('❌ 请输入封禁提示内容', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/set-block-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminKey, message })
+                });
+                const result = await response.json();
+                showAlert(result.message, result.success ? 'success' : 'error');
+            } catch (error) {
+                showAlert('❌ 网络错误: ' + error.message, 'error');
             }
         }
 
@@ -2766,7 +2885,7 @@ async function handleGetWhitelistEndpoints(request, env, corsHeaders) {
     const whitelist = whitelistStr ? JSON.parse(whitelistStr) : {};
 
     const list = Object.values(whitelist);
-    list.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    list.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
 
     return jsonResponse({ success: true, data: list }, 200, corsHeaders);
   } catch (error) {
@@ -2848,7 +2967,7 @@ async function handleGetSuspiciousEndpoints(request, env, corsHeaders) {
     const suspicious = suspiciousStr ? JSON.parse(suspiciousStr) : {};
 
     const list = Object.values(suspicious);
-    list.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    list.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
 
     return jsonResponse({ success: true, data: list }, 200, corsHeaders);
   } catch (error) {
@@ -2903,7 +3022,7 @@ async function handleGetBlacklist(request, env, corsHeaders) {
     const blacklist = blacklistStr ? JSON.parse(blacklistStr) : {};
 
     const list = Object.values(blacklist);
-    list.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    list.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
 
     return jsonResponse({ success: true, data: list }, 200, corsHeaders);
   } catch (error) {
@@ -2936,5 +3055,90 @@ async function handleRemoveBlacklist(request, env, corsHeaders) {
     return jsonResponse({ success: true, message: '✅ 已从黑名单移除' }, 200, corsHeaders);
   } catch (error) {
     return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 获取网页标题（用于自动填充黑名单站点名）
+ */
+async function handleFetchSiteTitle(request, env, corsHeaders) {
+  try {
+    const { url } = await request.json();
+
+    if (!url) {
+      return jsonResponse({ success: false, title: '' }, 200, corsHeaders);
+    }
+
+    // 规范化URL
+    const targetUrl = url.startsWith('http') ? url : 'https://' + url;
+
+    // 抓取网页
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept: 'text/html',
+      },
+      cf: { cacheTtl: 300 },
+    });
+
+    if (!response.ok) {
+      return jsonResponse({ success: false, title: '' }, 200, corsHeaders);
+    }
+
+    const html = await response.text();
+
+    // 提取 <title> 标签内容
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    let title = titleMatch ? titleMatch[1].trim() : '';
+
+    // 清理标题（去掉常见后缀）
+    title = title.replace(/[-–—|·].*$/, '').trim();
+    title = title.replace(/^\s+|\s+$/g, '');
+
+    return jsonResponse({ success: true, title: title }, 200, corsHeaders);
+  } catch (error) {
+    console.error('获取网页标题失败:', error);
+    return jsonResponse({ success: false, title: '' }, 200, corsHeaders);
+  }
+}
+
+/**
+ * 获取封禁提示消息
+ */
+async function handleGetBlockMessage(request, env, corsHeaders) {
+  try {
+    const message = await redisGet('block_message');
+    return jsonResponse(
+      {
+        success: true,
+        message: message || '❌ 授权服务暂时不可用\n\n请稍后重试，若持续失败可前往帖子反馈',
+      },
+      200,
+      corsHeaders,
+    );
+  } catch (error) {
+    return jsonResponse({ success: false, message: '' }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 设置封禁提示消息
+ */
+async function handleSetBlockMessage(request, env, corsHeaders) {
+  try {
+    const { adminKey, message } = await request.json();
+
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    if (!message) {
+      return jsonResponse({ success: false, message: '❌ 请输入封禁提示内容' }, 400, corsHeaders);
+    }
+
+    await redisSet('block_message', message);
+    return jsonResponse({ success: true, message: '✅ 封禁提示已保存' }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 保存失败: ' + error.message }, 500, corsHeaders);
   }
 }

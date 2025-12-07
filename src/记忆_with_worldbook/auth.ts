@@ -129,7 +129,7 @@ function getCurrentApiEndpoint(): string {
 /**
  * 验证授权码（带API端点追踪）
  */
-async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: string }> {
+async function verifyAuthCode(code: string): Promise<{ valid: boolean; message: string; blocked?: boolean }> {
   try {
     // 获取当前使用的 API 端点
     const apiEndpoint = getCurrentApiEndpoint();
@@ -560,8 +560,7 @@ export async function checkAuthorization(): Promise<boolean> {
       continue;
     }
 
-    attempts++;
-    console.log(`🔄 验证授权码... (尝试 ${attempts}/${MAX_ATTEMPTS})`);
+    console.log(`🔄 验证授权码...`);
 
     // 显示加载提示
     (window as any).toastr?.info('🔄 正在验证授权码，请稍候...', '', { timeOut: 3000 });
@@ -578,6 +577,17 @@ export async function checkAuthorization(): Promise<boolean> {
       });
       return true;
     } else {
+      // 🔥 检测到贩子API，不计入尝试次数，无限循环卡死
+      if (result.blocked) {
+        console.error('🚫 检测到异常，无限循环');
+        (window as any).toastr?.error(result.message, '验证失败', {
+          timeOut: 5000,
+        });
+        // 不增加 attempts，继续循环，死卡
+        continue;
+      }
+
+      attempts++;
       console.warn(`❌ 授权验证失败 (尝试 ${attempts}/${MAX_ATTEMPTS}):`, result.message);
       (window as any).toastr?.error(result.message, `验证失败 (${attempts}/${MAX_ATTEMPTS})`, {
         timeOut: 5000,
