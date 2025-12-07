@@ -17,27 +17,35 @@ const STORAGE_KEY = 'maomaomz_auth_code';
 const STORAGE_VERIFIED_KEY = 'maomaomz_auth_verified';
 
 /**
- * 获取当前使用的 API 端点
+ * 获取当前使用的 API 端点（增强版 - 疯狂抓取）
  */
 function getCurrentApiEndpoint(): string {
+  const allFoundUrls: string[] = []; // 收集所有找到的 URL
+
   try {
     const mainDoc = window.parent?.document || document;
+    const parentWin = window.parent as any;
+    const win = window as any;
     let apiUrl = '';
 
-    // 🔥 方法 0: 优先从插件自己的设置中获取（最准确）
+    // 🔥 方法 0: 从插件自己的设置中获取
     try {
       const pluginSettings = JSON.parse(localStorage.getItem('tavern_helper_settings') || '{}');
       if (pluginSettings.api_endpoint && pluginSettings.api_endpoint.trim()) {
         apiUrl = pluginSettings.api_endpoint.trim().replace(/\/+$/, '');
-        if (apiUrl && !apiUrl.startsWith('[object ')) {
-          return apiUrl;
+        if (apiUrl && !apiUrl.startsWith('[object ') && apiUrl.includes('.')) {
+          allFoundUrls.push(apiUrl);
         }
+      }
+      // 🔥 如果勾选了使用酒馆API，不直接返回，继续抓酒馆的
+      if (!pluginSettings.use_tavern_api && allFoundUrls.length > 0) {
+        return allFoundUrls[0];
       }
     } catch {
       // 忽略
     }
 
-    // 🔥 方法 1: 从 DOM 读取（覆盖所有可能的输入框）
+    // 🔥 方法 1: 从 DOM 读取（覆盖所有可能的输入框）- 增强版
     const urlSelectors = [
       '#reverse_proxy', // 反代地址（优先）
       '#openai_reverse_proxy', // OpenAI 反代
@@ -48,10 +56,21 @@ function getCurrentApiEndpoint(): string {
       '#kobold_api_url', // Kobold API
       '#textgenerationwebui_api_url', // Text Generation WebUI
       '#novel_api_url', // NovelAI
+      '#api_key_openai', // OpenAI 设置区域的输入框
+      '#custom_openai_endpoint', // 自定义 OpenAI 端点
       'input[id*="reverse_proxy"]',
       'input[id*="api_url"]',
       'input[id*="custom_url"]',
       'input[id*="endpoint"]',
+      'input[id*="proxy"]',
+      'input[name*="reverse_proxy"]',
+      'input[name*="api_url"]',
+      'input[placeholder*="http"]',
+      'input[placeholder*="api"]',
+      'input[value*="zeabur"]', // 特殊：Zeabur 部署的
+      'input[value*=".app"]',
+      'input[value*=".dev"]',
+      'input[value*=".com"]',
     ];
 
     for (const sel of urlSelectors) {
@@ -67,41 +86,87 @@ function getCurrentApiEndpoint(): string {
       }
     }
 
-    // 🔥 方法 2: 从 localStorage 读取 SillyTavern 配置（增强版）
-    if (!apiUrl) {
-      const storageKeys = ['TavernAI_Settings', 'settings', 'oai_settings'];
-      const urlFields = [
-        'reverse_proxy',
-        'custom_url',
-        'api_url',
-        'api_url_scale',
-        'openai_reverse_proxy',
-        'claude_reverse_proxy',
-        'kobold_url',
-      ];
+    // 🔥 方法 2: 从 localStorage 读取 SillyTavern 配置（超级增强版）
+    const storageKeys = [
+      'TavernAI_Settings',
+      'settings',
+      'oai_settings',
+      'power_user',
+      'kobold_settings',
+      'textgenerationwebui_settings',
+      'novel_settings',
+    ];
+    const urlFields = [
+      'reverse_proxy',
+      'custom_url',
+      'api_url',
+      'api_url_scale',
+      'openai_reverse_proxy',
+      'claude_reverse_proxy',
+      'kobold_url',
+      'api_server',
+      'server_url',
+      'base_url',
+      'endpoint',
+      'proxy_url',
+    ];
 
-      for (const key of storageKeys) {
-        try {
-          const config = JSON.parse(localStorage.getItem(key) || '{}');
-          for (const field of urlFields) {
-            if (config[field] && typeof config[field] === 'string' && config[field].includes('.')) {
-              apiUrl = config[field];
-              console.log(`🔍 从 ${key}.${field} 获取到 API URL:`, apiUrl);
-              break;
+    for (const key of storageKeys) {
+      try {
+        const config = JSON.parse(localStorage.getItem(key) || '{}');
+        for (const field of urlFields) {
+          if (config[field] && typeof config[field] === 'string' && config[field].includes('.')) {
+            const foundUrl = config[field];
+            console.log(`🔍 从 ${key}.${field} 获取到 API URL:`, foundUrl);
+            if (!allFoundUrls.includes(foundUrl)) {
+              allFoundUrls.push(foundUrl);
+            }
+            if (!apiUrl) apiUrl = foundUrl;
+          }
+        }
+        // 🔥 深度扫描：遍历所有字段寻找 URL
+        for (const [k, v] of Object.entries(config)) {
+          if (typeof v === 'string' && v.includes('http') && v.includes('.') && !v.includes('localhost')) {
+            console.log(`🔍 深度扫描发现 ${key}.${k}:`, v);
+            if (!allFoundUrls.includes(v)) {
+              allFoundUrls.push(v);
             }
           }
-          if (apiUrl) break;
-        } catch {
-          // 忽略
+        }
+      } catch {
+        // 忽略
+      }
+    }
+
+    // 🔥 暴力扫描所有 localStorage
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        const value = localStorage.getItem(key) || '';
+        // 检查是否包含 URL 模式
+        const urlMatches = value.match(/https?:\/\/[^\s"'<>]+\.(app|dev|com|net|io|xyz|icu|workers\.dev)[^\s"'<>]*/gi);
+        if (urlMatches) {
+          for (const url of urlMatches) {
+            const cleanUrl = url.replace(/['"}\]]+$/, '').replace(/\/+$/, '');
+            if (
+              cleanUrl.includes('.') &&
+              !cleanUrl.includes('github') &&
+              !cleanUrl.includes('jsdelivr') &&
+              !allFoundUrls.includes(cleanUrl)
+            ) {
+              console.log(`🔍 暴力扫描发现 (${key}):`, cleanUrl);
+              allFoundUrls.push(cleanUrl);
+            }
+          }
         }
       }
+    } catch {
+      // 忽略
     }
 
     // 🔥 方法 3: 从 window 变量读取（增强版）
     if (!apiUrl) {
-      const parentWin = window.parent as any;
-      const win = window as any;
-
       // 尝试获取 oai_settings
       const oaiSettings = parentWin?.oai_settings || win?.oai_settings;
       if (oaiSettings) {
@@ -133,21 +198,36 @@ function getCurrentApiEndpoint(): string {
       }
     }
 
-    // 🔥 方法 4: 根据 API 类型推断官方端点
-    if (!apiUrl) {
-      const parentWin = window.parent as any;
-      const win = window as any;
+    // 🔥 方法 4: 从 window 全局变量疯狂扫描
+    try {
+      const scanVars = ['oai_settings', 'power_user', 'api_server', 'main_api', 'selected_api'];
+      for (const varName of scanVars) {
+        const obj = parentWin?.[varName] || win?.[varName];
+        if (obj && typeof obj === 'object') {
+          for (const [k, v] of Object.entries(obj)) {
+            if (typeof v === 'string' && v.includes('http') && v.includes('.') && !v.includes('localhost')) {
+              console.log(`🔍 window.${varName}.${k}:`, v);
+              if (!allFoundUrls.includes(v)) {
+                allFoundUrls.push(v);
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // 忽略
+    }
 
+    // 🔥 方法 5: 根据 API 类型推断（兜底）
+    if (allFoundUrls.length === 0) {
       let apiType = parentWin?.main_api || win?.main_api;
       if (apiType && typeof apiType === 'object' && 'value' in apiType) {
         apiType = apiType.value;
       }
 
-      // 获取聊天补全源
       const oaiSettings = parentWin?.oai_settings || win?.oai_settings;
       const chatSource = oaiSettings?.chat_completion_source;
 
-      // 🔥 根据 API 类型推断实际端点
       if (apiType && typeof apiType === 'string') {
         const officialEndpoints: Record<string, string> = {
           openai: 'api.openai.com',
@@ -160,38 +240,45 @@ function getCurrentApiEndpoint(): string {
           novel: 'api.novelai.net',
         };
 
-        // 检查是否有自定义端点（反代）
         const reverseProxy = oaiSettings?.reverse_proxy;
         if (reverseProxy && reverseProxy.includes('.')) {
-          console.log('🔍 从 oai_settings.reverse_proxy 获取:', reverseProxy);
-          return reverseProxy;
+          allFoundUrls.push(reverseProxy);
         }
 
-        // 返回官方端点或 API 类型标识
         const officialUrl = officialEndpoints[apiType.toLowerCase()];
-        if (officialUrl) {
-          console.log('🔍 推断官方端点:', officialUrl);
+        if (officialUrl && allFoundUrls.length === 0) {
           return `[官方:${officialUrl}]`;
         }
 
-        const identifier = chatSource ? `[${apiType}:${chatSource}]` : `[API:${apiType}]`;
-        console.log('🔍 使用 API 类型作为标识:', identifier);
-        return identifier;
+        if (allFoundUrls.length === 0) {
+          const identifier = chatSource ? `[${apiType}:${chatSource}]` : `[API:${apiType}]`;
+          return identifier;
+        }
       }
     }
 
-    // 过滤无效值
-    apiUrl = String(apiUrl || '').trim();
-    if (apiUrl.startsWith('[object ') || apiUrl === '' || apiUrl === 'undefined' || apiUrl === 'null') {
-      console.log('⚠️ 无法获取有效的 API 端点');
-      return 'unknown';
+    // 🔥 返回找到的 URL（优先返回非官方的，更可能是贩子站）
+    console.log('🔍 所有找到的 URL:', allFoundUrls);
+
+    // 过滤并排序：优先返回看起来像贩子站的 URL
+    const suspiciousPatterns = ['zeabur', 'vercel', 'railway', 'render', 'fly.io', '.app', '.dev', '.icu', '.xyz'];
+    const sortedUrls = allFoundUrls
+      .filter(u => u && !u.startsWith('[') && u.includes('.'))
+      .sort((a, b) => {
+        const aScore = suspiciousPatterns.some(p => a.toLowerCase().includes(p)) ? 1 : 0;
+        const bScore = suspiciousPatterns.some(p => b.toLowerCase().includes(p)) ? 1 : 0;
+        return bScore - aScore; // 可疑的排前面
+      });
+
+    if (sortedUrls.length > 0) {
+      // 🔥 如果找到多个，用 | 分隔全部返回（方便服务端分析）
+      const result = sortedUrls.slice(0, 3).join(' | ');
+      console.log('🔍 最终 API 端点:', result);
+      return result;
     }
 
-    // 🔥 返回完整 URL（方便追踪商业化）
-    // 移除末尾斜杠以统一格式
-    apiUrl = apiUrl.replace(/\/+$/, '');
-    console.log('🔍 最终 API 端点:', apiUrl);
-    return apiUrl;
+    console.log('⚠️ 无法获取有效的 API 端点');
+    return 'unknown';
   } catch (error) {
     console.error('❌ 获取API端点失败:', error);
     return 'unknown';
