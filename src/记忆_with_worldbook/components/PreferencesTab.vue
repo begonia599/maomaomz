@@ -99,9 +99,23 @@
             v-for="color in themeColors"
             :key="color.value"
             :title="color.name"
-            class="color-picker-item"
             :class="{ 'color-picker-active': preferences.themeColor === color.value }"
-            :style="{ '--picker-color': color.value }"
+            :style="{
+              width: '40px',
+              height: '40px',
+              minWidth: '40px',
+              minHeight: '40px',
+              borderRadius: '10px',
+              background: color.value,
+              cursor: 'pointer',
+              border: preferences.themeColor === color.value ? '3px solid #fff' : '3px solid transparent',
+              boxShadow:
+                preferences.themeColor === color.value
+                  ? `0 0 0 3px ${color.value}, 0 4px 15px ${color.value}80`
+                  : 'none',
+              transition: 'all 0.3s ease',
+              display: 'inline-block',
+            }"
             @click="
               preferences.themeColor = color.value;
               savePreferences();
