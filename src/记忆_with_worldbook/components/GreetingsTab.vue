@@ -1,7 +1,7 @@
 <template>
   <div
     class="greetings-tab"
-    style="display: flex; flex-direction: column; height: 100%; background: #1a2332 !important"
+    style="display: flex; flex-direction: column; height: 100%; background: transparent !important"
   >
     <!-- 标题区域 -->
     <div

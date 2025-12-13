@@ -1,5 +1,5 @@
 <template>
-  <div class="tools-tab" style="padding: 25px !important; background: #1a2332 !important">
+  <div class="tools-tab" style="padding: 25px !important; background: transparent !important">
     <!-- 反八股工具 -->
     <div class="tool-section">
       <div

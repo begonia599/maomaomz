@@ -1,5 +1,5 @@
 <template>
-  <div class="tools-tab" style="padding: 25px !important; background: #1a2332 !important">
+  <div class="tools-tab" style="padding: 25px !important; background: transparent !important">
     <!-- 新手引导 -->
     <div
       v-if="showGuide"

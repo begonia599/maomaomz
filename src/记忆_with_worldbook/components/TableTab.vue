@@ -1,5 +1,5 @@
 <template>
-  <div class="table-tab" style="padding: 25px !important; background: #1a2332 !important">
+  <div class="table-tab" style="padding: 25px !important; background: transparent !important">
     <div
       class="section-header"
       style="

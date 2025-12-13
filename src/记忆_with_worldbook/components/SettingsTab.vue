@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-tab" style="padding: 25px !important; background: #1a2332 !important">
+  <div class="settings-tab" style="padding: 25px !important; background: transparent !important">
     <!-- API 配置 -->
     <div
       class="config-section"

@@ -7616,7 +7616,7 @@ onMounted(() => {
 
 .project-tab {
   padding: 25px !important;
-  background: #1a1a1a !important;
+  background: transparent !important;
 }
 
 /* 滚动条样式 */

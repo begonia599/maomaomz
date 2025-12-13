@@ -1,5 +1,5 @@
 <template>
-  <div class="token-stats-tab" style="padding: 20px 24px; background: #1a2332">
+  <div class="token-stats-tab" style="padding: 20px 24px; background: transparent">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px">
       <div>
         <h2 style="margin: 0; font-size: 16px; color: #fff; display: flex; align-items: center; gap: 8px">

@@ -1,5 +1,5 @@
 <template>
-  <div class="help-tab" style="padding: 25px !important; background: #1a2332 !important">
+  <div class="help-tab" style="padding: 25px !important; background: transparent !important">
     <!-- 版本信息 -->
     <div
       style="

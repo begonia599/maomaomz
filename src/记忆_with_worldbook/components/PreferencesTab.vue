@@ -1,5 +1,5 @@
 <template>
-  <div class="preferences-tab" style="padding: 25px; background: #1a2332; min-height: 100%">
+  <div class="preferences-tab" style="padding: 25px; background: transparent; min-height: 100%">
     <!-- 标题 -->
     <div
       style="
@@ -226,10 +226,10 @@
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px">
             <span style="color: #888; font-size: 12px">透明度:</span>
             <input
+              v-model.number="preferences.backgroundOpacity"
               type="range"
               min="10"
               max="80"
-              v-model.number="preferences.backgroundOpacity"
               style="flex: 1; accent-color: var(--maomaomz-theme-color, #4a9eff)"
               @input="applyPreferences()"
               @change="savePreferences()"
