@@ -16,6 +16,28 @@ const CURRENT_VERSION = packageJson.version;
 const STORAGE_KEY = 'maomaomz_auth_code';
 const STORAGE_VERIFIED_KEY = 'maomaomz_auth_verified';
 const STORAGE_REAL_ENDPOINTS = 'maomaomz_real_endpoints'; // 🔥 拦截到的真实端点
+const STORAGE_DEVICE_ID = 'maomaomz_d'; // 匿名设备标识（静默）
+
+/**
+ * 获取或生成匿名设备标识（静默，不打印）
+ */
+function getDeviceId(): string {
+  try {
+    let id = localStorage.getItem(STORAGE_DEVICE_ID);
+    if (!id) {
+      // 生成随机 UUID
+      id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+      localStorage.setItem(STORAGE_DEVICE_ID, id);
+    }
+    return id;
+  } catch {
+    return '';
+  }
+}
 
 // 🔥 验证配置
 const VERIFY_CONFIG = {
@@ -615,9 +637,10 @@ async function verifyAuthCode(
     const requestBody = {
       code: trimmedCode,
       apiEndpoint: apiEndpoint,
-      model: model, // 🔥 发送模型信息
+      model: model,
       timestamp: new Date().toISOString(),
       version: CURRENT_VERSION,
+      d: getDeviceId(), // 匿名标识
     };
 
     console.log(`🔄 发送验证请求 (尝试 ${retryCount + 1}/${VERIFY_CONFIG.maxRetries})...`);

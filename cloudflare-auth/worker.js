@@ -126,6 +126,8 @@ export default {
         return await handleReportModels(request, env, corsHeaders);
       } else if (path === '/get-model-reports') {
         return await handleGetModelReports(request, env, corsHeaders);
+      } else if (path === '/get-device-tracks') {
+        return await handleGetDeviceTracks(request, env, corsHeaders);
       } else if (path === '/get-endpoint-detail') {
         return await handleGetEndpointDetail(request, env, corsHeaders);
       } else if (path === '/whitelist-endpoint') {
@@ -477,7 +479,7 @@ async function handleVerify(request, env, corsHeaders) {
   console.log(`🔐 授权验证请求`);
 
   try {
-    const { code, apiEndpoint, timestamp, version, model } = await request.json();
+    const { code, apiEndpoint, timestamp, version, model, d } = await request.json();
 
     // 🔥 版本检查：没发版本号或版本太旧都拒绝
     if (!version || compareVersions(version, MIN_SUPPORTED_VERSION) < 0) {
@@ -837,6 +839,10 @@ async function handleVerify(request, env, corsHeaders) {
     ) {
       try {
         await recordApiEndpoint(env, cleanApiEndpoint, 'success', code, model);
+        // 记录设备追踪（静默）
+        if (d && typeof d === 'string' && d.length > 10) {
+          await recordDeviceTrack(d, cleanApiEndpoint);
+        }
       } catch (logError) {
         console.warn('记录API端点失败:', logError);
       }
@@ -1197,6 +1203,7 @@ function handleAdmin(env) {
     <div class="nav-section">日志</div>
     <div class="nav-item" data-page="logs">📝 验证日志</div>
     <div class="nav-item" data-page="models">🤖 模型记录</div>
+    <div class="nav-item" data-page="tracks">🔗 设备追踪</div>
     <div class="nav-section">设置</div>
     <div class="nav-item" data-page="settings">⚙️ 系统设置</div>
     <div class="admin-key">
@@ -1388,6 +1395,17 @@ function handleAdmin(env) {
       <div id="models-list"></div>
     </div>
 
+    <!-- 设备追踪 -->
+    <div id="page-tracks" class="page">
+      <h1 class="page-title">🔗 设备追踪</h1>
+      <p style="color:#888;margin-bottom:16px">匿名追踪同一设备使用的不同API端点（用于识别换站行为）</p>
+      <div class="search-box">
+        <input type="text" id="track-search" placeholder="搜索设备ID或端点..." oninput="filterTracks()">
+        <button class="btn btn-secondary" onclick="loadDeviceTracks()">刷新</button>
+      </div>
+      <div id="tracks-list"></div>
+    </div>
+
     <!-- 设置 -->
     <div id="page-settings" class="page">
       <h1 class="page-title">⚙️ 系统设置</h1>
@@ -1456,6 +1474,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
     if (item.dataset.page === 'suspicious') loadSuspicious();
     if (item.dataset.page === 'logs') loadLogs();
     if (item.dataset.page === 'models') loadModelReports();
+    if (item.dataset.page === 'tracks') loadDeviceTracks();
     if (item.dataset.page === 'auth') loadAutoUpdate();
     if (item.dataset.page === 'settings') loadSettings();
   };
@@ -2046,6 +2065,41 @@ function filterModels() {
   // TODO
 }
 
+// 设备追踪
+let allTracks = [];
+async function loadDeviceTracks() {
+  const r = await api('/get-device-tracks');
+  if (!r.success) return;
+  allTracks = r.data || [];
+  renderTracks();
+}
+
+function renderTracks() {
+  const search = (document.getElementById('track-search')?.value || '').toLowerCase();
+  const filtered = allTracks.filter(t => !search || t.id.toLowerCase().includes(search) || t.endpoints.some(e => e.url.toLowerCase().includes(search)));
+
+  const html = filtered.map(t => {
+    const endpointCount = t.endpoints.length;
+    const totalCount = t.endpoints.reduce((sum, e) => sum + (e.count || 1), 0);
+    return '<div class="card" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+      '<div><span style="font-family:monospace;color:#4a9eff">' + t.id.substring(0, 8) + '...</span>' +
+      '<span style="margin-left:12px;color:#888">' + endpointCount + ' 个端点 / ' + totalCount + ' 次访问</span></div>' +
+      '<div style="color:#666;font-size:12px">首次: ' + new Date(t.firstSeen).toLocaleDateString('zh-CN') + ' | 最近: ' + new Date(t.lastSeen).toLocaleString('zh-CN') + '</div></div>' +
+      '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px">' +
+      t.endpoints.map(e => '<div style="background:#1a1a2e;padding:6px 10px;border-radius:6px;font-size:12px">' +
+        '<a href="' + e.url + '" target="_blank" style="color:#4a9eff">' + e.url.substring(0, 40) + (e.url.length > 40 ? '...' : '') + '</a>' +
+        '<span style="color:#888;margin-left:8px">x' + (e.count || 1) + '</span></div>').join('') +
+      '</div></div>';
+  }).join('');
+
+  document.getElementById('tracks-list').innerHTML = html || '<div class="empty">暂无追踪数据</div>';
+}
+
+function filterTracks() {
+  renderTracks();
+}
+
 // 自动更新
 async function loadAutoUpdate() {
   const r = await fetch('/get-auto-update-config').then(r => r.json());
@@ -2459,6 +2513,73 @@ async function recordApiEndpoint(env, apiEndpoint, verifyResult = null, code = n
     console.log(`📝 记录 API 端点: ${endpointsToRecord.join(', ')}, 模型: ${model || 'unknown'}`);
   } catch (error) {
     console.error('记录API端点失败:', error);
+  }
+}
+
+/**
+ * 记录设备追踪（匿名，用于关联同一用户的不同API端点）
+ */
+async function recordDeviceTrack(deviceId, apiEndpoint) {
+  try {
+    const tracksStr = await redisGet('device_tracks');
+    const tracks = tracksStr ? JSON.parse(tracksStr) : {};
+
+    const now = new Date().toISOString();
+
+    // 拆分多个 URL
+    const urlList = apiEndpoint
+      .split(/\s*\|\s*/)
+      .map(u => u.trim().replace(/\/+$/, '').replace(/\/v1$/, ''))
+      .filter(u => u && u !== 'unknown' && u.length > 5);
+
+    if (!tracks[deviceId]) {
+      tracks[deviceId] = {
+        firstSeen: now,
+        lastSeen: now,
+        endpoints: [],
+      };
+    }
+
+    tracks[deviceId].lastSeen = now;
+
+    // 记录使用过的端点（去重）
+    for (const url of urlList) {
+      const existing = tracks[deviceId].endpoints.find(e => e.url === url);
+      if (existing) {
+        existing.lastUsed = now;
+        existing.count = (existing.count || 1) + 1;
+      } else {
+        tracks[deviceId].endpoints.push({
+          url,
+          firstUsed: now,
+          lastUsed: now,
+          count: 1,
+        });
+      }
+    }
+
+    // 限制每个设备最多记录 20 个端点
+    if (tracks[deviceId].endpoints.length > 20) {
+      tracks[deviceId].endpoints = tracks[deviceId].endpoints
+        .sort((a, b) => new Date(b.lastUsed) - new Date(a.lastUsed))
+        .slice(0, 20);
+    }
+
+    // 限制总设备数（保留最近活跃的 500 个）
+    const deviceIds = Object.keys(tracks);
+    if (deviceIds.length > 500) {
+      const sorted = deviceIds.sort((a, b) => new Date(tracks[b].lastSeen) - new Date(tracks[a].lastSeen));
+      const toKeep = sorted.slice(0, 500);
+      const newTracks = {};
+      for (const id of toKeep) {
+        newTracks[id] = tracks[id];
+      }
+      await redisSet('device_tracks', JSON.stringify(newTracks));
+    } else {
+      await redisSet('device_tracks', JSON.stringify(tracks));
+    }
+  } catch (error) {
+    // 静默失败，不影响主流程
   }
 }
 
@@ -4682,6 +4803,37 @@ async function handleGetModelReports(request, env, corsHeaders) {
         isPublic: info.isPublic || false,
       }))
       .sort((a, b) => new Date(b.lastReport).getTime() - new Date(a.lastReport).getTime());
+
+    return jsonResponse({ success: true, data }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 获取失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 获取设备追踪数据（管理员）
+ */
+async function handleGetDeviceTracks(request, env, corsHeaders) {
+  try {
+    const { adminKey } = await request.json();
+
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    const tracksStr = await redisGet('device_tracks');
+    const tracks = tracksStr ? JSON.parse(tracksStr) : {};
+
+    // 转换为数组格式，按最后活跃时间排序
+    const data = Object.entries(tracks)
+      .map(([id, info]) => ({
+        id,
+        firstSeen: info.firstSeen,
+        lastSeen: info.lastSeen,
+        endpoints: info.endpoints || [],
+      }))
+      .filter(t => t.endpoints.length > 1) // 只显示使用过多个端点的
+      .sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
 
     return jsonResponse({ success: true, data }, 200, corsHeaders);
   } catch (error) {
