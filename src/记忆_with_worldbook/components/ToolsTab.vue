@@ -1,5 +1,5 @@
 <template>
-  <div class="tools-tab" style="padding: 25px !important; background: #1a1a1a !important">
+  <div class="tools-tab" style="padding: 25px !important; background: #1a2332 !important">
     <!-- 反八股工具 -->
     <div class="tool-section">
       <div
@@ -9,16 +9,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 12px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -480,12 +474,7 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border: 1px solid rgba(255, 193, 7, 0.3);
           border-radius: 12px;
           margin-bottom: 4px;
@@ -761,12 +750,7 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border: 1px solid rgba(220, 53, 69, 0.3);
           border-radius: 12px;
           margin-bottom: 4px;
@@ -1051,12 +1035,7 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border: 1px solid rgba(233, 30, 99, 0.3);
           border-radius: 12px;
           margin-bottom: 4px;
@@ -1262,16 +1241,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 12px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -1598,16 +1571,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 12px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -2227,16 +2194,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 12px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -3038,16 +2999,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 12px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -3706,16 +3661,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 12px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),

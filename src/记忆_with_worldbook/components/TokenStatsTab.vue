@@ -1,9 +1,9 @@
 <template>
-  <div class="token-stats-tab" style="padding: 20px 24px; background: #1a1a1a">
+  <div class="token-stats-tab" style="padding: 20px 24px; background: #1a2332">
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px">
       <div>
         <h2 style="margin: 0; font-size: 16px; color: #fff; display: flex; align-items: center; gap: 8px">
-          <i class="fa-solid fa-chart-pie" style="color: #4a9eff"></i>
+          <i class="fa-solid fa-chart-pie" style="color: #6b8299"></i>
           Token 统计
         </h2>
         <p style="margin: 4px 0 0; font-size: 12px; color: #aaa">该角色卡与绑定的世界书条目的总 Tokens</p>
@@ -19,7 +19,7 @@
             cursor: pointer;
             font-size: 12px;
             font-weight: 500;
-            background: #4a9eff;
+            background: #546b83;
             color: #fff;
             display: flex;
             align-items: center;
@@ -48,7 +48,7 @@
       {{ error }}
     </div>
 
-    <div v-if="!envReady" style="padding: 16px; border-radius: 8px; background: #252525; color: #ccc; font-size: 13px">
+    <div v-if="!envReady" style="padding: 16px; border-radius: 8px; background: #2a3a4a; color: #ccc; font-size: 13px">
       检测不到 SillyTavern / TavernHelper 环境，无法计算 Token。
       <br />
       请在 SillyTavern 中打开插件后再使用本功能。
@@ -56,7 +56,7 @@
 
     <div
       v-else-if="!stats && !loading"
-      style="padding: 16px; border-radius: 8px; background: #252525; color: #ccc; font-size: 13px"
+      style="padding: 16px; border-radius: 8px; background: #2a3a4a; color: #ccc; font-size: 13px"
     >
       点击右上角的“重新计算”按钮开始统计当前会话的 Token 使用情况。
     </div>
@@ -71,7 +71,7 @@
             min-width: 180px;
             padding: 14px 16px;
             border-radius: 10px;
-            background: #252525;
+            background: #2a3a4a;
             border: 1px solid #333;
           "
         >
@@ -93,7 +93,7 @@
             min-width: 180px;
             padding: 14px 16px;
             border-radius: 10px;
-            background: #252525;
+            background: #2a3a4a;
             border: 1px solid #333;
           "
         >
@@ -114,7 +114,7 @@
             min-width: 180px;
             padding: 14px 16px;
             border-radius: 10px;
-            background: #252525;
+            background: #2a3a4a;
             border: 1px solid #333;
           "
         >
@@ -135,7 +135,7 @@
             min-width: 180px;
             padding: 14px 16px;
             border-radius: 10px;
-            background: #252525;
+            background: #2a3a4a;
             border: 1px solid #333;
           "
         >
@@ -156,7 +156,7 @@
             min-width: 180px;
             padding: 14px 16px;
             border-radius: 10px;
-            background: #252525;
+            background: #2a3a4a;
             border: 1px solid #333;
           "
         >
@@ -177,7 +177,7 @@
       </div>
 
       <!-- 类型分布 -->
-      <div style="padding: 14px 16px; border-radius: 10px; background: #252525; border: 1px solid #333">
+      <div style="padding: 14px 16px; border-radius: 10px; background: #2a3a4a; border: 1px solid #333">
         <div style="font-size: 13px; color: #ddd; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
           <i class="fa-solid fa-chart-pie" style="color: #4ade80"></i>
           类型分布（世界书内部）
@@ -244,7 +244,7 @@
       </div>
 
       <!-- 按来源统计 -->
-      <div style="padding: 14px 16px; border-radius: 10px; background: #252525; border: 1px solid #333">
+      <div style="padding: 14px 16px; border-radius: 10px; background: #2a3a4a; border: 1px solid #333">
         <div style="font-size: 13px; color: #ddd; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
           <i class="fa-solid fa-layer-group" style="color: #f97316"></i>
           按来源统计
@@ -281,7 +281,7 @@
       </div>
 
       <!-- 世界书明细 -->
-      <div style="padding: 14px 16px; border-radius: 10px; background: #252525; border: 1px solid #333">
+      <div style="padding: 14px 16px; border-radius: 10px; background: #2a3a4a; border: 1px solid #333">
         <div style="font-size: 13px; color: #ddd; margin-bottom: 8px; display: flex; align-items: center; gap: 8px">
           <i class="fa-solid fa-book" style="color: #4ade80"></i>
           世界书明细（启用条目）

@@ -1,5 +1,5 @@
 <template>
-  <div class="tools-tab" style="padding: 25px !important; background: #1a1a1a !important">
+  <div class="tools-tab" style="padding: 25px !important; background: #1a2332 !important">
     <!-- 变量结构生成器 -->
     <div class="tool-section">
       <div
@@ -9,16 +9,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 16px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -41,7 +35,7 @@
             gap: 10px;
           "
         >
-          <i class="fa-solid fa-database" style="color: #4a9eff; font-size: 18px"></i>
+          <i class="fa-solid fa-database" style="color: #6b8299; font-size: 18px"></i>
           [InitVar] 变量结构生成器
         </h4>
         <i
@@ -54,7 +48,7 @@
         <div class="tool-instructions" style="margin-bottom: 15px">
           <p style="margin: 0 0 8px 0; color: #ccc; font-size: 12px">
             <i class="fa-solid fa-info-circle" style="margin-right: 6px; color: #17a2b8"></i>
-            生成符合 MVU Beta 规范的 <strong style="color: #4a9eff">[InitVar]</strong> 初始化数据。
+            生成符合 MVU Beta 规范的 <strong style="color: #6b8299">[InitVar]</strong> 初始化数据。
           </p>
           <p
             style="
@@ -332,7 +326,7 @@
         </button>
 
         <div v-if="generatedStructure" class="output-section">
-          <h4 style="color: #4a9eff; font-size: 14px; margin-bottom: 10px">生成的 [InitVar] 结构：</h4>
+          <h4 style="color: #6b8299; font-size: 14px; margin-bottom: 10px">生成的 [InitVar] 结构：</h4>
           <div class="code-output">
             <pre>{{ generatedStructure }}</pre>
             <button class="copy-btn-abs" @click="copyGenerated">
@@ -350,7 +344,7 @@
               border-radius: 8px;
             "
           >
-            <p style="margin: 0 0 10px 0; color: #4a9eff; font-size: 12px; font-weight: 600">
+            <p style="margin: 0 0 10px 0; color: #6b8299; font-size: 12px; font-weight: 600">
               <i class="fa-solid fa-link"></i> 基于此结构继续生成：
             </p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap">
@@ -427,16 +421,10 @@
           justify-content: space-between;
           align-items: center;
           padding: 15px 20px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
           border-radius: 16px;
           margin-bottom: 15px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          border: 1px solid rgba(84, 107, 131, 0.3);
           box-shadow:
             0 3px 12px rgba(0, 0, 0, 0.3),
             inset 0 1px 0 rgba(255, 255, 255, 0.04),
@@ -2034,7 +2022,7 @@ watch([varName, subFields, generatedStructure, variableCategories, generatedProm
   background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(102, 126, 234, 0.3));
   border: 1px solid rgba(74, 158, 255, 0.4);
   border-radius: 6px;
-  color: #4a9eff;
+  color: #6b8299;
   padding: 8px 14px;
   cursor: pointer;
   font-size: 12px;
