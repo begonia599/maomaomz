@@ -2411,7 +2411,8 @@ function generateFromFields() {
 
   if (totalFields <= 4) {
     // 字段少于等于4个，使用单标记
-    config.value.findRegex = `<-CHARACTER_STATUS->[\\r\\n]*\\|${fields.map(() => '([^|]+)').join('\\|')}\\|[\\r\\n]*`;
+    // 使用更宽松的匹配模式，支持复杂内容（包括省略号、特殊标点等）
+    config.value.findRegex = `<-CHARACTER_STATUS->[\\s\\S]*?\\|${fields.map(() => '([^|]+?)').join('\\|')}\\|`;
     console.log('✅ 自动生成的 findRegex (单标记):', config.value.findRegex);
     console.log('📊 字段数量:', totalFields);
   } else {
@@ -2432,23 +2433,24 @@ function generateFromFields() {
         '\\|' +
           fields
             .slice(i, i + count)
-            .map(() => '([^|]+)')
+            .map(() => '([^|]+?)')
             .join('\\|') +
-          '\\|[\\r\\n]*',
+          '\\|',
       );
     }
 
     // 第二个标记 + 后半部分字段（每perLine个一行）
-    lines.push('<-CHARACTER_STATUS->[\\r\\n]*');
+    // 使用更宽松的匹配，允许标记之间有任意空白
+    lines.push('[\\s\\S]*?<-CHARACTER_STATUS->[\\s\\S]*?');
     for (let i = firstHalf; i < totalFields; i += perLine) {
       const count = Math.min(perLine, totalFields - i);
       lines.push(
         '\\|' +
           fields
             .slice(i, i + count)
-            .map(() => '([^|]+)')
+            .map(() => '([^|]+?)')
             .join('\\|') +
-          '\\|[\\r\\n]*',
+          '\\|',
       );
     }
 
