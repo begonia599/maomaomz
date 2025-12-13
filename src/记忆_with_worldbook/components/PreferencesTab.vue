@@ -32,9 +32,9 @@
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">刷新时自动弹出面板</div>
           <div style="color: #888; font-size: 12px">页面刷新后自动显示猫猫的小破烂面板</div>
         </div>
-        <label class="toggle-switch">
+        <label class="maomaomz-toggle-switch">
           <input v-model="preferences.autoShowPanel" type="checkbox" @change="savePreferences" />
-          <span class="toggle-slider"></span>
+          <span class="maomaomz-toggle-slider"></span>
         </label>
       </div>
 
@@ -44,9 +44,9 @@
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示任务中心</div>
           <div style="color: #888; font-size: 12px">在界面右下角显示任务进度和状态</div>
         </div>
-        <label class="toggle-switch">
+        <label class="maomaomz-toggle-switch">
           <input v-model="preferences.showTaskManager" type="checkbox" @change="savePreferences" />
-          <span class="toggle-slider"></span>
+          <span class="maomaomz-toggle-slider"></span>
         </label>
       </div>
 
@@ -56,9 +56,9 @@
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示最小化图标</div>
           <div style="color: #888; font-size: 12px">在页面右上角显示猫猫头快捷图标</div>
         </div>
-        <label class="toggle-switch">
+        <label class="maomaomz-toggle-switch">
           <input v-model="preferences.showMinimizeIcon" type="checkbox" @change="savePreferences" />
-          <span class="toggle-slider"></span>
+          <span class="maomaomz-toggle-slider"></span>
         </label>
       </div>
 
@@ -68,9 +68,9 @@
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">设置区块默认展开</div>
           <div style="color: #888; font-size: 12px">打开设置页面时，各功能区块默认展开还是折叠</div>
         </div>
-        <label class="toggle-switch">
+        <label class="maomaomz-toggle-switch">
           <input v-model="preferences.defaultSectionsExpanded" type="checkbox" @change="savePreferences" />
-          <span class="toggle-slider"></span>
+          <span class="maomaomz-toggle-slider"></span>
         </label>
       </div>
 
@@ -131,9 +131,9 @@
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示成功通知</div>
           <div style="color: #888; font-size: 12px">操作成功时显示提示消息</div>
         </div>
-        <label class="toggle-switch">
+        <label class="maomaomz-toggle-switch">
           <input v-model="preferences.showSuccessToast" type="checkbox" @change="savePreferences" />
-          <span class="toggle-slider"></span>
+          <span class="maomaomz-toggle-slider"></span>
         </label>
       </div>
 
@@ -152,9 +152,9 @@
           <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示错误通知</div>
           <div style="color: #888; font-size: 12px">操作失败时显示错误消息</div>
         </div>
-        <label class="toggle-switch">
+        <label class="maomaomz-toggle-switch">
           <input v-model="preferences.showErrorToast" type="checkbox" @change="savePreferences" />
-          <span class="toggle-slider"></span>
+          <span class="maomaomz-toggle-slider"></span>
         </label>
       </div>
     </div>
@@ -335,56 +335,58 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
-/* 开关按钮样式 */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 26px;
-  flex-shrink: 0;
+<style>
+/* 开关按钮样式 - 使用唯一前缀避免冲突 */
+.maomaomz-toggle-switch {
+  position: relative !important;
+  display: inline-block !important;
+  width: 50px !important;
+  height: 26px !important;
+  flex-shrink: 0 !important;
 }
 
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+.maomaomz-toggle-switch input {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
 }
 
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #3a3a3a;
-  transition: 0.3s;
-  border-radius: 26px;
+.maomaomz-toggle-slider {
+  position: absolute !important;
+  cursor: pointer !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: #3a3a3a !important;
+  transition: 0.3s !important;
+  border-radius: 26px !important;
+  display: block !important;
 }
 
-.toggle-slider:before {
-  position: absolute;
-  content: '';
-  height: 20px;
-  width: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
+.maomaomz-toggle-slider:before {
+  position: absolute !important;
+  content: '' !important;
+  height: 20px !important;
+  width: 20px !important;
+  left: 3px !important;
+  bottom: 3px !important;
+  background-color: white !important;
+  transition: 0.3s !important;
+  border-radius: 50% !important;
 }
 
-input:checked + .toggle-slider {
-  background: var(--maomaomz-theme-color, #4a9eff);
+.maomaomz-toggle-switch input:checked + .maomaomz-toggle-slider {
+  background: var(--maomaomz-theme-color, #4a9eff) !important;
 }
 
-input:checked + .toggle-slider:before {
-  transform: translateX(24px);
+.maomaomz-toggle-switch input:checked + .maomaomz-toggle-slider:before {
+  transform: translateX(24px) !important;
 }
 
-.toggle-slider:hover {
-  opacity: 0.9;
+.maomaomz-toggle-slider:hover {
+  opacity: 0.9 !important;
 }
 
 /* 设置项卡片 */

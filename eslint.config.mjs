@@ -81,5 +81,6 @@ export default [
     'postcss.config.js',
     'vite.config.ts',
     'supabase/functions/**',
+    'cloudflare-auth/**',
   ]),
 ];

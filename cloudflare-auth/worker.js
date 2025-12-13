@@ -104,6 +104,8 @@ export default {
         return await handleUnbanEndpoint(request, env, corsHeaders);
       } else if (path === '/get-banned-endpoints') {
         return await handleGetBannedEndpoints(request, env, corsHeaders);
+      } else if (path === '/batch-import-banned') {
+        return await handleBatchImportBanned(request, env, corsHeaders);
       } else if (path === '/delete-endpoint') {
         return await handleDeleteEndpoint(request, env, corsHeaders);
       } else if (path === '/add-blacklist') {
@@ -114,6 +116,8 @@ export default {
         return await handleRemoveBlacklist(request, env, corsHeaders);
       } else if (path === '/edit-blacklist') {
         return await handleEditBlacklist(request, env, corsHeaders);
+      } else if (path === '/batch-import-blacklist') {
+        return await handleBatchImportBlacklist(request, env, corsHeaders);
       } else if (path === '/report-models') {
         return await handleReportModels(request, env, corsHeaders);
       } else if (path === '/get-model-reports') {
@@ -158,6 +162,10 @@ export default {
         return await handleGetCode(request, env, corsHeaders);
       } else if (path === '/api/bot/claim') {
         return await handleBotClaim(request, env, corsHeaders);
+      } else if (path === '/cleanup-duplicates') {
+        return await handleCleanupDuplicates(request, env, corsHeaders);
+      } else if (path === '/clear-list') {
+        return await handleClearList(request, env, corsHeaders);
       } else {
         return jsonResponse({ error: '404 Not Found' }, 404, corsHeaders);
       }
@@ -274,10 +282,175 @@ export default {
 };
 
 /**
- * 验证授权码（带API端点追踪）
+ * 验证授权码（带API端点追踪 + 安全加强）
  */
 // 最低支持版本（低于此版本拒绝验证）
 const MIN_SUPPORTED_VERSION = '2.0.7';
+
+// 🔒 安全配置
+const SECURITY_CONFIG = {
+  maxRequestsPerMinute: 30,
+};
+
+// 🚨 已知的假 URL / 非 API 站点（用户用来伪装端点）
+const FAKE_URL_PATTERNS = [
+  // 图床
+  'imgur.com',
+  'imgbb.com',
+  'postimg.cc',
+  'imgurl.org',
+  'sm.ms',
+  'pic.com',
+  'photobucket.com',
+  'flickr.com',
+  'tinypic.com',
+  'imageshack.com',
+  // 作业/教育站点
+  'zuoyebang.com',
+  'zybang.com',
+  'xiaoyuan',
+  'homework',
+  'xueersi',
+  'yuanfudao',
+  'zuoye',
+  'bangbang',
+  'gaokao',
+  'zhongkao',
+  'shuxue',
+  'yingyu',
+  // 常见网站
+  'baidu.com',
+  'google.com',
+  'bing.com',
+  'yahoo.com',
+  'sogou.com',
+  'taobao.com',
+  'jd.com',
+  'tmall.com',
+  'pinduoduo.com',
+  'alibaba.com',
+  'weibo.com',
+  'zhihu.com',
+  'bilibili.com',
+  'douyin.com',
+  'tiktok.com',
+  'qq.com',
+  'wechat.com',
+  'weixin.qq.com',
+  '163.com',
+  'sina.com',
+  'youku.com',
+  'iqiyi.com',
+  'douban.com',
+  'tieba.baidu.com',
+  // 其他明显不是 API 的
+  'github.com',
+  'gitee.com',
+  'gitlab.com',
+  'stackoverflow.com',
+  'wikipedia.org',
+  'amazon.com',
+  'apple.com',
+  'microsoft.com',
+  'facebook.com',
+  'twitter.com',
+  'instagram.com',
+  'linkedin.com',
+  'netflix.com',
+  'spotify.com',
+  'youtube.com',
+  'twitch.tv',
+  // 网盘/云存储
+  'pan.baidu.com',
+  'aliyundrive.com',
+  '115.com',
+  'quark.cn',
+  'dropbox.com',
+  'onedrive.com',
+  'drive.google.com',
+  // 其他可疑模式
+  'localhost',
+  '127.0.0.1',
+  '0.0.0.0',
+  'example.com',
+  'test.com',
+];
+
+// 🚨 检测是否为假 URL
+function isFakeUrl(url) {
+  if (!url || url === 'unknown') return false;
+  const lowerUrl = url.toLowerCase();
+
+  // 检查是否包含已知假站点
+  for (const pattern of FAKE_URL_PATTERNS) {
+    if (lowerUrl.includes(pattern.toLowerCase())) {
+      return true;
+    }
+  }
+
+  // 检查是否为纯 IP 地址（排除常见端口）
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(lowerUrl.replace(/^https?:\/\//, ''))) {
+    // 纯 IP 地址可能是自建服务，标记为可疑但不拒绝
+    return false;
+  }
+
+  return false;
+}
+
+// 🚨 检测 URL 是否看起来像真实的 API 端点
+function looksLikeRealApiEndpoint(url) {
+  if (!url || url === 'unknown') return false;
+  const lowerUrl = url.toLowerCase();
+
+  // 应该包含常见的 API 特征
+  const apiPatterns = [
+    '/v1',
+    '/api',
+    '/chat',
+    '/completions',
+    '/models',
+    'openai',
+    'claude',
+    'anthropic',
+    'gemini',
+    'gpt',
+    'api.',
+    '-api.',
+    'llm',
+    'ai.',
+    'chat.',
+  ];
+
+  for (const pattern of apiPatterns) {
+    if (lowerUrl.includes(pattern)) {
+      return true;
+    }
+  }
+
+  // 检查常见的 API 部署平台
+  const deployPlatforms = [
+    'vercel.app',
+    'netlify.app',
+    'railway.app',
+    'render.com',
+    'fly.io',
+    'zeabur.app',
+    'deno.dev',
+    'workers.dev',
+    'herokuapp.com',
+    'azure',
+    'aws',
+    'cloudflare',
+  ];
+
+  for (const platform of deployPlatforms) {
+    if (lowerUrl.includes(platform)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 // 版本比较函数
 function compareVersions(v1, v2) {
@@ -293,6 +466,8 @@ function compareVersions(v1, v2) {
 }
 
 async function handleVerify(request, env, corsHeaders) {
+  console.log(`🔐 授权验证请求`);
+
   try {
     const { code, apiEndpoint, timestamp, version, model } = await request.json();
 
@@ -320,11 +495,10 @@ async function handleVerify(request, env, corsHeaders) {
       cleanApiEndpoint = apiEndpoint.trim() || 'unknown';
     }
 
-    // 🔥 提取主域名函数（去掉子域名）
+    // 🔥 提取主域名函数（去掉子域名）- 提前定义供白名单检查使用
     const getMainDomain = domain => {
       const parts = domain.split('.');
       if (parts.length <= 2) return domain;
-      // 处理特殊后缀如 .com.cn, .co.uk 等
       const specialTlds = ['com.cn', 'net.cn', 'org.cn', 'co.uk', 'co.jp', 'com.au'];
       const lastTwo = parts.slice(-2).join('.');
       if (specialTlds.includes(lastTwo)) {
@@ -333,46 +507,140 @@ async function handleVerify(request, env, corsHeaders) {
       return parts.slice(-2).join('.');
     };
 
-    // 🔥 检查 API 端点是否被禁用（支持模糊匹配，兼容带/不带 /v1）
-    const bannedEndpointsStr = await redisGet('banned_endpoints');
-    const bannedEndpoints = bannedEndpointsStr ? JSON.parse(bannedEndpointsStr) : {};
+    // 🚨 检测假 URL 和真实 API URL
+    const endpointUrls = cleanApiEndpoint.split(/\s*\|\s*/).filter(e => e && e !== 'unknown');
+    let hasFakeUrl = false;
+    let hasRealApiUrl = false;
+    const realApiUrls = [];
 
-    // 🔥 拆分多个 URL（客户端可能发送 "url1 | url2 | url3"）
-    const endpointList = cleanApiEndpoint.split(/\s*\|\s*/).filter(e => e && e !== 'unknown');
-
-    let matchedBanned = null;
-    for (const singleEndpoint of endpointList) {
-      if (matchedBanned) break;
-
-      // 🔥 更激进的清理：去掉协议、/v1、尾部斜杠
-      const lowerEndpoint = singleEndpoint
+    // ✅ 【提前】检查白名单 - 白名单端点跳过真实端点检测
+    const whitelistStr = await redisGet('whitelist_endpoints');
+    const whitelist = whitelistStr ? JSON.parse(whitelistStr) : {};
+    let isWhitelistedEarly = false;
+    for (const url of endpointUrls) {
+      const lowerUrl = url
         .toLowerCase()
         .replace(/^https?:\/\//, '')
         .replace(/\/v1\/?$/, '')
         .replace(/\/$/, '');
-      const endpointMainDomain = getMainDomain(lowerEndpoint.split('/')[0]);
-
-      for (const key of Object.keys(bannedEndpoints)) {
+      const urlMainDomain = getMainDomain(lowerUrl.split('/')[0]);
+      for (const key of Object.keys(whitelist)) {
         const lowerKey = key
           .toLowerCase()
           .replace(/^https?:\/\//, '')
           .replace(/\/v1\/?$/, '')
           .replace(/\/$/, '');
         const keyMainDomain = getMainDomain(lowerKey.split('/')[0]);
-
-        // 🔥 三重匹配：完整包含 OR 主域名相同
-        if (
-          lowerEndpoint.includes(lowerKey) ||
-          lowerKey.includes(lowerEndpoint) ||
-          endpointMainDomain === keyMainDomain
-        ) {
-          matchedBanned = bannedEndpoints[key];
-          matchedBanned.matchedKey = key;
-          matchedBanned.matchedEndpoint = singleEndpoint;
+        if (lowerUrl.includes(lowerKey) || lowerKey.includes(lowerUrl) || urlMainDomain === keyMainDomain) {
+          isWhitelistedEarly = true;
+          console.log(`✅ 白名单端点（提前检测），跳过真实端点检测: ${url} (匹配: ${key})`);
           break;
         }
       }
+      if (isWhitelistedEarly) break;
     }
+
+    for (const url of endpointUrls) {
+      if (isFakeUrl(url)) {
+        hasFakeUrl = true;
+        console.log(`🚨 检测到假 URL: ${url}`);
+      }
+      if (looksLikeRealApiEndpoint(url)) {
+        hasRealApiUrl = true;
+        realApiUrls.push(url);
+      }
+    }
+
+    // 🔥 必须有拦截到的真实 API 端点（用户必须实际拉取过模型）
+    // 如果没有真实端点，或者只有假URL，拒绝验证
+    // ✅ 白名单端点跳过此检测
+    if (!isWhitelistedEarly && (!hasRealApiUrl || endpointUrls.length === 0)) {
+      console.log(`⚠️ 没有真实API端点，需要先使用插件拉取模型 - ${cleanApiEndpoint}`);
+
+      // 记录可疑请求
+      try {
+        const suspiciousLogsStr = await redisGet('suspicious_fake_urls');
+        const suspiciousLogs = suspiciousLogsStr ? JSON.parse(suspiciousLogsStr) : [];
+        suspiciousLogs.unshift({
+          url: cleanApiEndpoint || 'empty',
+          code: code.substring(0, 8) + '****',
+          reason: hasFakeUrl ? 'FAKE_URL' : 'NO_REAL_ENDPOINT',
+          timestamp: new Date().toISOString(),
+        });
+        if (suspiciousLogs.length > 100) suspiciousLogs.length = 100;
+        await redisSet('suspicious_fake_urls', JSON.stringify(suspiciousLogs));
+      } catch (e) {
+        console.error('记录可疑URL失败:', e);
+      }
+
+      // 🔥 返回需要先使用插件的提示
+      return jsonResponse(
+        {
+          valid: false,
+          needRealEndpoint: true,
+          message:
+            '❌ 请先在插件中拉取模型列表\\n\\n验证需要检测到真实的 API 请求\\n请确保已正确配置 API 端点并拉取过模型',
+        },
+        200,
+        corsHeaders,
+      );
+    }
+
+    // 如果有假URL混入真实URL中，记录但不阻止
+    if (hasFakeUrl) {
+      console.log(`⚠️ 检测到假URL混入: ${cleanApiEndpoint}`);
+    }
+
+    console.log(`✅ 检测到真实API端点: ${realApiUrls.join(', ')}`);
+    // 只使用真实的API端点进行后续检查
+    cleanApiEndpoint = realApiUrls.join(' | ');
+
+    // 🔥 拆分多个 URL（客户端可能发送 "url1 | url2 | url3"）
+    const endpointList = cleanApiEndpoint.split(/\s*\|\s*/).filter(e => e && e !== 'unknown');
+
+    // ✅ 白名单已在前面检查过，复用 isWhitelistedEarly
+    const isWhitelisted = isWhitelistedEarly;
+
+    // 🔥 检查 API 端点是否被禁用（支持模糊匹配，兼容带/不带 /v1）
+    // ✅ 白名单端点跳过此检查
+    const bannedEndpointsStr = await redisGet('banned_endpoints');
+    const bannedEndpoints = bannedEndpointsStr ? JSON.parse(bannedEndpointsStr) : {};
+
+    let matchedBanned = null;
+    if (!isWhitelisted) {
+      for (const singleEndpoint of endpointList) {
+        if (matchedBanned) break;
+
+        // 🔥 更激进的清理：去掉协议、/v1、尾部斜杠
+        const lowerEndpoint = singleEndpoint
+          .toLowerCase()
+          .replace(/^https?:\/\//, '')
+          .replace(/\/v1\/?$/, '')
+          .replace(/\/$/, '');
+        const endpointMainDomain = getMainDomain(lowerEndpoint.split('/')[0]);
+
+        for (const key of Object.keys(bannedEndpoints)) {
+          const lowerKey = key
+            .toLowerCase()
+            .replace(/^https?:\/\//, '')
+            .replace(/\/v1\/?$/, '')
+            .replace(/\/$/, '');
+          const keyMainDomain = getMainDomain(lowerKey.split('/')[0]);
+
+          // 🔥 三重匹配：完整包含 OR 主域名相同
+          if (
+            lowerEndpoint.includes(lowerKey) ||
+            lowerKey.includes(lowerEndpoint) ||
+            endpointMainDomain === keyMainDomain
+          ) {
+            matchedBanned = bannedEndpoints[key];
+            matchedBanned.matchedKey = key;
+            matchedBanned.matchedEndpoint = singleEndpoint;
+            break;
+          }
+        }
+      }
+    } // 结束 if (!isWhitelisted) 块
 
     if (matchedBanned) {
       console.log(`⛔ 已禁用的 API 端点尝试验证: ${cleanApiEndpoint} (匹配: ${matchedBanned.matchedKey})`);
@@ -403,44 +671,47 @@ async function handleVerify(request, env, corsHeaders) {
     }
 
     // 🔥 检查 API 端点是否在黑名单中（贩子端点，支持模糊匹配）
+    // ✅ 白名单端点跳过此检查
     const blacklistStr = await redisGet('blacklist_endpoints');
     const blacklist = blacklistStr ? JSON.parse(blacklistStr) : {};
 
     // 模糊匹配：检查用户端点是否包含黑名单中的任何关键词（兼容带/不带 /v1、https://）
     let matchedBlacklist = null;
-    // 🔥 复用拆分后的 endpointList
-    for (const singleEndpoint of endpointList) {
-      if (matchedBlacklist) break;
+    if (!isWhitelisted) {
+      // 🔥 复用拆分后的 endpointList
+      for (const singleEndpoint of endpointList) {
+        if (matchedBlacklist) break;
 
-      // 🔥 更激进的清理：去掉协议、/v1、尾部斜杠
-      const lowerEndpoint = singleEndpoint
-        .toLowerCase()
-        .replace(/^https?:\/\//, '')
-        .replace(/\/v1\/?$/, '')
-        .replace(/\/$/, '');
-      const endpointMainDomain = getMainDomain(lowerEndpoint.split('/')[0]);
-
-      for (const key of Object.keys(blacklist)) {
-        const lowerKey = key
+        // 🔥 更激进的清理：去掉协议、/v1、尾部斜杠
+        const lowerEndpoint = singleEndpoint
           .toLowerCase()
           .replace(/^https?:\/\//, '')
           .replace(/\/v1\/?$/, '')
           .replace(/\/$/, '');
-        const keyMainDomain = getMainDomain(lowerKey.split('/')[0]);
+        const endpointMainDomain = getMainDomain(lowerEndpoint.split('/')[0]);
 
-        // 🔥 三重匹配：完整包含 OR 主域名相同
-        if (
-          lowerEndpoint.includes(lowerKey) ||
-          lowerKey.includes(lowerEndpoint) ||
-          endpointMainDomain === keyMainDomain
-        ) {
-          matchedBlacklist = blacklist[key];
-          matchedBlacklist.matchedKey = key;
-          matchedBlacklist.matchedEndpoint = singleEndpoint;
-          break;
+        for (const key of Object.keys(blacklist)) {
+          const lowerKey = key
+            .toLowerCase()
+            .replace(/^https?:\/\//, '')
+            .replace(/\/v1\/?$/, '')
+            .replace(/\/$/, '');
+          const keyMainDomain = getMainDomain(lowerKey.split('/')[0]);
+
+          // 🔥 三重匹配：完整包含 OR 主域名相同
+          if (
+            lowerEndpoint.includes(lowerKey) ||
+            lowerKey.includes(lowerEndpoint) ||
+            endpointMainDomain === keyMainDomain
+          ) {
+            matchedBlacklist = blacklist[key];
+            matchedBlacklist.matchedKey = key;
+            matchedBlacklist.matchedEndpoint = singleEndpoint;
+            break;
+          }
         }
       }
-    }
+    } // 结束 if (!isWhitelisted) 黑名单检查块
 
     if (matchedBlacklist) {
       console.log(
@@ -490,9 +761,9 @@ async function handleVerify(request, env, corsHeaders) {
     const isValid = code.toUpperCase() === currentCode.toUpperCase();
 
     if (!isValid) {
-      // 记录失败的详细日志
+      // 记录失败的详细日志（不记录IP）
       await logVerification(env, {
-        code,
+        code: code.substring(0, 8) + '****', // 脱敏
         isValid: false,
         apiEndpoint: cleanApiEndpoint,
         model: model || 'unknown',
@@ -563,6 +834,9 @@ async function handleVerify(request, env, corsHeaders) {
       }
     }
 
+    // 🔒 记录成功验证日志（不记录IP）
+    console.log(`✅ 授权验证成功: Endpoint=${cleanApiEndpoint.substring(0, 50)}`);
+
     return jsonResponse(
       {
         valid: true,
@@ -575,6 +849,7 @@ async function handleVerify(request, env, corsHeaders) {
   } catch (error) {
     console.error('❌ handleVerify 错误:', error);
     console.error('错误堆栈:', error.stack);
+
     return jsonResponse(
       {
         valid: false,
@@ -681,13 +956,39 @@ async function handleStats(request, env, corsHeaders) {
     const suspiciousStr = await redisGet('suspicious_endpoints');
     const suspicious = suspiciousStr ? JSON.parse(suspiciousStr) : {};
 
+    // 🔥 获取模型上报数据（这是准确的模型列表）
+    const modelReportsStr = await redisGet('model_reports');
+    const modelReports = modelReportsStr ? JSON.parse(modelReportsStr) : {};
+
     // 合并禁用、白名单、可疑状态到端点列表
-    const endpointList = Object.values(endpoints).map(ep => ({
-      ...ep,
-      isBanned: !!bannedEndpoints[ep.endpoint],
-      isWhitelisted: !!whitelist[ep.endpoint],
-      isSuspicious: !!suspicious[ep.endpoint],
-    }));
+    // 🔥 使用 model_reports 的模型数据替换验证时记录的不准确数据
+    const endpointList = Object.values(endpoints).map(ep => {
+      // 查找匹配的模型上报记录（按端点URL匹配）
+      let matchedModels = [];
+      try {
+        const epHost = ep.endpoint?.replace(/^https?:\/\//, '').split('/')[0];
+        for (const [reportEndpoint, reportData] of Object.entries(modelReports)) {
+          try {
+            const reportHost = new URL(reportEndpoint).host;
+            if (epHost && reportHost && epHost.includes(reportHost.split(':')[0])) {
+              matchedModels = reportData.models || [];
+              break;
+            }
+          } catch {
+            /* ignore invalid URLs */
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+      return {
+        ...ep,
+        models: matchedModels, // 使用上报的准确模型，不用验证时的
+        isBanned: !!bannedEndpoints[ep.endpoint],
+        isWhitelisted: !!whitelist[ep.endpoint],
+        isSuspicious: !!suspicious[ep.endpoint],
+      };
+    });
 
     // 按访问次数排序
     endpointList.sort((a, b) => (b.accessCount || 0) - (a.accessCount || 0));
@@ -735,2208 +1036,1087 @@ async function handleStats(request, env, corsHeaders) {
 }
 
 /**
- * 管理页面 - 侧边栏布局版本
+ * 管理页面 - 重构版 v2.0
  */
 function handleAdmin(env) {
   const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐱 猫猫的小破烂 - 授权管理后台</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; line-height: 1.6; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐱 猫猫授权后台</title>
+  <style>
+    :root {
+      --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #f1f5f9; --muted: #94a3b8;
+      --primary: #60a5fa; --success: #34d399; --warning: #fbbf24; --danger: #f87171;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
 
-        /* 侧边栏 */
-        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%); border-right: 1px solid #2a2a2a; overflow-y: auto; z-index: 100; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px 16px; border-bottom: 1px solid #2a2a2a; text-align: center; }
-        .sidebar-header h1 { font-size: 18px; background: linear-gradient(135deg, #ff9500 0%, #ffa500 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .sidebar-header .warning { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: #fff; padding: 6px 10px; border-radius: 6px; margin-top: 10px; font-size: 10px; font-weight: 700; }
-        .nav-group { padding: 10px 0; border-bottom: 1px solid #1f1f1f; }
-        .nav-group-title { padding: 6px 16px; font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: #888; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
-        .nav-item:hover { background: rgba(74, 158, 255, 0.1); color: #fff; }
-        .nav-item.active { background: rgba(74, 158, 255, 0.15); color: #4a9eff; border-left-color: #4a9eff; }
-        .nav-item .icon { font-size: 16px; }
-        .nav-item .label { font-size: 13px; }
-        .sidebar-footer { padding: 12px; border-top: 1px solid #2a2a2a; margin-top: auto; }
-        .sidebar-footer label { display: block; margin-bottom: 4px; color: #888; font-size: 11px; }
-        .sidebar-footer input { width: 100%; padding: 8px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 12px; }
+    /* 布局 */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { width: 200px; background: var(--card); border-right: 1px solid var(--border); padding: 16px 0; flex-shrink: 0; }
+    .main { flex: 1; padding: 24px; overflow-y: auto; }
 
-        /* 主内容区 */
-        .main-content { margin-left: 240px; min-height: 100vh; padding: 20px; }
-        .page-header { margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #2a2a2a; }
-        .page-header h2 { font-size: 22px; color: #fff; }
-        .page-header p { color: #888; font-size: 13px; margin-top: 4px; }
-        .page { display: none; }
-        .page.active { display: block; }
+    /* 侧边栏 */
+    .logo { padding: 0 16px 16px; font-size: 16px; font-weight: 700; color: #f59e0b; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+    .nav-item { display: block; padding: 10px 16px; color: var(--muted); cursor: pointer; border-left: 3px solid transparent; font-size: 13px; }
+    .nav-item:hover { background: #334155; color: var(--text); }
+    .nav-item.active { color: var(--primary); border-left-color: var(--primary); background: rgba(59,130,246,0.1); }
+    .nav-section { font-size: 10px; color: #555; padding: 16px 16px 6px; text-transform: uppercase; letter-spacing: 1px; }
+    .admin-key { padding: 16px; border-top: 1px solid var(--border); margin-top: auto; }
+    .admin-key input { width: 100%; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 12px; }
 
-        /* 卡片 */
-        .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
-        .card-title { font-size: 15px; color: #4a9eff; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    /* 页面 */
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-title { font-size: 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
 
-        /* 表单 */
-        .form-group { margin-bottom: 14px; }
-        .form-group label { display: block; margin-bottom: 4px; color: #ccc; font-size: 13px; }
-        input[type="text"], input[type="password"], textarea { width: 100%; padding: 10px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 13px; }
-        input:focus, textarea:focus { outline: none; border-color: #4a9eff; }
-        textarea { min-height: 120px; resize: vertical; font-family: 'Courier New', monospace; }
+    /* 卡片 */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .card-title { font-size: 14px; color: var(--primary); margin-bottom: 12px; font-weight: 600; }
 
-        /* 按钮 */
-        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%); color: #fff; }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3); }
-        .btn-secondary { background: #2a2a2a; color: #ccc; }
-        .btn-secondary:hover { background: #3a3a3a; }
-        .btn-danger { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #fff; }
-        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+    /* 网格 */
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 900px) { .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } .app { flex-direction: column; } .sidebar { width: 100%; } }
 
-        /* 统计卡片 */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 16px; }
-        .stat-card { background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 8px; padding: 14px; text-align: center; }
-        .stat-value { font-size: 24px; font-weight: 700; color: #4a9eff; }
-        .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
+    /* 统计 */
+    .stat { text-align: center; padding: 16px; background: var(--bg); border-radius: 6px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
 
-        /* 授权码显示 */
-        .code-display { background: #0f0f0f; border: 2px solid #4a9eff; border-radius: 8px; padding: 16px; text-align: center; font-family: 'Courier New', monospace; font-size: 22px; font-weight: 700; color: #4a9eff; letter-spacing: 2px; }
+    /* 表单 */
+    input, textarea, select { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; }
+    input:focus, textarea:focus { outline: none; border-color: var(--primary); }
+    textarea { min-height: 100px; resize: vertical; font-family: monospace; }
+    label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+    .form-row { margin-bottom: 12px; }
 
-        /* 列表项 */
-        .list-item { background: #0f0f0f; border-radius: 6px; padding: 10px 14px; margin-bottom: 6px; border-left: 3px solid #4a9eff; }
-        .list-item.success { border-left-color: #10b981; }
-        .list-item.error { border-left-color: #ef4444; }
-        .list-item.warning { border-left-color: #f59e0b; }
+    /* 按钮 */
+    .btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-warning { background: var(--warning); color: #000; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-secondary { background: #333; color: var(--text); }
+    .btn:hover { opacity: 0.9; }
+    .btn-sm { padding: 5px 12px; font-size: 11px; white-space: nowrap; }
+    .btn-group { display: inline-flex; gap: 8px; }
+    .pagination { display: flex; align-items: center; justify-content: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 
-        /* 开关 */
-        .switch-container { display: flex; align-items: center; gap: 10px; }
-        .switch { width: 44px; height: 24px; background: #3a3a3a; border-radius: 12px; position: relative; cursor: pointer; transition: background 0.3s; }
-        .switch.active { background: #4a9eff; }
-        .switch::after { content: ''; position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s; }
-        .switch.active::after { transform: translateX(20px); }
+    /* 表格 */
+    .table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .table th, .table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    .table th { color: var(--muted); font-weight: 500; font-size: 13px; text-transform: uppercase; }
+    .table tr:hover { background: rgba(255,255,255,0.02); }
 
-        /* 提示 */
-        .alert { padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
-        .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; }
-        .alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #ef4444; }
-        #alert-container { position: fixed; top: 16px; right: 16px; z-index: 1000; max-width: 360px; }
+    /* 标签 */
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; text-align: center; min-width: 60px; }
+    .tag-success { background: rgba(52,211,153,0.15); color: var(--success); }
+    .tag-danger { background: rgba(248,113,113,0.15); color: var(--danger); }
+    .tag-warning { background: rgba(251,191,36,0.15); color: var(--warning); }
+    .tag-info { background: rgba(96,165,250,0.15); color: var(--primary); }
 
-        /* 滚动容器 */
-        .scroll-container { max-height: 350px; overflow-y: auto; }
+    /* 端点卡片 */
+    .endpoint-card { background: var(--bg); border-radius: 6px; padding: 12px; border-left: 3px solid var(--border); }
+    .endpoint-card.banned { border-left-color: var(--danger); }
+    .endpoint-card.whitelist { border-left-color: var(--success); }
+    .endpoint-card.suspicious { border-left-color: var(--warning); }
+    .endpoint-url { font-family: monospace; font-size: 14px; word-break: break-all; color: var(--primary); }
+    .endpoint-meta { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
-        /* 响应式 */
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid #2a2a2a; }
-            .main-content { margin-left: 0; }
-            .nav-group { display: flex; flex-wrap: wrap; padding: 6px; }
-            .nav-item { padding: 6px 10px; border-left: none; border-radius: 4px; }
-        }
+    /* 授权码 */
+    .code-box { background: var(--bg); border: 2px solid var(--primary); border-radius: 8px; padding: 20px; text-align: center; font-family: monospace; font-size: 24px; font-weight: 700; color: var(--primary); letter-spacing: 3px; }
 
-    </style>
+    /* 提示 */
+    .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; font-size: 13px; z-index: 9999; animation: slideIn 0.3s; }
+    .toast-success { background: var(--success); color: #fff; }
+    .toast-error { background: var(--danger); color: #fff; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* 搜索框 */
+    .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-box input { flex: 1; }
+
+    /* 滚动 */
+    .scroll { max-height: 400px; overflow-y: auto; }
+    .scroll::-webkit-scrollbar { width: 6px; }
+    .scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    /* 空状态 */
+    .empty { text-align: center; padding: 40px; color: var(--muted); }
+
+    /* 模型标签 */
+    .model-tag { display: inline-block; padding: 3px 8px; margin: 2px; background: #222; border-radius: 3px; font-size: 13px; font-family: monospace; }
+  </style>
 </head>
 <body>
-    <!-- 侧边栏 -->
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <h1>🐱 猫猫的小破烂</h1>
-            <p style="font-size: 11px; color: #888; margin-top: 4px;">授权管理后台</p>
-            <div class="warning">⚠️ 商业化死全家 ⚠️</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">🐱 猫猫后台</div>
+    <div class="nav-section">概览</div>
+    <div class="nav-item active" data-page="dashboard">📊 仪表盘</div>
+    <div class="nav-item" data-page="auth">🔑 授权管理</div>
+    <div class="nav-section">端点管理</div>
+    <div class="nav-item" data-page="endpoints">📡 API端点</div>
+    <div class="nav-item" data-page="blacklist">☠️ 黑名单</div>
+    <div class="nav-item" data-page="whitelist">✅ 白名单</div>
+    <div class="nav-item" data-page="banned">🚫 禁用列表</div>
+    <div class="nav-item" data-page="suspicious">⚠️ 可疑列表</div>
+    <div class="nav-section">日志</div>
+    <div class="nav-item" data-page="logs">📝 验证日志</div>
+    <div class="nav-item" data-page="models">🤖 模型记录</div>
+    <div class="nav-section">设置</div>
+    <div class="nav-item" data-page="settings">⚙️ 系统设置</div>
+    <div class="admin-key">
+      <label>管理密钥</label>
+      <input type="password" id="adminKey" placeholder="输入密钥">
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- 仪表盘 -->
+    <div id="page-dashboard" class="page active">
+      <h1 class="page-title">📊 仪表盘</h1>
+      <div class="grid grid-4" id="stats-grid">
+        <div class="stat"><div class="stat-value" id="stat-success">-</div><div class="stat-label">成功验证</div></div>
+        <div class="stat"><div class="stat-value" id="stat-failed">-</div><div class="stat-label">失败验证</div></div>
+        <div class="stat"><div class="stat-value" id="stat-endpoints">-</div><div class="stat-label">API端点</div></div>
+        <div class="stat"><div class="stat-value" id="stat-rate">-</div><div class="stat-label">成功率</div></div>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">当前授权码</div>
+          <div class="code-box" id="current-code">加载中...</div>
+          <div style="margin-top:12px;font-size:12px;color:var(--muted)">更新于: <span id="code-updated">-</span></div>
         </div>
-        <nav>
-            <div class="nav-group">
-                <div class="nav-group-title">授权管理</div>
-                <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">�</span><span class="label">仪表盘</span></div>
-                <div class="nav-item" onclick="showPage('auth-code')"><span class="icon">🔑</span><span class="label">授权码管理</span></div>
-                <div class="nav-item" onclick="showPage('auto-update')"><span class="icon">🔄</span><span class="label">自动更新</span></div>
+        <div class="card">
+          <div class="card-title">快速操作</div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="generateCode()">🎲 生成新授权码</button>
+            <button class="btn btn-secondary" onclick="loadStats()">🔄 刷新数据</button>
+          </div>
+          <div style="margin-top:16px">
+            <label>手动设置授权码</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="new-code" placeholder="输入新授权码">
+              <button class="btn btn-primary" onclick="updateCode()">更新</button>
             </div>
-            <div class="nav-group">
-                <div class="nav-group-title">监控</div>
-                <div class="nav-item" onclick="showPage('endpoints')"><span class="icon">🌐</span><span class="label">API端点</span></div>
-                <div class="nav-item" onclick="showPage('logs')"><span class="icon">📋</span><span class="label">验证日志</span></div>
-                <div class="nav-item" onclick="showPage('banned')"><span class="icon">🚫</span><span class="label">禁用列表</span></div>
-                <div class="nav-item" onclick="showPage('suspicious')"><span class="icon">⚠️</span><span class="label">可疑列表</span></div>
-                <div class="nav-item" onclick="showPage('whitelist')"><span class="icon">✅</span><span class="label">白名单</span></div>
-                <div class="nav-item" onclick="showPage('blacklist')"><span class="icon">☠️</span><span class="label">黑名单</span></div>
-                <div class="nav-item" onclick="showPage('model-reports')"><span class="icon">🤖</span><span class="label">模型记录</span></div>
-            </div>
-            <div class="nav-group">
-                <div class="nav-group-title">设置</div>
-                <div class="nav-item" onclick="showPage('plugin-info')"><span class="icon">�</span><span class="label">插件信息</span></div>
-            </div>
-        </nav>
-        <div class="sidebar-footer">
-            <label>🔐 管理员密钥</label>
-            <input type="password" id="adminKey" placeholder="输入密钥" />
+          </div>
         </div>
-    </aside>
+      </div>
+      <div class="card">
+        <div class="card-title">最近验证</div>
+        <div class="scroll" id="recent-logs"></div>
+      </div>
+    </div>
 
-    <!-- 主内容区 -->
-    <main class="main-content">
-        <div id="alert-container"></div>
-
-        <!-- 仪表盘 -->
-        <div id="page-dashboard" class="page active">
-            <div class="page-header"><h2>📊 仪表盘</h2><p>授权系统概览</p></div>
-            <div class="card">
-                <div class="card-title">当前授权码</div>
-                <div class="code-display" id="currentCode">加载中...</div>
-                <p style="text-align: center; color: #888; margin-top: 10px;">更新时间: <span id="updatedTime">--</span></p>
-                <div class="btn-group" style="justify-content: center; margin-top: 12px;">
-                    <button class="btn btn-primary" onclick="copyCode()">📋 复制</button>
-                    <button class="btn btn-secondary" onclick="refreshStats()">🔄 刷新</button>
-                </div>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-card"><div class="stat-value" id="statSuccess">0</div><div class="stat-label">验证成功</div></div>
-                <div class="stat-card"><div class="stat-value" id="statFailed">0</div><div class="stat-label">验证失败</div></div>
-                <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">总次数</div></div>
-                <div class="stat-card"><div class="stat-value" id="statRate">0%</div><div class="stat-label">成功率</div></div>
-                <div class="stat-card"><div class="stat-value" id="statEndpoints">0</div><div class="stat-label">API端点</div></div>
-            </div>
-            <div class="card">
-                <div class="card-title">💎 历史授权码</div>
-                <div id="historyList" class="scroll-container" style="max-height: 180px;"><p style="color: #888; text-align: center;">加载中...</p></div>
-            </div>
-            <div class="card" style="border: 3px solid #f59e0b; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);">
-                <div class="card-title" style="color: #f59e0b; font-size: 18px; font-weight: 700;">🚨 新端点提醒（24小时内）</div>
-                <div id="newEndpointsList" style="max-height: 400px; overflow-y: auto;"><p style="color: #888; text-align: center;">加载中...</p></div>
-            </div>
+    <!-- 授权管理 -->
+    <div id="page-auth" class="page">
+      <h1 class="page-title">🔑 授权管理</h1>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">自动更新设置</div>
+          <div class="form-row">
+            <label>启用自动更新</label>
+            <select id="auto-update-enabled"><option value="false">关闭</option><option value="true">开启</option></select>
+          </div>
+          <div class="form-row">
+            <label>更新时间（北京时间，0-23点）</label>
+            <input type="number" id="auto-update-hour" min="0" max="23" value="0">
+          </div>
+          <div class="form-row">
+            <label>更新间隔（天）</label>
+            <input type="number" id="auto-update-days" min="1" value="1">
+          </div>
+          <button class="btn btn-primary" onclick="saveAutoUpdate()">保存设置</button>
         </div>
-
-        <!-- 授权码管理 -->
-        <div id="page-auth-code" class="page">
-            <div class="page-header"><h2>� 授权码管理</h2><p>更新和管理授权码</p></div>
-            <div class="card">
-                <div class="card-title">更新授权码</div>
-                <div class="form-group"><label>新授权码</label><input type="text" id="newCode" placeholder="例如：MEOW-20251205-ABCD" /></div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="updateCode()">🚀 更新</button>
-                    <button class="btn btn-secondary" onclick="generateCode()">🎲 自动生成</button>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title">� 授权码使用统计</div>
-                <div id="codeUsageList" class="scroll-container"><p style="color: #888; text-align: center;">加载中...</p></div>
-            </div>
+        <div class="card">
+          <div class="card-title">历史授权码</div>
+          <div class="scroll" id="code-history"></div>
         </div>
+      </div>
+    </div>
 
-        <!-- 自动更新 -->
-        <div id="page-auto-update" class="page">
-            <div class="page-header"><h2>🔄 自动更新配置</h2><p>定时自动生成新授权码</p></div>
-            <div class="card">
-                <div class="card-title">配置</div>
-                <div class="switch-container" style="margin-bottom: 14px;">
-                    <div class="switch" id="autoUpdateSwitch" onclick="toggleAutoUpdate()"></div>
-                    <span id="autoUpdateStatusText">未启用</span>
-                </div>
-                <div class="form-group">
-                    <label>📅 更新周期</label>
-                    <select id="autoUpdateDays" style="width: 100%; padding: 10px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 13px;">
-                        <option value="1">每天</option>
-                        <option value="2">每2天</option>
-                        <option value="3">每3天</option>
-                        <option value="5">每5天</option>
-                        <option value="7">每周（7天）</option>
-                        <option value="14">每两周（14天）</option>
-                        <option value="30">每月（30天）</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>⏰ 更新时间（北京时间）</label>
-                    <select id="autoUpdateHour" style="width: 100%; padding: 10px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 13px;">
-                        <option value="0">00:00（午夜）</option>
-                        <option value="1">01:00</option>
-                        <option value="2">02:00</option>
-                        <option value="3">03:00</option>
-                        <option value="4">04:00</option>
-                        <option value="5">05:00</option>
-                        <option value="6">06:00</option>
-                        <option value="7">07:00</option>
-                        <option value="8">08:00</option>
-                        <option value="9">09:00</option>
-                        <option value="10">10:00</option>
-                        <option value="11">11:00</option>
-                        <option value="12">12:00（正午）</option>
-                        <option value="13">13:00</option>
-                        <option value="14">14:00</option>
-                        <option value="15">15:00</option>
-                        <option value="16">16:00</option>
-                        <option value="17">17:00</option>
-                        <option value="18">18:00</option>
-                        <option value="19">19:00</option>
-                        <option value="20">20:00</option>
-                        <option value="21">21:00</option>
-                        <option value="22">22:00</option>
-                        <option value="23">23:00</option>
-                    </select>
-                </div>
-                <p style="color: #888; font-size: 12px; margin-bottom: 14px;">系统会按设定周期在指定时间自动生成新授权码</p>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="saveAutoUpdateConfig()">💾 保存配置</button>
-                    <button class="btn btn-secondary" onclick="triggerAutoUpdate()">⚡ 立即更新</button>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title">📋 更新日志</div>
-                <div id="autoUpdateLogs" class="scroll-container"><p style="color: #888; text-align: center;">加载中...</p></div>
-            </div>
+    <!-- API端点 -->
+    <div id="page-endpoints" class="page">
+      <h1 class="page-title">📡 API端点统计</h1>
+      <div class="search-box">
+        <input type="text" id="endpoint-search" placeholder="搜索端点..." oninput="filterEndpoints()">
+        <select id="endpoint-filter" onchange="filterEndpoints()">
+          <option value="all">全部</option>
+          <option value="new">🆕 未分类</option>
+          <option value="normal">正常</option>
+          <option value="banned">已禁用</option>
+          <option value="whitelist">白名单</option>
+          <option value="suspicious">可疑</option>
+        </select>
+      </div>
+      <div class="grid grid-3" id="endpoints-list"></div>
+    </div>
+
+    <!-- 黑名单 -->
+    <div id="page-blacklist" class="page">
+      <h1 class="page-title">☠️ 黑名单（贩子站点）<button class="btn btn-sm btn-danger" style="margin-left:12px" onclick="clearList('blacklist')">清空全部</button></h1>
+      <div class="card">
+        <div class="card-title">添加黑名单</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="blacklist-name" placeholder="站点名称" style="width:200px">
+          <input type="text" id="blacklist-url" placeholder="URL（自动提取主域名）" style="flex:1">
+          <button class="btn btn-danger" onclick="addBlacklist()">添加</button>
         </div>
-
-        <!-- API端点 -->
-        <div id="page-endpoints" class="page">
-            <div class="page-header"><h2>🌐 API端点统计</h2><p>追踪用户使用的API服务商</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="endpointSearch" placeholder="🔍 搜索端点..." style="flex: 1; min-width: 200px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" oninput="filterEndpoints()" />
-                    <select id="endpointFilter" style="padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 13px;" onchange="filterEndpoints()">
-                        <option value="all">全部</option>
-                        <option value="banned">已禁用</option>
-                        <option value="suspicious">可疑</option>
-                        <option value="whitelist">白名单</option>
-                    </select>
-                    <span id="endpointCount" style="color: #888; font-size: 13px;"></span>
-                </div>
-            </div>
-            <div id="endpointsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px;"><p style="color: #888; text-align: center;">加载中...</p></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📥 批量导入（TXT格式）</div>
+        <div style="margin-bottom:8px;font-size:12px;color:var(--muted)">格式：每行一条，支持 "站点名称|URL" 或 "站点名称,URL" 或纯URL（名称默认为"未知贩子"）<br>以#开头的行会被忽略</div>
+        <div style="display:flex;gap:8px;flex-direction:column">
+          <textarea id="blacklist-import-content" placeholder="粘贴内容或上传TXT文件..." style="width:100%;height:120px;resize:vertical;font-family:monospace;font-size:12px"></textarea>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="file" id="blacklist-import-file" accept=".txt" style="display:none" onchange="handleBlacklistFileUpload(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('blacklist-import-file').click()">📁 选择TXT文件</button>
+            <button class="btn btn-danger" onclick="batchImportBlacklist()">📥 批量导入</button>
+            <span id="blacklist-import-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
         </div>
-
-        <!-- 验证日志 -->
-        <div id="page-logs" class="page">
-            <div class="page-header"><h2>📋 验证日志</h2><p>所有验证记录</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="logsSearch" placeholder="搜索日志（授权码/端点/时间）..." oninput="filterLogs()" style="flex: 1; min-width: 250px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <span id="logsCount" style="color: #888; font-size: 13px;"></span>
-                </div>
-            </div>
-            <div class="card"><div id="logsList" style="max-height: 70vh; overflow-y: auto;"><p style="color: #888; text-align: center;">加载中...</p></div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>黑名单列表</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-secondary" onclick="exportBlacklist('txt')">📤 导出TXT</button>
+            <button class="btn btn-sm btn-secondary" onclick="exportBlacklist('csv')">📤 导出CSV</button>
+          </div>
         </div>
+        <div class="scroll" id="blacklist-list"></div>
+      </div>
+    </div>
 
-        <!-- 禁用列表 -->
-        <div id="page-banned" class="page">
-            <div class="page-header"><h2>🚫 禁用列表</h2><p>已禁用的API端点</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="manualBanEndpoint" placeholder="输入端点名称或URL..." style="flex: 1; min-width: 250px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <button onclick="manualBan()" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">🚫 添加禁用</button>
-                </div>
-            </div>
-            <div class="card"><div id="bannedEndpointsList" class="scroll-container"><p style="color: #888; text-align: center;">加载中...</p></div></div>
+    <!-- 白名单 -->
+    <div id="page-whitelist" class="page">
+      <h1 class="page-title">✅ 白名单（受信任站点）<button class="btn btn-sm btn-danger" style="margin-left:12px" onclick="clearList('whitelist')">清空全部</button></h1>
+      <div class="card">
+        <div class="card-title">添加白名单</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="whitelist-url" placeholder="输入端点URL" style="flex:1">
+          <button class="btn btn-success" onclick="addWhitelist()">添加</button>
         </div>
+      </div>
+      <div class="grid grid-3" id="whitelist-list"></div>
+    </div>
 
-        <!-- 可疑列表 -->
-        <div id="page-suspicious" class="page">
-            <div class="page-header"><h2>⚠️ 可疑列表</h2><p>需要关注的API端点</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="suspiciousSiteName" placeholder="站点名称（留空自动获取）" style="flex: 0 0 180px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <input type="text" id="manualSuspiciousEndpoint" placeholder="输入端点URL..." style="flex: 1; min-width: 250px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <button onclick="manualSuspicious()" style="padding: 10px 20px; background: #f59e0b; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">⚠️ 添加可疑</button>
-                </div>
-            </div>
-            <div id="suspiciousEndpointsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px;"><p style="color: #888; text-align: center;">加载中...</p></div>
+    <!-- 禁用列表 -->
+    <div id="page-banned" class="page">
+      <h1 class="page-title">🚫 禁用列表<button class="btn btn-sm btn-danger" style="margin-left:12px" onclick="clearList('banned')">清空全部</button></h1>
+      <div class="card">
+        <div class="card-title">添加禁用</div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="ban-url" placeholder="输入要禁用的端点URL" style="flex:1">
+          <input type="text" id="ban-reason" placeholder="禁用原因" style="width:200px">
+          <button class="btn btn-danger" onclick="banEndpoint()">禁用</button>
         </div>
-
-        <!-- 白名单 -->
-        <div id="page-whitelist" class="page">
-            <div class="page-header"><h2>✅ 白名单</h2><p>受信任的API端点</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
-                    <input type="text" id="whitelistSiteName" placeholder="站点名称（留空自动获取）" style="flex: 0 0 180px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <input type="text" id="manualWhitelistEndpoint" placeholder="输入端点URL..." style="flex: 1; min-width: 250px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <button onclick="manualWhitelist()" style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">✅ 添加白名单</button>
-                </div>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <input type="text" id="whitelistSearch" placeholder="🔍 搜索白名单..." style="flex: 1; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" oninput="filterWhitelist()" />
-                    <button onclick="mergeWhitelist()" style="padding: 10px 16px; background: #854d0e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">🔄 合并重复</button>
-                    <span id="whitelistCount" style="color: #888; font-size: 13px;"></span>
-                </div>
-            </div>
-            <div id="whitelistEndpointsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px;"><p style="color: #888; text-align: center;">加载中...</p></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📥 批量导入（TXT格式）</div>
+        <div style="margin-bottom:8px;font-size:12px;color:var(--muted)">格式：每行一个URL，或 "URL|原因"（自动去重）</div>
+        <div style="display:flex;gap:8px;flex-direction:column">
+          <textarea id="banned-import-content" placeholder="粘贴内容或上传TXT文件..." style="width:100%;height:100px;resize:vertical;font-family:monospace;font-size:12px"></textarea>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="file" id="banned-import-file" accept=".txt" style="display:none" onchange="handleBannedFileUpload(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('banned-import-file').click()">📁 选择TXT文件</button>
+            <button class="btn btn-danger" onclick="batchImportBanned()">📥 批量导入</button>
+            <span id="banned-import-status" style="font-size:12px;color:var(--muted)"></span>
+          </div>
         </div>
+      </div>
+      <div class="scroll" id="banned-list"></div>
+    </div>
 
-        <!-- 黑名单（贩子API端点） -->
-        <div id="page-blacklist" class="page">
-            <div class="page-header"><h2>☠️ 黑名单</h2><p>已知贩子API端点（支持主域名匹配所有子域名）</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
-                    <input type="text" id="blacklistSiteName" placeholder="站点名称（如：某某API站）" style="flex: 0 0 200px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <input type="text" id="blacklistEndpoint" placeholder="输入完整URL（自动提取主域名）" oninput="previewBlacklistDomain()" style="flex: 1; min-width: 250px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" />
-                    <button onclick="addBlacklist()" style="padding: 10px 20px; background: #7c2d12; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">☠️ 添加黑名单</button>
-                </div>
-                <div id="blacklistPreview" style="display: none; margin-bottom: 12px; padding: 10px; background: #1a1a1a; border: 1px dashed #7c2d12; border-radius: 6px;">
-                    <div style="color: #f97316; font-size: 12px; margin-bottom: 6px;">📌 将拦截以下匹配：</div>
-                    <div id="blacklistPreviewContent" style="font-family: Courier New, monospace; color: #fbbf24; font-size: 13px;"></div>
-                </div>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <input type="text" id="blacklistSearch" placeholder="🔍 搜索黑名单..." style="flex: 1; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" oninput="filterBlacklist()" />
-                    <button onclick="mergeBlacklist()" style="padding: 10px 16px; background: #854d0e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">🔄 合并重复</button>
-                    <button onclick="exportBlacklist()" style="padding: 10px 16px; background: #374151; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">📥 导出TXT</button>
-                    <span id="blacklistCount" style="color: #888; font-size: 13px;"></span>
-                </div>
-            </div>
-            <div id="blacklistGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px;"><p style="color: #888; text-align: center;">加载中...</p></div>
+    <!-- 可疑列表 -->
+    <div id="page-suspicious" class="page">
+      <h1 class="page-title">⚠️ 可疑列表<button class="btn btn-sm btn-danger" style="margin-left:12px" onclick="clearList('suspicious')">清空全部</button></h1>
+      <div class="grid grid-3" id="suspicious-list"></div>
+    </div>
+
+    <!-- 验证日志 -->
+    <div id="page-logs" class="page">
+      <h1 class="page-title">📝 验证日志</h1>
+      <div class="search-box">
+        <input type="text" id="log-search" placeholder="搜索日志..." oninput="filterLogs()">
+      </div>
+      <div class="scroll" style="max-height:600px" id="logs-list"></div>
+    </div>
+
+    <!-- 模型记录 -->
+    <div id="page-models" class="page">
+      <h1 class="page-title">🤖 模型记录</h1>
+      <div class="search-box">
+        <input type="text" id="model-search" placeholder="搜索端点或模型..." oninput="filterModels()">
+        <button class="btn btn-secondary" onclick="loadModelReports()">刷新</button>
+      </div>
+      <div id="models-list"></div>
+    </div>
+
+    <!-- 设置 -->
+    <div id="page-settings" class="page">
+      <h1 class="page-title">⚙️ 系统设置</h1>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">封禁提示消息</div>
+          <textarea id="block-message" placeholder="被封禁时显示的消息"></textarea>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="saveBlockMessage()">保存</button>
         </div>
-
-        <!-- 模型记录 -->
-        <div id="page-model-reports" class="page">
-            <div class="page-header"><h2>🤖 模型记录</h2><p>用户API端点返回的模型列表</p></div>
-            <div class="card" style="margin-bottom: 16px; padding: 16px;">
-                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="modelReportsSearch" placeholder="🔍 搜索端点或模型名..." style="flex: 1; min-width: 200px; padding: 10px 14px; background: #0f0f0f; border: 1px solid #3a3a3a; border-radius: 6px; color: #fff; font-size: 14px;" oninput="filterModelReports()" />
-                    <button id="resellerFilterBtn" onclick="toggleResellerFilter()" style="padding: 10px 16px; background: #374151; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">🏪 只看贩子</button>
-                    <button class="btn btn-primary" onclick="loadModelReports()">🔄 刷新</button>
-                    <span id="modelReportsCount" style="color: #888; font-size: 12px;"></span>
-                </div>
-            </div>
-            <div id="modelReportsGrid" style="display: grid; grid-template-columns: 1fr; gap: 16px;"><p style="color: #888; text-align: center;">点击刷新加载数据</p></div>
+        <div class="card">
+          <div class="card-title">插件信息</div>
+          <div class="form-row"><label>版本号</label><input type="text" id="plugin-version"></div>
+          <div class="form-row"><label>更新日志</label><textarea id="plugin-changelog"></textarea></div>
+          <div class="form-row"><label>使用说明</label><textarea id="plugin-usage"></textarea></div>
+          <button class="btn btn-primary" onclick="savePluginInfo()">保存</button>
         </div>
-
-        <!-- 插件信息 -->
-        <div id="page-plugin-info" class="page">
-            <div class="page-header"><h2>📦 插件信息管理</h2><p>更新插件版本号和说明</p></div>
-            <div class="card">
-                <div class="form-group"><label>版本号</label><input type="text" id="pluginVersion" placeholder="例如：1.6.2" /></div>
-                <div class="form-group"><label>更新日志 (Markdown)</label><textarea id="pluginChangelog" placeholder="## v1.6.2&#10;- 新增功能&#10;- 修复问题"></textarea></div>
-                <div class="form-group"><label>使用说明 (Markdown)</label><textarea id="pluginUsage" placeholder="## 功能介绍&#10;&#10;### 功能1&#10;说明..."></textarea></div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="updatePluginInfo()">💾 保存</button>
-                    <button class="btn btn-secondary" onclick="loadPluginInfo()">🔄 重新加载</button>
-                </div>
-            </div>
-            <div class="card" style="margin-top: 16px; border: 2px solid #dc2626;">
-                <div class="card-title" style="color: #dc2626;">🚫 封禁提示设置</div>
-                <p style="color: #888; font-size: 13px; margin-bottom: 12px;">贩子API用户验证失败时显示的提示信息</p>
-                <div class="form-group">
-                    <label>封禁提示内容</label>
-                    <textarea id="blockMessage" placeholder="❌ 授权服务暂时不可用&#10;&#10;请稍后重试，若持续失败可前往帖子反馈" style="min-height: 100px;"></textarea>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="saveBlockMessage()" style="background: #dc2626;">💾 保存封禁提示</button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        // 页面切换
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-            document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
-            document.getElementById('page-' + pageId).classList.add('active');
-            if (event && event.currentTarget) event.currentTarget.classList.add('active');
-            if (pageId === 'dashboard') refreshStats();
-            if (pageId === 'auto-update') loadAutoUpdateConfig();
-            if (pageId === 'plugin-info') loadPluginInfo();
-            if (pageId === 'blacklist') loadBlacklist();
-        }
-
-        // 自动更新开关
-        function toggleAutoUpdate() {
-            var switchEl = document.getElementById('autoUpdateSwitch');
-            var statusText = document.getElementById('autoUpdateStatusText');
-            switchEl.classList.toggle('active');
-            if (switchEl.classList.contains('active')) {
-                statusText.textContent = '已启用';
-                statusText.style.color = '#10b981';
-            } else {
-                statusText.textContent = '未启用';
-                statusText.style.color = '#888';
-            }
-        }
-        // 页面加载
-        window.onload = function() {
-            const savedKey = localStorage.getItem('adminKey');
-            if (savedKey) {
-                document.getElementById('adminKey').value = savedKey;
-                // 延迟100ms确保DOM完全就绪
-                setTimeout(function() {
-                    refreshStats();
-                }, 100);
-            }
-            loadPluginInfo();
-
-            // 自动刷新（每30秒）
-            setInterval(function() {
-                const adminKey = document.getElementById('adminKey').value;
-                if (adminKey && document.getElementById('page-dashboard').classList.contains('active')) {
-                    refreshStats();
-                }
-            }, 30000);
-        };
-
-        // 显示提示消息
-        function showAlert(message, type) {
-            if (type === undefined) type = 'success';
-            const container = document.getElementById('alert-container');
-            const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
-            const alert = document.createElement('div');
-            alert.className = 'alert ' + alertClass;
-            alert.textContent = message;
-            container.innerHTML = '';
-            container.appendChild(alert);
-            setTimeout(function() { alert.remove(); }, 5000);
-        }
-
-        // 更新授权码
-        async function updateCode() {
-            const adminKey = document.getElementById('adminKey').value;
-            const newCode = document.getElementById('newCode').value;
-
-            if (!adminKey) {
-                showAlert('❌ 请输入管理员密钥', 'error');
-                return;
-            }
-
-            if (!newCode) {
-                showAlert('❌ 请输入新的授权码', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, newCode })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showAlert('✅ ' + data.message, 'success');
-                    localStorage.setItem('adminKey', adminKey);
-                    document.getElementById('newCode').value = '';
-                    refreshStats();
-                } else {
-                    showAlert('❌ ' + data.message, 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 自动生成授权码
-        function generateCode() {
-            const today = new Date();
-            const dateStr = today.getFullYear() +
-                          String(today.getMonth() + 1).padStart(2, '0') +
-                          String(today.getDate()).padStart(2, '0');
-
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let random = '';
-            for (let i = 0; i < 4; i++) {
-                random += chars[Math.floor(Math.random() * chars.length)];
-            }
-
-            const code = 'MEOW-' + dateStr + '-' + random;
-            document.getElementById('newCode').value = code;
-            showAlert('✅ 已生成授权码: ' + code, 'success');
-        }
-
-        // 刷新统计数据
-        async function refreshStats() {
-            const adminKey = document.getElementById('adminKey').value;
-
-            if (!adminKey) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/stats', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    const data = result.data;
-
-                    // 更新当前授权码
-                    document.getElementById('currentCode').textContent = data.currentCode;
-                    document.getElementById('updatedTime').textContent =
-                        '更新时间: ' + new Date(data.updatedAt).toLocaleString("zh-CN");
-
-                    // 更新统计数据
-                    document.getElementById('statSuccess').textContent = data.stats.success;
-                    document.getElementById('statFailed').textContent = data.stats.failed;
-                    document.getElementById('statTotal').textContent = data.stats.total;
-                    document.getElementById('statRate').textContent = data.stats.successRate + '%';
-                    document.getElementById('statEndpoints').textContent = data.stats.apiEndpointCount || 0;
-
-                    // 🔥 更新授权码使用统计
-                    const codeUsageList = document.getElementById('codeUsageList');
-                    if (data.codeUsage && data.codeUsage.length > 0) {
-                        codeUsageList.innerHTML = data.codeUsage.map(function(usage) {
-                            const isHighUsage = usage.usageCount > 100;
-                            const endpointList = usage.endpoints ? Object.entries(usage.endpoints) : [];
-
-                            let endpointDetails = '';
-                            if (endpointList.length > 0) {
-                                const endpointItems = endpointList.map(function(item) {
-                                    return '<div style="color: #666; font-size: 11px; margin-bottom: 4px;">🌐 ' + item[0] + ': ' + item[1] + '次</div>';
-                                }).join('');
-                                endpointDetails = '<details style="margin-top: 8px;">' +
-                                    '<summary style="cursor: pointer; color: #666; font-size: 12px;">查看API端点分布</summary>' +
-                                    '<div style="margin-top: 8px; padding: 10px; background: #0a0a0a; border-radius: 8px;">' +
-                                    endpointItems +
-                                    '</div></details>';
-                            }
-
-                            const borderColor = isHighUsage ? '#ef4444' : '#10b981';
-                            const highUsageBadge = isHighUsage ? '<span style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">⚠️ 高频使用</span>' : '';
-                            const usageColor = isHighUsage ? '#ef4444' : '#10b981';
-
-                            return '<div class="list-item" style="border-left-color: ' + borderColor + ';">' +
-                                '<div style="flex: 1;">' +
-                                    '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">' +
-                                        highUsageBadge +
-                                        '<span style="font-family: Courier New, monospace; font-weight: 700; color: #4a9eff; font-size: 14px;">' +
-                                            usage.code +
-                                        '</span>' +
-                                    '</div>' +
-                                    '<div style="color: #888; font-size: 13px; margin-bottom: 6px;">' +
-                                        '使用次数: <span style="color: ' + usageColor + '; font-weight: 700;">' + usage.usageCount + '</span>' +
-                                    '</div>' +
-                                    '<div style="color: #666; font-size: 12px; margin-bottom: 4px;">' +
-                                        '首次: ' + new Date(usage.firstUsed).toLocaleString("zh-CN") + ' | ' +
-                                        '最后: ' + new Date(usage.lastUsed).toLocaleString("zh-CN") +
-                                    '</div>' +
-                                    endpointDetails +
-                                '</div>' +
-                            '</div>';
-                        }).join('');
-                    } else {
-                        codeUsageList.innerHTML = '<p style="color: #888; text-align: center;">暂无授权码使用数据</p>';
-                    }
-
-                    // 🔥 保存端点数据到全局变量，初始渲染时排除白名单、已禁用和可疑
-                    window.allEndpoints = data.apiEndpoints || [];
-                    const activeEndpoints = window.allEndpoints.filter(function(ep) { return !ep.isWhitelisted && !ep.isBanned && !ep.isSuspicious; });
-                    renderEndpoints(activeEndpoints);
-
-                    // 加载禁用列表、可疑列表和白名单
-                    loadBannedEndpoints();
-                    loadSuspiciousEndpoints();
-                    loadWhitelistEndpoints();
-
-                    // 更新验证日志
-                    window.allLogs = data.logs || [];
-                    renderLogs(window.allLogs);
-
-                    // 更新历史授权码
-                    const historyList = document.getElementById('historyList');
-                    if (data.history && data.history.length > 0) {
-                        historyList.innerHTML = data.history.map(function(item) {
-                            return '<div class="list-item" style="display: flex; justify-content: space-between; align-items: center;">' +
-                                '<span style="font-family: Courier New, monospace; font-weight: 700; color: #4a9eff;">' + item.code + '</span>' +
-                                '<span style="color: #888; font-size: 12px;">' + new Date(item.replacedAt).toLocaleString("zh-CN") + '</span>' +
-                            '</div>';
-                        }).join('');
-                    } else {
-                        historyList.innerHTML = '<p style="color: #888; text-align: center;">暂无历史记录</p>';
-                    }
-
-                    // 🆕 新端点提醒（24小时内首次出现的）
-                    const newEndpointsList = document.getElementById('newEndpointsList');
-                    const now = new Date();
-                    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                    const newEndpoints = (data.apiEndpoints || []).filter(function(ep) {
-                        if (!ep.firstAccess) return false;
-                        const firstAccessDate = new Date(ep.firstAccess);
-                        return firstAccessDate > oneDayAgo && !ep.isWhitelisted;
-                    }).sort(function(a, b) {
-                        return new Date(b.firstAccess) - new Date(a.firstAccess);
-                    });
-
-                    if (newEndpoints.length > 0) {
-                        newEndpointsList.innerHTML = newEndpoints.map(function(ep) {
-                            var safeEndpoint = String(ep.endpoint || '').split(String.fromCharCode(39)).join('').split(String.fromCharCode(34)).join('');
-                            var borderColor = ep.isBanned ? '#7c2d12' : (ep.isSuspicious ? '#f59e0b' : '#f59e0b');
-                            var badge = ep.isBanned ? '<span style="background:#7c2d12;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px;">已禁用</span>' :
-                                       (ep.isSuspicious ? '<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:8px;">可疑</span>' : '');
-                            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#1a1a1a;border-left:3px solid ' + borderColor + ';border-radius:6px;margin-bottom:8px;">' +
-                                '<div style="flex:1;">' +
-                                    '<div style="font-family:Courier New,monospace;color:#4a9eff;font-size:13px;word-break:break-all;">' + (ep.endpoint || '(空)') + badge + '</div>' +
-                                    '<div style="color:#666;font-size:11px;margin-top:4px;">首次: ' + new Date(ep.firstAccess).toLocaleString("zh-CN") + ' | 访问: ' + (ep.accessCount || 1) + '次</div>' +
-                                '</div>' +
-                                '<button onclick="banEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding:4px 10px;background:#dc2626;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;">禁用</button>' +
-                            '</div>';
-                        }).join('');
-                    } else {
-                        newEndpointsList.innerHTML = '<p style="color: #10b981; text-align: center;">✅ 最近24小时无新端点</p>';
-                    }
-                } else {
-                    showAlert('❌ ' + result.message, 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 获取统计失败: ' + error.message, 'error');
-            }
-        }
-
-        // 复制授权码
-        function copyCode() {
-            const code = document.getElementById('currentCode').textContent;
-            if (code === '加载中...' || code === '未设置') {
-                showAlert('❌ 暂无可复制的授权码', 'error');
-                return;
-            }
-            navigator.clipboard.writeText(code);
-            showAlert('✅ 授权码已复制到剪贴板！', 'success');
-        }
-
-        // 🔄 加载自动更新配置
-        async function loadAutoUpdateConfig() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) return;
-
-            try {
-                const response = await fetch('/get-auto-update-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    const config = result.data.config;
-                    const logs = result.data.logs;
-                    const switchEl = document.getElementById('autoUpdateSwitch');
-                    const statusText = document.getElementById('autoUpdateStatusText');
-                    const hourSelect = document.getElementById('autoUpdateHour');
-
-                    // 更新开关状态
-                    if (config.enabled) {
-                        switchEl.classList.add('active');
-                        statusText.textContent = '已启用';
-                        statusText.style.color = '#10b981';
-                    } else {
-                        switchEl.classList.remove('active');
-                        statusText.textContent = '未启用';
-                        statusText.style.color = '#888';
-                    }
-
-                    // 更新时间选择
-                    hourSelect.value = config.hour !== undefined ? config.hour : 0;
-
-                    // 更新天数选择
-                    const daysSelect = document.getElementById('autoUpdateDays');
-                    daysSelect.value = config.days !== undefined ? config.days : 1;
-
-                    // 更新日志
-                    const logsDiv = document.getElementById('autoUpdateLogs');
-                    if (logs && logs.length > 0) {
-                        logsDiv.innerHTML = logs.map(function(log) {
-                            const triggerIcon = log.trigger === 'cron' ? '⏰' : '⚡';
-                            return '<div class="list-item"><span>' + triggerIcon + '</span> <span style="color: #888;">' + log.oldCode + '</span> → <span style="color: #10b981; font-weight: 700;">' + log.newCode + '</span><div style="color: #666; font-size: 11px; margin-top: 4px;">' + new Date(log.timestamp).toLocaleString('zh-CN') + '</div></div>';
-                        }).join('');
-                    } else {
-                        logsDiv.innerHTML = '<p style="color: #888; text-align: center;">暂无日志</p>';
-                    }
-                }
-            } catch (error) {
-                console.error('加载自动更新配置失败:', error);
-            }
-        }
-
-        // 🔄 保存自动更新配置
-        async function saveAutoUpdateConfig() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) { showAlert('❌ 请先输入管理员密钥', 'error'); return; }
-
-            const enabled = document.getElementById('autoUpdateSwitch').classList.contains('active');
-            const hour = parseInt(document.getElementById('autoUpdateHour').value, 10);
-            const days = parseInt(document.getElementById('autoUpdateDays').value, 10);
-
-            try {
-                const response = await fetch('/set-auto-update-config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, enabled, hour, days })
-                });
-
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadAutoUpdateConfig();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 🔄 手动触发更新
-        async function triggerAutoUpdate() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) { showAlert('❌ 请先输入管理员密钥', 'error'); return; }
-            if (!confirm('确定要立即生成新的授权码吗？')) return;
-
-            try {
-                const response = await fetch('/trigger-auto-update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    showAlert('✅ 新授权码: ' + result.data.newCode, 'success');
-                    refreshStats();
-                    loadAutoUpdateConfig();
-                } else {
-                    showAlert('❌ ' + result.message, 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 渲染端点列表
-        function renderEndpoints(endpoints) {
-            const endpointsList = document.getElementById('endpointsList');
-            const countSpan = document.getElementById('endpointCount');
-
-            if (endpoints && endpoints.length > 0) {
-                countSpan.textContent = '共 ' + endpoints.length + ' 个端点';
-                endpointsList.innerHTML = endpoints.map(function(endpoint) {
-                    const isBanned = endpoint.isBanned;
-                    const isWhitelisted = endpoint.isWhitelisted;
-                    const isSuspicious = endpoint.isSuspicious;
-
-                    let borderColor = '#4a9eff';
-                    if (isBanned) borderColor = '#7c2d12';
-                    else if (isWhitelisted) borderColor = '#10b981';
-                    else if (isSuspicious) borderColor = '#f59e0b';
-
-                    const bannedBadge = isBanned ? '<span style="background: #7c2d12; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700;">🚫 已禁用</span>' : '';
-                    const whitelistBadge = isWhitelisted ? '<span style="background: #065f46; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700;">✅ 白名单</span>' : '';
-                    const suspiciousBadge = isSuspicious ? '<span style="background: #f59e0b; color: #fff; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700;">⚠️ 可疑</span>' : '';
-
-                    var safeEndpoint = String(endpoint.endpoint || '').split(String.fromCharCode(39)).join('').split(String.fromCharCode(34)).join('');
-
-                    // 禁用/解禁按钮
-                    var banButton = isBanned
-                        ? '<button onclick="unbanEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #065f46; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">✅ 解禁</button>'
-                        : '<button onclick="banEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🚫 禁用</button>';
-
-                    // 白名单按钮
-                    var whitelistButton = isWhitelisted
-                        ? '<button onclick="unwhitelistEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">移除白名单</button>'
-                        : '<button onclick="whitelistEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #059669; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">➕ 白名单</button>';
-
-                    // 可疑按钮
-                    var suspiciousButton = isSuspicious
-                        ? '<button onclick="unsuspiciousEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">移除可疑</button>'
-                        : '<button onclick="suspiciousEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">⚠️ 可疑</button>';
-
-                    // 删除按钮
-                    var deleteButton = '<button onclick="deleteEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #374151; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🗑️ 删除</button>';
-
-                    // 详情按钮
-                    var detailButton = '<button onclick="showEndpointDetail(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">📋 详情</button>';
-
-                    return '<div style="background: #1a1a1a; border: 2px solid ' + borderColor + '; border-radius: 12px; padding: 20px; ' + (isBanned ? 'opacity: 0.6;' : '') + '" data-endpoint="' + safeEndpoint + '">' +
-                        '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">' +
-                            bannedBadge + whitelistBadge + suspiciousBadge +
-                        '</div>' +
-                        '<a href="' + (endpoint.endpoint && endpoint.endpoint.startsWith('http') ? endpoint.endpoint : 'https://' + (endpoint.endpoint || '')) + '" target="_blank" style="display: block; font-family: Courier New, monospace; font-weight: 700; color: ' + (isBanned ? '#666' : '#4a9eff') + '; font-size: 16px; word-break: break-all; margin-bottom: 16px; line-height: 1.4; text-decoration: underline; cursor: pointer;">' +
-                            (endpoint.endpoint || '(空)') +
-                        '</a>' +
-                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
-                            '<span style="color: #888; font-size: 13px;">访问次数</span>' +
-                            '<span style="color: #10b981; font-weight: 700; font-size: 28px;">' + (endpoint.accessCount || 0) + '</span>' +
-                        '</div>' +
-                        '<div style="border-top: 1px solid #2a2a2a; padding-top: 12px; margin-top: 8px;">' +
-                            '<div style="display: flex; justify-content: space-between; color: #666; font-size: 12px; margin-bottom: 6px;">' +
-                                '<span>首次访问</span>' +
-                                '<span>' + (endpoint.firstAccess ? new Date(endpoint.firstAccess).toLocaleString("zh-CN") : '-') + '</span>' +
-                            '</div>' +
-                            '<div style="display: flex; justify-content: space-between; color: #888; font-size: 12px;">' +
-                                '<span>最近访问</span>' +
-                                '<span>' + (endpoint.lastAccess ? new Date(endpoint.lastAccess).toLocaleString("zh-CN") : '-') + '</span>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div style="display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap;">' +
-                            detailButton + banButton + suspiciousButton + whitelistButton + deleteButton +
-                        '</div>' +
-                    '</div>';
-                }).join('');
-            } else {
-                countSpan.textContent = '';
-                endpointsList.innerHTML = '<p style="color: #888; text-align: center;">暂无API端点数据</p>';
-            }
-        }
-
-        // 筛选端点
-        function filterEndpoints() {
-            const searchText = document.getElementById('endpointSearch').value.toLowerCase();
-            const filterType = document.getElementById('endpointFilter').value;
-
-            let filtered = window.allEndpoints || [];
-
-            // 默认排除白名单、已禁用和可疑（除非专门筛选）
-            if (filterType !== 'whitelist' && filterType !== 'banned' && filterType !== 'suspicious') {
-                filtered = filtered.filter(function(ep) {
-                    return !ep.isWhitelisted && !ep.isBanned && !ep.isSuspicious;
-                });
-            }
-
-            // 搜索过滤
-            if (searchText) {
-                filtered = filtered.filter(function(ep) {
-                    return (ep.endpoint || '').toLowerCase().includes(searchText);
-                });
-            }
-
-            // 类型过滤
-            if (filterType !== 'all') {
-                filtered = filtered.filter(function(ep) {
-                    if (filterType === 'banned') return ep.isBanned;
-                    if (filterType === 'suspicious') return ep.isSuspicious;
-                    if (filterType === 'whitelist') return ep.isWhitelisted;
-                    return true;
-                });
-            }
-
-            renderEndpoints(filtered);
-        }
-
-        // 渲染验证日志
-        function renderLogs(logs) {
-            const logsList = document.getElementById('logsList');
-            const logsCount = document.getElementById('logsCount');
-
-            if (logsCount) {
-                logsCount.textContent = '共 ' + logs.length + ' 条记录';
-            }
-
-            if (logs && logs.length > 0) {
-                logsList.innerHTML = logs.map(function(log) {
-                    const borderColor = log.isValid ? '#10b981' : '#ef4444';
-                    const icon = log.isValid ? '✅' : '❌';
-                    const codeColor = log.isValid ? '#10b981' : '#ef4444';
-                    const apiEndpoint = log.apiEndpoint || 'unknown';
-                    const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleString("zh-CN") : '-';
-
-                    return '<div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-left: 3px solid ' + borderColor + '; background: #1a1a1a; margin-bottom: 8px; border-radius: 0 8px 8px 0;">' +
-                        '<div style="flex: 1;">' +
-                            '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">' +
-                                '<span style="font-size: 14px;">' + icon + '</span>' +
-                                '<span style="font-family: Courier New, monospace; color: ' + codeColor + '; font-weight: 600;">' + log.code + '</span>' +
-                            '</div>' +
-                            '<div style="color: #888; font-size: 12px;">🌐 ' + apiEndpoint + '</div>' +
-                        '</div>' +
-                        '<span style="color: #666; font-size: 12px; white-space: nowrap;">' + timeStr + '</span>' +
-                    '</div>';
-                }).join('');
-            } else {
-                logsList.innerHTML = '<p style="color: #888; text-align: center; padding: 40px;">暂无验证日志</p>';
-            }
-        }
-
-        // 搜索过滤日志
-        function filterLogs() {
-            const searchText = (document.getElementById('logsSearch').value || '').toLowerCase();
-
-            if (!window.allLogs) return;
-
-            let filtered = window.allLogs;
-            if (searchText) {
-                filtered = window.allLogs.filter(function(log) {
-                    const code = (log.code || '').toLowerCase();
-                    const endpoint = (log.apiEndpoint || '').toLowerCase();
-                    const time = log.timestamp ? new Date(log.timestamp).toLocaleString("zh-CN").toLowerCase() : '';
-                    return code.includes(searchText) || endpoint.includes(searchText) || time.includes(searchText);
-                });
-            }
-
-            renderLogs(filtered);
-        }
-
-        // 加入白名单
-        async function whitelistEndpoint(endpoint, siteName) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) { showAlert('❌ 请先输入管理员密钥', 'error'); return; }
-
-            try {
-                const response = await fetch('/whitelist-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint, siteName: siteName || '' })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) { refreshStats(); loadWhitelistEndpoints(); }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 移除白名单
-        async function unwhitelistEndpoint(endpoint) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) { showAlert('❌ 请先输入管理员密钥', 'error'); return; }
-
-            try {
-                const response = await fetch('/unwhitelist-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) refreshStats();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 加载白名单列表
-        async function loadWhitelistEndpoints() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) return;
-
-            try {
-                const response = await fetch('/get-whitelist-endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-                const result = await response.json();
-
-                if (result.success && result.data) {
-                    window.allWhitelist = result.data;
-                    renderWhitelist(result.data);
-                } else {
-                    window.allWhitelist = [];
-                    renderWhitelist([]);
-                }
-            } catch (error) {
-                console.error('加载白名单失败:', error);
-            }
-        }
-
-        // 渲染白名单
-        function renderWhitelist(list) {
-            const listDiv = document.getElementById('whitelistEndpointsList');
-            const countSpan = document.getElementById('whitelistCount');
-
-            if (list && list.length > 0) {
-                countSpan.textContent = '共 ' + list.length + ' 个';
-                listDiv.innerHTML = list.map(function(item) {
-                    var siteName = item.siteName || '受信任站点';
-                    var safeEndpoint = String(item.endpoint || '').split(String.fromCharCode(39)).join('').split(String.fromCharCode(34)).join('');
-                    var mergedInfo = item.mergedFrom && item.mergedFrom.length > 1 ?
-                        '<div style="color: #666; font-size: 10px; margin-bottom: 8px;">📦 合并自: ' + item.mergedFrom.join(', ') + '</div>' : '';
-                    return '<div style="background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%); border: 1px solid #2d5a47; border-radius: 12px; padding: 16px; border-left: 4px solid #3d7a5a;">' +
-                        '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">' +
-                            '<div style="font-size: 16px; font-weight: 700; color: #6cb88c;">✅ ' + siteName + '</div>' +
-                        '</div>' +
-                        '<div style="font-family: Courier New, monospace; color: #7dba9a; font-size: 13px; margin-bottom: 8px; word-break: break-all;">' + item.endpoint + '</div>' +
-                        mergedInfo +
-                        '<div style="color: #888; font-size: 11px; margin-bottom: 12px;">添加时间: ' + new Date(item.addedAt).toLocaleString('zh-CN') + '</div>' +
-                        '<div style="display: flex; gap: 8px;">' +
-                            '<button onclick="pingWhitelist(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">📡 详情</button>' +
-                            '<button onclick="unwhitelistEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 6px 14px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">🗑️ 移除</button>' +
-                        '</div>' +
-                    '</div>';
-                }).join('');
-            } else {
-                countSpan.textContent = '';
-                listDiv.innerHTML = '<p style="color: #888; text-align: center;">暂无白名单</p>';
-            }
-        }
-
-        // 搜索白名单
-        function filterWhitelist() {
-            const searchText = document.getElementById('whitelistSearch').value.toLowerCase();
-            let filtered = window.allWhitelist || [];
-
-            if (searchText) {
-                filtered = filtered.filter(function(item) {
-                    return (item.siteName || '').toLowerCase().includes(searchText) ||
-                           (item.endpoint || '').toLowerCase().includes(searchText);
-                });
-            }
-
-            renderWhitelist(filtered);
-        }
-
-        // Ping 白名单域名查看详情
-        async function pingWhitelist(endpoint) {
-            showAlert('📡 正在 Ping ' + endpoint + ' ...', 'info');
-
-            try {
-                const response = await fetch('/fetch-site-title', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: endpoint })
-                });
-                const data = await response.json();
-
-                var msg = '📡 域名: ' + endpoint + '\\n\\n';
-
-                if (data.ping && data.pingInfo) {
-                    var info = data.pingInfo;
-                    msg += '✅ Ping 成功\\n';
-                    msg += '⏱️ 延迟: ' + info.latency + 'ms\\n';
-                    msg += '📊 状态: HTTP ' + info.status + '\\n';
-                    if (info.server) msg += '🖥️ 服务器: ' + info.server + '\\n';
-                    if (info.isApi) msg += '🔌 类型: API站点\\n';
-                    if (info.hasModels) {
-                        msg += '🤖 模型数: ' + info.modelCount + '\\n';
-                        if (info.sampleModels && info.sampleModels.length > 0) {
-                            msg += '📋 示例: ' + info.sampleModels.slice(0, 3).join(', ') + '\\n';
-                        }
-                    }
-                    if (data.title) msg += '📝 标题: ' + data.title;
-                } else {
-                    msg += '❌ Ping 失败 - 站点可能已失效或无法访问';
-                }
-
-                alert(msg);
-            } catch (error) {
-                showAlert('❌ 请求失败: ' + error.message, 'error');
-            }
-        }
-
-        // 合并重复的白名单条目
-        async function mergeWhitelist() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            showAlert('🔍 正在分析...', 'info');
-
-            try {
-                // 先预览
-                const previewRes = await fetch('/merge-whitelist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, preview: true })
-                });
-                const preview = await previewRes.json();
-
-                if (!preview.success) {
-                    showAlert(preview.message, 'error');
-                    return;
-                }
-
-                if (!preview.mergeGroups || preview.mergeGroups.length === 0) {
-                    showAlert('✅ 没有需要合并的重复条目', 'success');
-                    return;
-                }
-
-                // 显示预览
-                var msg = '将进行以下合并：\\n\\n';
-                preview.mergeGroups.forEach(function(g) {
-                    msg += '📦 ' + g.sources.join(' + ') + '\\n   → ' + g.target + '\\n\\n';
-                });
-                msg += '共 ' + preview.mergeGroups.length + ' 组，删除 ' + preview.deleteCount + ' 条重复\\n\\n确定执行吗？';
-
-                if (!confirm(msg)) {
-                    showAlert('❌ 已取消', 'info');
-                    return;
-                }
-
-                // 执行合并
-                const response = await fetch('/merge-whitelist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, preview: false })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadWhitelistEndpoints();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 手动添加禁用
-        async function manualBan() {
-            const endpoint = document.getElementById('manualBanEndpoint').value.trim();
-            if (!endpoint) { showAlert('❌ 请输入端点名称或URL', 'error'); return; }
-            await banEndpoint(endpoint);
-            document.getElementById('manualBanEndpoint').value = '';
-        }
-
-        // 手动添加白名单
-        async function manualWhitelist() {
-            const endpoint = document.getElementById('manualWhitelistEndpoint').value.trim();
-            var siteName = document.getElementById('whitelistSiteName').value.trim();
-            if (!endpoint) { showAlert('❌ 请输入端点URL', 'error'); return; }
-
-            // 自动获取站点名称
-            if (!siteName) {
-                try {
-                    showAlert('🔍 正在获取站点名称...', 'info');
-                    const titleRes = await fetch('/fetch-site-title', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: endpoint })
-                    });
-                    const titleData = await titleRes.json();
-                    if (titleData.success && titleData.title) {
-                        siteName = titleData.title;
-                    }
-                } catch (e) {
-                    console.log('获取标题失败');
-                }
-                if (!siteName) {
-                    try {
-                        var urlObj = new URL(endpoint.startsWith('http') ? endpoint : 'https://' + endpoint);
-                        siteName = urlObj.hostname.replace(/^www\\./, '').replace(/^api\\./, '');
-                    } catch (e) {
-                        siteName = endpoint.split('/')[0];
-                    }
-                }
-            }
-
-            await whitelistEndpoint(endpoint, siteName);
-            document.getElementById('manualWhitelistEndpoint').value = '';
-            document.getElementById('whitelistSiteName').value = '';
-        }
-
-        // 手动添加可疑
-        async function manualSuspicious() {
-            const endpoint = document.getElementById('manualSuspiciousEndpoint').value.trim();
-            var siteName = document.getElementById('suspiciousSiteName').value.trim();
-            if (!endpoint) { showAlert('❌ 请输入端点URL', 'error'); return; }
-
-            // 自动获取站点名称
-            if (!siteName) {
-                try {
-                    showAlert('🔍 正在获取站点名称...', 'info');
-                    const titleRes = await fetch('/fetch-site-title', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: endpoint })
-                    });
-                    const titleData = await titleRes.json();
-                    if (titleData.success && titleData.title) {
-                        siteName = titleData.title;
-                    }
-                } catch (e) {
-                    console.log('获取标题失败');
-                }
-                if (!siteName) {
-                    try {
-                        var urlObj = new URL(endpoint.startsWith('http') ? endpoint : 'https://' + endpoint);
-                        siteName = urlObj.hostname.replace(/^www\\./, '').replace(/^api\\./, '');
-                    } catch (e) {
-                        siteName = endpoint.split('/')[0];
-                    }
-                }
-            }
-
-            await suspiciousEndpoint(endpoint, siteName);
-            document.getElementById('manualSuspiciousEndpoint').value = '';
-            document.getElementById('suspiciousSiteName').value = '';
-        }
-
-        // 标记为可疑
-        async function suspiciousEndpoint(endpoint, siteName) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) { showAlert('❌ 请先输入管理员密钥', 'error'); return; }
-
-            try {
-                const response = await fetch('/suspicious-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint, siteName: siteName || '' })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) { refreshStats(); loadSuspiciousEndpoints(); }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 移除可疑标记
-        async function unsuspiciousEndpoint(endpoint) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) { showAlert('❌ 请先输入管理员密钥', 'error'); return; }
-
-            try {
-                const response = await fetch('/unsuspicious-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) { refreshStats(); loadSuspiciousEndpoints(); }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 加载可疑列表
-        async function loadSuspiciousEndpoints() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) return;
-
-            try {
-                const response = await fetch('/get-suspicious-endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-                const result = await response.json();
-
-                const listDiv = document.getElementById('suspiciousEndpointsList');
-                if (result.success && result.data && result.data.length > 0) {
-                    listDiv.innerHTML = result.data.map(function(item) {
-                        var linkUrl = item.endpoint && item.endpoint.startsWith('http') ? item.endpoint : 'https://' + (item.endpoint || '');
-                        var siteName = item.siteName || '未知站点';
-                        return '<div style="background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%); border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; border-left: 4px solid #f59e0b;">' +
-                            '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">' +
-                                '<div style="font-size: 16px; font-weight: 700; color: #f59e0b;">⚠️ ' + siteName + '</div>' +
-                                '<button onclick="unsuspiciousEndpoint(this.dataset.ep)" data-ep="' + item.endpoint + '" style="padding: 6px 14px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;">移除</button>' +
-                            '</div>' +
-                            '<a href="' + linkUrl + '" target="_blank" style="display: block; font-family: Courier New, monospace; color: #fbbf24; font-size: 13px; margin-bottom: 8px; word-break: break-all; text-decoration: underline;">' + item.endpoint + '</a>' +
-                            '<div style="color: #888; font-size: 11px;">添加时间: ' + new Date(item.addedAt).toLocaleString('zh-CN') + '</div>' +
-                        '</div>';
-                    }).join('');
-                } else {
-                    listDiv.innerHTML = '<p style="color: #888; text-align: center;">暂无可疑端点 ✅</p>';
-                }
-            } catch (error) {
-                console.error('加载可疑列表失败:', error);
-            }
-        }
-
-        // 禁用 API 端点
-        async function banEndpoint(endpoint) {
-            const reason = prompt('请输入禁用原因（可留空）:', '涉嫌商业化倒卖');
-            if (reason === null) return; // 用户取消
-
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/ban-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint, reason: reason || '涉嫌商业化倒卖' })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert('✅ 已禁用: ' + endpoint, 'success');
-                    refreshStats();
-                } else {
-                    showAlert('❌ ' + result.message, 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 解禁 API 端点
-        async function unbanEndpoint(endpoint) {
-            if (!confirm('确定要解禁 ' + endpoint + ' 吗？')) return;
-
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/unban-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert('✅ 已解禁: ' + endpoint, 'success');
-                    refreshStats();
-                } else {
-                    showAlert('❌ ' + result.message, 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 删除 API 端点记录
-        async function deleteEndpoint(endpoint) {
-            if (!confirm('确定要删除 ' + endpoint + ' 的记录吗？')) return;
-
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/delete-endpoint', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert('✅ 已删除: ' + endpoint, 'success');
-                    refreshStats();
-                } else {
-                    showAlert('❌ ' + result.message, 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 加载禁用列表
-        async function loadBannedEndpoints() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) return;
-
-            try {
-                const response = await fetch('/get-banned-endpoints', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    const bannedList = document.getElementById('bannedEndpointsList');
-                    const endpoints = result.data || [];
-
-                    if (endpoints.length > 0) {
-                        bannedList.innerHTML = endpoints.map(function(item) {
-                            var safeEndpoint = String(item.endpoint || '').split(String.fromCharCode(39)).join('').split(String.fromCharCode(34)).join('');
-                            return '<div class="list-item" style="border-left-color: #7c2d12;">' +
-                                '<div style="flex: 1;">' +
-                                    '<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">' +
-                                        '<span style="background: #7c2d12; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">🚫 已禁用</span>' +
-                                        '<span style="font-family: Courier New, monospace; font-weight: 700; color: #ef4444; font-size: 14px;">' +
-                                            item.endpoint +
-                                        '</span>' +
-                                        '<button onclick="unbanEndpoint(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 4px 12px; background: #065f46; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 8px;">✅ 解禁</button>' +
-                                    '</div>' +
-                                    '<div style="color: #888; font-size: 13px;">' +
-                                        '禁用原因: <span style="color: #f59e0b;">' + item.reason + '</span> | ' +
-                                        '禁用时间: ' + new Date(item.bannedAt).toLocaleString("zh-CN") +
-                                    '</div>' +
-                                '</div>' +
-                            '</div>';
-                        }).join('');
-                    } else {
-                        bannedList.innerHTML = '<p style="color: #10b981; text-align: center;">✅ 暂无禁用的 API 端点</p>';
-                    }
-                }
-            } catch (error) {
-                console.error('加载禁用列表失败:', error);
-            }
-        }
-
-        // 提取主域名（去掉子域名前缀）
-        function extractRootDomain(url) {
-            try {
-                var fullUrl = url.startsWith('http') ? url : 'https://' + url;
-                var urlObj = new URL(fullUrl);
-                var hostname = urlObj.hostname.toLowerCase();
-                // 去掉常见子域名前缀
-                hostname = hostname.replace(/^(www|api|pro|app|v1|v2|chat|gpt|ai|openai|claude)\\./, '');
-                // 提取主域名（最后两段，如 chr1.com）
-                var parts = hostname.split('.');
-                if (parts.length > 2) {
-                    // 处理 co.uk, com.cn 等二级后缀
-                    var tld = parts.slice(-2).join('.');
-                    if (['co.uk', 'com.cn', 'net.cn', 'org.cn', 'com.hk', 'co.jp'].includes(tld)) {
-                        hostname = parts.slice(-3).join('.');
-                    } else {
-                        hostname = parts.slice(-2).join('.');
-                    }
-                }
-                return hostname;
-            } catch (e) {
-                return url.split('/')[0].replace(/^(www|api|pro|app)\\./, '');
-            }
-        }
-
-        // 提取域名（保留子域名，只去掉协议和路径）
-        function extractFullDomain(url) {
-            try {
-                var fullUrl = url.startsWith('http') ? url : 'https://' + url;
-                var urlObj = new URL(fullUrl);
-                return urlObj.hostname.toLowerCase();
-            } catch (e) {
-                return url.split('/')[0].toLowerCase();
-            }
-        }
-
-        // 预览黑名单匹配域名
-        function previewBlacklistDomain() {
-            var endpoint = document.getElementById('blacklistEndpoint').value.trim();
-            var previewDiv = document.getElementById('blacklistPreview');
-            var contentDiv = document.getElementById('blacklistPreviewContent');
-
-            if (!endpoint) {
-                previewDiv.style.display = 'none';
-                return;
-            }
-
-            var fullDomain = extractFullDomain(endpoint);
-            var rootDomain = extractRootDomain(endpoint);
-
-            contentDiv.innerHTML =
-                '<div style="margin-bottom: 8px;">' +
-                    '<label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">' +
-                        '<input type="radio" name="blacklistMode" value="full" checked style="accent-color: #f59e0b;"> ' +
-                        '<span>输入域名: <strong style="color: #f59e0b;">' + fullDomain + '</strong></span>' +
-                        '<span style="color: #666; font-size: 11px;">（匹配 ' + fullDomain + ', ' + fullDomain + '/v1）</span>' +
-                    '</label>' +
-                '</div>' +
-                '<div>' +
-                    '<label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">' +
-                        '<input type="radio" name="blacklistMode" value="root" style="accent-color: #ef4444;"> ' +
-                        '<span>主域名: <strong style="color: #ef4444;">' + rootDomain + '</strong></span>' +
-                        '<span style="color: #666; font-size: 11px;">（匹配所有子域名: api., pro., www. 等）</span>' +
-                    '</label>' +
-                '</div>';
-            previewDiv.style.display = 'block';
-        }
-
-        // 添加黑名单
-        async function addBlacklist() {
-            var siteName = document.getElementById('blacklistSiteName').value.trim();
-            var inputEndpoint = document.getElementById('blacklistEndpoint').value.trim();
-
-            // 根据用户选择决定使用哪个域名
-            var modeRadio = document.querySelector('input[name="blacklistMode"]:checked');
-            var useRoot = modeRadio && modeRadio.value === 'root';
-            var endpoint = useRoot ? extractRootDomain(inputEndpoint) : extractFullDomain(inputEndpoint);
-
-            const adminKey = document.getElementById('adminKey').value;
-
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-            if (!endpoint) {
-                showAlert('❌ 请输入端点URL', 'error');
-                return;
-            }
-
-            // 如果没输入站点名称，尝试自动获取网页标题 + ping 检测
-            if (!siteName) {
-                try {
-                    showAlert('🔍 正在 Ping 并获取站点名称...', 'info');
-                    const titleRes = await fetch('/fetch-site-title', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: inputEndpoint })
-                    });
-                    const titleData = await titleRes.json();
-
-                    // 显示详细 ping 结果
-                    if (titleData.ping && titleData.pingInfo) {
-                        var info = titleData.pingInfo;
-                        var details = '📡 Ping: ' + info.latency + 'ms | HTTP ' + info.status;
-                        if (info.server) details += ' | ' + info.server;
-                        if (info.isApi) details += ' | API站点';
-                        if (info.hasModels) details += ' | 🤖 ' + info.modelCount + '个模型';
-                        if (titleData.title) details += '\\n📝 标题: ' + titleData.title;
-                        if (info.sampleModels && info.sampleModels.length > 0) {
-                            details += '\\n🎯 模型: ' + info.sampleModels.slice(0, 3).join(', ');
-                        }
-                        showAlert(details, 'success');
-                    } else {
-                        showAlert('⚠️ Ping 失败 - 站点可能已失效', 'error');
-                    }
-
-                    if (titleData.success && titleData.title) {
-                        siteName = titleData.title;
-                        // 如果是 New API，改成不知名贩子
-                        if (siteName.toLowerCase().includes('new api') || siteName === 'New API') {
-                            siteName = '不知名贩子';
-                        }
-                    }
-                } catch (e) {
-                    console.log('获取标题失败，使用域名');
-                    showAlert('❌ 网络请求失败', 'error');
-                }
-
-                // 如果还是没有，从URL提取域名
-                if (!siteName) {
-                    try {
-                        var urlObj = new URL(inputEndpoint.startsWith('http') ? inputEndpoint : 'https://' + inputEndpoint);
-                        siteName = urlObj.hostname.replace(/^www\\./, '').replace(/^api\\./, '');
-                    } catch (e) {
-                        siteName = inputEndpoint.split('/')[0];
-                    }
-                }
-            }
-
-            // 自动加前缀"死妈贩子-"
-            if (!siteName.startsWith('死妈贩子-')) {
-                siteName = '死妈贩子-' + siteName;
-            }
-
-            try {
-                const response = await fetch('/add-blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, siteName, endpoint })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) {
-                    document.getElementById('blacklistSiteName').value = '';
-                    document.getElementById('blacklistEndpoint').value = '';
-                    document.getElementById('blacklistPreview').style.display = 'none';
-                    loadBlacklist();
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 加载黑名单
-        async function loadBlacklist() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) return;
-
-            try {
-                const response = await fetch('/get-blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    window.allBlacklist = result.data || [];
-                    renderBlacklist(window.allBlacklist);
-                }
-            } catch (error) {
-                console.error('加载黑名单失败:', error);
-            }
-        }
-
-        // 渲染黑名单卡片
-        function renderBlacklist(list) {
-            const grid = document.getElementById('blacklistGrid');
-            const countSpan = document.getElementById('blacklistCount');
-
-            if (list && list.length > 0) {
-                countSpan.textContent = '共 ' + list.length + ' 个';
-                grid.innerHTML = list.map(function(item) {
-                    var safeEndpoint = String(item.endpoint || '').split(String.fromCharCode(39)).join('').split(String.fromCharCode(34)).join('');
-                    var displayUrl = item.endpoint || '';
-                    // 如果不是完整URL，构造一个用于跳转
-                    var linkUrl = displayUrl.startsWith('http') ? displayUrl : 'https://' + displayUrl;
-
-                    var mergedInfo = item.mergedFrom && item.mergedFrom.length > 1 ?
-                        '<div style="color: #666; font-size: 10px; margin-bottom: 8px;">📦 合并自: ' + item.mergedFrom.join(', ') + '</div>' : '';
-                    return '<div style="background: #1a1a1a; border: 2px solid #7c2d12; border-radius: 12px; padding: 20px;" data-sitename="' + (item.siteName || '') + '" data-endpoint="' + safeEndpoint + '">' +
-                        '<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">' +
-                            '<span style="background: #7c2d12; color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: 700;">☠️ ' + (item.siteName || '未知站点') + '</span>' +
-                        '</div>' +
-                        '<a href="' + linkUrl + '" target="_blank" style="display: block; font-family: Courier New, monospace; font-weight: 600; color: #4a9eff; font-size: 15px; word-break: break-all; margin-bottom: 8px; text-decoration: underline; cursor: pointer;">' + displayUrl + '</a>' +
-                        mergedInfo +
-                        '<div style="color: #666; font-size: 12px; margin-bottom: 14px;">添加时间: ' + (item.addedAt ? new Date(item.addedAt).toLocaleString("zh-CN") : '-') + '</div>' +
-                        '<div style="display: flex; gap: 8px;">' +
-                            '<button onclick="pingBlacklist(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">📡 详情</button>' +
-                            '<button onclick="editBlacklist(this.dataset.ep, this.dataset.name)" data-ep="' + safeEndpoint + '" data-name="' + (item.siteName || '') + '" style="padding: 8px 16px; background: #374151; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">✏️ 编辑</button>' +
-                            '<button onclick="removeBlacklist(this.dataset.ep)" data-ep="' + safeEndpoint + '" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">🗑️ 移除</button>' +
-                        '</div>' +
-                    '</div>';
-                }).join('');
-            } else {
-                countSpan.textContent = '';
-                grid.innerHTML = '<p style="color: #888; text-align: center; grid-column: 1 / -1;">暂无黑名单记录</p>';
-            }
-        }
-
-        // 搜索黑名单
-        function filterBlacklist() {
-            const searchText = document.getElementById('blacklistSearch').value.toLowerCase();
-            let filtered = window.allBlacklist || [];
-
-            if (searchText) {
-                filtered = filtered.filter(function(item) {
-                    return (item.siteName || '').toLowerCase().includes(searchText) ||
-                           (item.endpoint || '').toLowerCase().includes(searchText);
-                });
-            }
-
-            renderBlacklist(filtered);
-        }
-
-        // Ping 黑名单域名查看详情
-        async function pingBlacklist(endpoint) {
-            showAlert('📡 正在 Ping ' + endpoint + ' ...', 'info');
-
-            try {
-                const response = await fetch('/fetch-site-title', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: endpoint })
-                });
-                const data = await response.json();
-
-                var msg = '📡 域名: ' + endpoint + '\\n\\n';
-
-                if (data.ping && data.pingInfo) {
-                    var info = data.pingInfo;
-                    msg += '✅ Ping 成功\\n';
-                    msg += '⏱️ 延迟: ' + info.latency + 'ms\\n';
-                    msg += '📊 状态: HTTP ' + info.status + '\\n';
-                    if (info.server) msg += '🖥️ 服务器: ' + info.server + '\\n';
-                    if (info.isApi) msg += '🔌 类型: API站点\\n';
-                    if (info.hasModels) {
-                        msg += '🤖 模型数: ' + info.modelCount + '\\n';
-                        if (info.sampleModels && info.sampleModels.length > 0) {
-                            msg += '📋 示例: ' + info.sampleModels.slice(0, 3).join(', ') + '\\n';
-                        }
-                    }
-                    if (data.title) msg += '📝 标题: ' + data.title;
-                } else {
-                    msg += '❌ Ping 失败 - 站点可能已失效或无法访问';
-                }
-
-                alert(msg);
-            } catch (error) {
-                showAlert('❌ 请求失败: ' + error.message, 'error');
-            }
-        }
-
-        // 移除黑名单
-        async function removeBlacklist(endpoint) {
-            if (!confirm('确定要从黑名单移除 ' + endpoint + ' 吗？')) return;
-
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/remove-blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadBlacklist();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 编辑黑名单
-        async function editBlacklist(endpoint, currentName) {
-            const newName = prompt('编辑站点名称:', currentName);
-            if (newName === null || newName === currentName) return;
-
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/edit-blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint, siteName: newName })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadBlacklist();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 合并重复的黑名单条目（同主域名）
-        async function mergeBlacklist() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            showAlert('🔍 正在分析...', 'info');
-
-            try {
-                // 先预览
-                const previewRes = await fetch('/merge-blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, preview: true })
-                });
-                const preview = await previewRes.json();
-
-                if (!preview.success) {
-                    showAlert(preview.message, 'error');
-                    return;
-                }
-
-                if (!preview.mergeGroups || preview.mergeGroups.length === 0) {
-                    showAlert('✅ 没有需要合并的重复条目', 'success');
-                    return;
-                }
-
-                // 显示预览
-                var msg = '将进行以下合并：\\n\\n';
-                preview.mergeGroups.forEach(function(g) {
-                    msg += '📦 ' + g.sources.join(' + ') + '\\n   → ' + g.target + '\\n\\n';
-                });
-                msg += '共 ' + preview.mergeGroups.length + ' 组，删除 ' + preview.deleteCount + ' 条重复\\n\\n确定执行吗？';
-
-                if (!confirm(msg)) {
-                    showAlert('❌ 已取消', 'info');
-                    return;
-                }
-
-                // 执行合并
-                const response = await fetch('/merge-blacklist', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, preview: false })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadBlacklist();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 显示端点详情弹窗
-        async function showEndpointDetail(endpoint) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/get-endpoint-detail', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint })
-                });
-                const result = await response.json();
-
-                if (!result.success) {
-                    showAlert(result.message || '获取失败', 'error');
-                    return;
-                }
-
-                const data = result.data;
-
-                // 构建状态标签
-                let statusBadges = '';
-                if (data.isReseller) statusBadges += '<span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;">🏪 贩子</span>';
-                if (data.isPublic) statusBadges += '<span style="background:#059669;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;">💚 公益</span>';
-                if (data.isBanned) statusBadges += '<span style="background:#7c2d12;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;">🚫 已禁用</span>';
-                if (data.isBlacklisted) statusBadges += '<span style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;">☠️ 黑名单</span>';
-                if (data.isWhitelisted) statusBadges += '<span style="background:#065f46;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;">✅ 白名单</span>';
-                if (data.isSuspicious) statusBadges += '<span style="background:#f59e0b;color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;margin-right:6px;">⚠️ 可疑</span>';
-
-                // 构建验证历史
-                let historyHtml = '<p style="color:#666;font-size:13px;">暂无验证历史</p>';
-                if (data.verifyHistory && data.verifyHistory.length > 0) {
-                    historyHtml = '<div style="max-height:200px;overflow-y:auto;">' + data.verifyHistory.map(function(h) {
-                        const color = h.success ? '#10b981' : '#ef4444';
-                        const icon = h.success ? '✅' : '❌';
-                        return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2a2a;font-size:12px;">' +
-                            '<span style="color:' + color + ';">' + icon + ' ' + (h.result || '-') + '</span>' +
-                            '<span style="color:#666;">' + (h.code || '-') + '</span>' +
-                            '<span style="color:#888;">' + (h.timestamp ? new Date(h.timestamp).toLocaleString("zh-CN") : '-') + '</span>' +
-                        '</div>';
-                    }).join('') + '</div>';
-                }
-
-                // 构建模型列表
-                let modelsHtml = '<p style="color:#666;font-size:13px;">暂无模型记录</p>';
-                if (data.models && data.models.length > 0) {
-                    modelsHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;max-height:150px;overflow-y:auto;">' +
-                        data.models.map(function(m) {
-                            return '<span style="background:#1f2937;padding:4px 8px;border-radius:4px;font-size:11px;">' + m + '</span>';
-                        }).join('') + '</div>';
-                }
-
-                // 构建证据文本
-                const evidenceText = '【端点证据收集】\\n' +
-                    '端点: ' + data.endpoint + '\\n' +
-                    '首次访问: ' + (data.firstAccess ? new Date(data.firstAccess).toLocaleString("zh-CN") : '-') + '\\n' +
-                    '最后访问: ' + (data.lastAccess ? new Date(data.lastAccess).toLocaleString("zh-CN") : '-') + '\\n' +
-                    '访问次数: ' + data.accessCount + '\\n' +
-                    '状态: ' + (data.isBanned ? '已禁用 ' : '') + (data.isBlacklisted ? '黑名单 ' : '') + (data.isWhitelisted ? '白名单 ' : '') + (data.isSuspicious ? '可疑 ' : '') + '\\n' +
-                    '模型列表: ' + (data.models && data.models.length > 0 ? data.models.join(', ') : '无') + '\\n' +
-                    '验证历史: ' + (data.verifyHistory ? data.verifyHistory.length + '条记录' : '无');
-
-                // 弹窗HTML
-                const modalHtml = '<div id="endpointDetailModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)this.remove()">' +
-                    '<div style="background:#1a1a1a;border:1px solid #3a3a3a;border-radius:12px;padding:24px;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;">' +
-                        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-                            '<h3 style="margin:0;color:#fff;">📋 端点详情</h3>' +
-                            '<button onclick="document.getElementById(' + "'endpointDetailModal'" + ').remove()" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer;">✕</button>' +
-                        '</div>' +
-                        '<div style="background:#0f0f0f;padding:12px;border-radius:8px;margin-bottom:16px;">' +
-                            '<code style="color:#4a9eff;word-break:break-all;">' + data.endpoint + '</code>' +
-                        '</div>' +
-                        '<div style="margin-bottom:16px;">' + statusBadges + '</div>' +
-                        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
-                            '<div style="background:#0f0f0f;padding:12px;border-radius:8px;">' +
-                                '<div style="color:#888;font-size:12px;margin-bottom:4px;">访问次数</div>' +
-                                '<div style="color:#10b981;font-size:24px;font-weight:700;">' + data.accessCount + '</div>' +
-                            '</div>' +
-                            '<div style="background:#0f0f0f;padding:12px;border-radius:8px;">' +
-                                '<div style="color:#888;font-size:12px;margin-bottom:4px;">模型数量</div>' +
-                                '<div style="color:#6366f1;font-size:24px;font-weight:700;">' + (data.models ? data.models.length : 0) + '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div style="background:#0f0f0f;padding:12px;border-radius:8px;margin-bottom:16px;">' +
-                            '<div style="color:#888;font-size:12px;margin-bottom:8px;">📅 时间信息</div>' +
-                            '<div style="display:flex;justify-content:space-between;color:#ccc;font-size:13px;margin-bottom:4px;"><span>首次访问</span><span>' + (data.firstAccess ? new Date(data.firstAccess).toLocaleString("zh-CN") : '-') + '</span></div>' +
-                            '<div style="display:flex;justify-content:space-between;color:#ccc;font-size:13px;"><span>最后访问</span><span>' + (data.lastAccess ? new Date(data.lastAccess).toLocaleString("zh-CN") : '-') + '</span></div>' +
-                        '</div>' +
-                        '<div style="background:#0f0f0f;padding:12px;border-radius:8px;margin-bottom:16px;">' +
-                            '<div style="color:#888;font-size:12px;margin-bottom:8px;">📜 验证历史 (' + (data.verifyHistory ? data.verifyHistory.length : 0) + '条)</div>' +
-                            historyHtml +
-                        '</div>' +
-                        '<div style="background:#0f0f0f;padding:12px;border-radius:8px;margin-bottom:16px;">' +
-                            '<div style="color:#888;font-size:12px;margin-bottom:8px;">🤖 模型列表 (' + (data.models ? data.models.length : 0) + '个)</div>' +
-                            modelsHtml +
-                        '</div>' +
-                        '<div style="display:flex;gap:8px;">' +
-                            '<button onclick="copyEvidence(' + "'" + evidenceText.replace(/'/g, String.fromCharCode(92) + "'") + "'" + ')" style="flex:1;padding:10px;background:#6366f1;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;">📋 一键复制证据</button>' +
-                            '<button onclick="document.getElementById(' + "'endpointDetailModal'" + ').remove()" style="padding:10px 20px;background:#374151;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;">关闭</button>' +
-                        '</div>' +
-                    '</div>' +
-                '</div>';
-
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 复制证据
-        function copyEvidence(text) {
-            const realText = text.replace(/\\n/g, '\\n');
-            navigator.clipboard.writeText(realText).then(function() {
-                showAlert('✅ 证据已复制到剪贴板', 'success');
-            }).catch(function() {
-                showAlert('❌ 复制失败', 'error');
-            });
-        }
-
-        // 加载模型记录
-        async function loadModelReports() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/get-model-reports', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey })
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    renderModelReports(result.data || []);
-                } else {
-                    showAlert(result.message || '加载失败', 'error');
-                }
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 渲染模型记录
-        function renderModelReports(data, isFiltered) {
-            const grid = document.getElementById('modelReportsGrid');
-            const countEl = document.getElementById('modelReportsCount');
-
-            // 保存原始数据
-            if (!isFiltered) {
-                window.allModelReports = data || [];
-            }
-
-            if (countEl) {
-                countEl.textContent = '共 ' + (data ? data.length : 0) + ' 条记录';
-            }
-
-            if (data && data.length > 0) {
-                grid.innerHTML = data.map(function(item) {
-                    const modelsHtml = (item.models || []).map(function(m) {
-                        return '<span style="display: inline-block; background: #1f2937; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin: 2px;">' + m + '</span>';
-                    }).join('');
-
-                    var safeEp = String(item.endpoint || '').split(String.fromCharCode(39)).join('').split(String.fromCharCode(34)).join('');
-                    var isReseller = item.isReseller ? true : false;
-                    var isPublic = item.isPublic ? true : false;
-                    var badges = '';
-                    if (isReseller) badges += '<span style="background: #dc2626; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">🏪 贩子</span>';
-                    if (isPublic) badges += '<span style="background: #059669; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">💚 公益</span>';
-                    var resellerBtn = isReseller ?
-                        '<button onclick="toggleReseller(this.dataset.ep, false)" data-ep="' + safeEp + '" style="padding: 6px 12px; background: #374151; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">取消贩子</button>' :
-                        '<button onclick="toggleReseller(this.dataset.ep, true)" data-ep="' + safeEp + '" style="padding: 6px 12px; background: #dc2626; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🏪 贩子</button>';
-                    var publicBtn = isPublic ?
-                        '<button onclick="togglePublic(this.dataset.ep, false)" data-ep="' + safeEp + '" style="padding: 6px 12px; background: #374151; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">取消公益</button>' :
-                        '<button onclick="togglePublic(this.dataset.ep, true)" data-ep="' + safeEp + '" style="padding: 6px 12px; background: #059669; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">💚 公益</button>';
-
-                    var borderColor = isReseller ? '#dc2626' : (isPublic ? '#059669' : '#3a3a3a');
-                    return '<div style="background: #1a1a1a; border: 1px solid ' + borderColor + '; border-radius: 12px; padding: 20px;">' +
-                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">' +
-                            '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
-                                '<a href="' + (item.endpoint.startsWith('http') ? item.endpoint : 'https://' + item.endpoint) + '" target="_blank" style="font-family: monospace; color: #4a9eff; font-size: 14px; word-break: break-all; text-decoration: underline;">' + item.endpoint + '</a>' +
-                                badges +
-                            '</div>' +
-                            '<span style="color: #888; font-size: 12px;">上报 ' + (item.reportCount || 1) + ' 次</span>' +
-                        '</div>' +
-                        '<div style="color: #666; font-size: 12px; margin-bottom: 10px;">最后上报: ' + (item.lastReport ? new Date(item.lastReport).toLocaleString("zh-CN") : '-') + '</div>' +
-                        '<div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px;">' + modelsHtml + '</div>' +
-                        '<div style="display: flex; gap: 8px; flex-wrap: wrap;">' + resellerBtn + publicBtn + '</div>' +
-                    '</div>';
-                }).join('');
-            } else {
-                grid.innerHTML = '<p style="color: #888; text-align: center;">暂无模型记录</p>';
-            }
-        }
-
-        // 过滤模型记录
-        function filterModelReports() {
-            const searchText = (document.getElementById('modelReportsSearch').value || '').toLowerCase();
-
-            if (!window.allModelReports) return;
-
-            let filtered = window.allModelReports;
-
-            // 贩子筛选
-            if (window.resellerFilterOn) {
-                filtered = filtered.filter(function(item) {
-                    return item.isReseller === true;
-                });
-            }
-
-            // 搜索筛选
-            if (searchText) {
-                filtered = filtered.filter(function(item) {
-                    const endpoint = (item.endpoint || '').toLowerCase();
-                    const models = (item.models || []).join(' ').toLowerCase();
-                    return endpoint.includes(searchText) || models.includes(searchText);
-                });
-            }
-
-            renderModelReports(filtered, true);
-        }
-
-        // 切换贩子筛选
-        window.resellerFilterOn = false;
-        function toggleResellerFilter() {
-            window.resellerFilterOn = !window.resellerFilterOn;
-            var btn = document.getElementById('resellerFilterBtn');
-            if (window.resellerFilterOn) {
-                btn.style.background = '#dc2626';
-                btn.textContent = '🏪 显示全部';
-            } else {
-                btn.style.background = '#374151';
-                btn.textContent = '🏪 只看贩子';
-            }
-            filterModelReports();
-        }
-
-        // 切换贩子标签
-        async function toggleReseller(endpoint, isReseller) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/toggle-reseller', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint, isReseller })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadModelReports();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 切换公益站标签
-        async function togglePublic(endpoint, isPublic) {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/toggle-public', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, endpoint, isPublic })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-                if (result.success) loadModelReports();
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 导出黑名单为TXT
-        function exportBlacklist() {
-            if (!window.allBlacklist || window.allBlacklist.length === 0) {
-                showAlert('❌ 没有黑名单数据可导出', 'error');
-                return;
-            }
-
-            const lines = ['# 黑名单导出', '# 导出时间: ' + new Date().toLocaleString('zh-CN'), '# 格式: 站点名称 | URL', ''];
-            window.allBlacklist.forEach(function(item) {
-                lines.push((item.siteName || '未知站点') + ' | ' + (item.endpoint || ''));
-            });
-
-            const content = lines.join(String.fromCharCode(10));
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'blacklist_' + new Date().toISOString().slice(0, 10) + '.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            showAlert('✅ 黑名单已导出', 'success');
-        }
-
-        // 加载插件信息
-        async function loadPluginInfo() {
-            try {
-                const response = await fetch('/plugin-info');
-                const result = await response.json();
-
-                if (result.success && result.data) {
-                    const data = result.data;
-                    document.getElementById('pluginVersion').value = data.version || '';
-                    document.getElementById('pluginChangelog').value = data.changelog || '';
-                    document.getElementById('pluginUsage').value = data.usage || '';
-                }
-            } catch (error) {
-                console.error('加载插件信息失败:', error);
-            }
-
-            // 同时加载封禁提示
-            loadBlockMessage();
-        }
-
-        // 加载封禁提示
-        async function loadBlockMessage() {
-            try {
-                const response = await fetch('/get-block-message');
-                const result = await response.json();
-                if (result.success && result.message) {
-                    document.getElementById('blockMessage').value = result.message;
-                }
-            } catch (error) {
-                console.error('加载封禁提示失败:', error);
-            }
-        }
-
-        // 保存封禁提示
-        async function saveBlockMessage() {
-            const adminKey = document.getElementById('adminKey').value;
-            if (!adminKey) {
-                showAlert('❌ 请先输入管理员密钥', 'error');
-                return;
-            }
-
-            const message = document.getElementById('blockMessage').value.trim();
-            if (!message) {
-                showAlert('❌ 请输入封禁提示内容', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/set-block-message', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminKey, message })
-                });
-                const result = await response.json();
-                showAlert(result.message, result.success ? 'success' : 'error');
-            } catch (error) {
-                showAlert('❌ 网络错误: ' + error.message, 'error');
-            }
-        }
-
-        // 更新插件信息
-        async function updatePluginInfo() {
-            const version = document.getElementById('pluginVersion').value.trim();
-            const changelog = document.getElementById('pluginChangelog').value.trim();
-            const usage = document.getElementById('pluginUsage').value.trim();
-
-            if (!version || !changelog || !usage) {
-                showAlert('❌ 版本号、更新日志和使用说明不能为空', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/update-plugin-info', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ version, changelog, usage })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert('✅ ' + result.message, 'success');
-                    loadPluginInfo(); // 重新加载显示
-                } else {
-                    showAlert('❌ ' + (result.message || '更新失败'), 'error');
-                }
-            } catch (error) {
-                console.error('更新插件信息失败:', error);
-                showAlert('❌ 更新失败：' + error.message, 'error');
-            }
-        }
-
-          console.log('Worker.js loaded');
-    </script>
+      </div>
+      <div class="card" style="margin-top:16px;border-color:#f59e0b">
+        <div class="card-title" style="color:#f59e0b">🧹 数据清理</div>
+        <p style="color:#888;margin-bottom:12px">清理所有列表中的重复数据（黑名单、白名单、禁用列表、可疑列表、API端点）</p>
+        <button class="btn btn-warning" onclick="cleanupDuplicates()">清理重复数据</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const adminKey = () => document.getElementById('adminKey').value;
+let allEndpoints = [], allLogs = [];
+const PAGE_SIZE = 15;
+let currentPage = { endpoints: 1, whitelist: 1, blacklist: 1, banned: 1, suspicious: 1 };
+
+// 分页组件
+function renderPagination(total, current, listName) {
+  const pages = Math.ceil(total / PAGE_SIZE);
+  if (pages <= 1) return '';
+  let html = '<div class="pagination">';
+  html += '<button class="btn btn-sm btn-secondary" ' + (current <= 1 ? 'disabled' : '') + ' onclick="goPage(' + "'" + listName + "'" + ', ' + (current - 1) + ')">上一页</button>';
+  html += '<span style="margin:0 12px;color:var(--muted)">第 ' + current + ' / ' + pages + ' 页 (共' + total + '条)</span>';
+  html += '<button class="btn btn-sm btn-secondary" ' + (current >= pages ? 'disabled' : '') + ' onclick="goPage(' + "'" + listName + "'" + ', ' + (current + 1) + ')">下一页</button>';
+  html += '</div>';
+  return html;
+}
+
+function goPage(listName, page) {
+  currentPage[listName] = page;
+  if (listName === 'endpoints') renderEndpoints(allEndpoints);
+  else if (listName === 'whitelist') loadWhitelist();
+  else if (listName === 'blacklist') loadBlacklist();
+  else if (listName === 'banned') loadBanned();
+  else if (listName === 'suspicious') loadSuspicious();
+}
+
+// 导航
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.onclick = () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+    if (item.dataset.page === 'dashboard') loadStats();
+    if (item.dataset.page === 'endpoints') loadEndpoints();
+    if (item.dataset.page === 'blacklist') loadBlacklist();
+    if (item.dataset.page === 'whitelist') loadWhitelist();
+    if (item.dataset.page === 'banned') loadBanned();
+    if (item.dataset.page === 'suspicious') loadSuspicious();
+    if (item.dataset.page === 'logs') loadLogs();
+    if (item.dataset.page === 'models') loadModelReports();
+    if (item.dataset.page === 'auth') loadAutoUpdate();
+    if (item.dataset.page === 'settings') loadSettings();
+  };
+});
+
+// Toast
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// API
+async function api(path, data = {}) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ adminKey: adminKey(), ...data })
+  });
+  return res.json();
+}
+
+// 加载统计
+async function loadStats() {
+  if (!adminKey()) {
+    document.getElementById('current-code').textContent = '请先输入管理密钥';
+    return;
+  }
+  try {
+    const r = await api('/stats');
+    if (!r.success) return toast(r.message || '加载失败', 'error');
+  const d = r.data;
+  document.getElementById('stat-success').textContent = d.stats.success;
+  document.getElementById('stat-failed').textContent = d.stats.failed;
+  document.getElementById('stat-endpoints').textContent = d.stats.apiEndpointCount;
+  document.getElementById('stat-rate').textContent = d.stats.successRate + '%';
+  document.getElementById('current-code').textContent = d.currentCode;
+  document.getElementById('code-updated').textContent = d.updatedAt ? new Date(d.updatedAt).toLocaleString('zh-CN') : '-';
+
+  // 最近日志
+  const logsHtml = (d.logs || []).slice(0, 20).map(l =>
+    '<div class="endpoint-card ' + (l.isValid ? '' : 'banned') + '">' +
+    '<div style="display:flex;justify-content:space-between">' +
+    '<span class="tag ' + (l.isValid !== false ? 'tag-success' : 'tag-danger') + '">' + (l.isValid !== false ? '✓' : '✗') + '</span>' +
+    '<span style="font-size:11px;color:var(--muted)">' + new Date(l.timestamp).toLocaleString('zh-CN') + '</span></div>' +
+    '<div class="endpoint-url" style="margin-top:6px">' + (l.apiEndpoint || '-') + '</div>' +
+    '<div class="endpoint-meta">授权码: ' + (l.code || '-') + '</div></div>'
+  ).join('');
+  document.getElementById('recent-logs').innerHTML = logsHtml || '<div class="empty">暂无日志</div>';
+
+  // 历史授权码
+  const historyHtml = (d.history || []).map(h =>
+    '<div class="endpoint-card"><code>' + h.code + '</code><div class="endpoint-meta">' + new Date(h.replacedAt).toLocaleString('zh-CN') + '</div></div>'
+  ).join('');
+  document.getElementById('code-history').innerHTML = historyHtml || '<div class="empty">暂无历史</div>';
+
+  allEndpoints = d.apiEndpoints || [];
+  allLogs = d.logs || [];
+  } catch (e) {
+    toast('加载失败: ' + e.message, 'error');
+  }
+}
+
+// 更新授权码
+async function updateCode() {
+  const code = document.getElementById('new-code').value.trim();
+  if (!code) return toast('请输入授权码', 'error');
+  const r = await api('/update', { newCode: code });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) loadStats();
+}
+
+// 生成授权码
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const d = new Date();
+  const date = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  let rand = '';
+  for (let i = 0; i < 4; i++) rand += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('new-code').value = 'MEOW-' + date + '-' + rand;
+}
+
+// 加载端点
+async function loadEndpoints() {
+  const r = await api('/stats');
+  if (r.success) {
+    allEndpoints = r.data.apiEndpoints || [];
+    renderEndpoints(allEndpoints);
+  }
+}
+
+function renderEndpoints(list) {
+  if (list.length === 0) {
+    document.getElementById('endpoints-list').innerHTML = '<div class="empty">暂无端点</div>';
+    return;
+  }
+  const start = (currentPage.endpoints - 1) * PAGE_SIZE;
+  const pageList = list.slice(start, start + PAGE_SIZE);
+  const html = '<table class="table" style="width:100%"><thead><tr><th style="width:60px">状态</th><th style="width:200px">URL</th><th>模型</th><th style="width:50px">次数</th><th style="width:80px">访问</th><th style="width:70px">操作</th></tr></thead><tbody>' +
+    pageList.map(e => {
+      let status = '正常', cls = 'tag-info';
+      if (e.isBanned) { status = '已禁用'; cls = 'tag-danger'; }
+      else if (e.isWhitelisted) { status = '白名单'; cls = 'tag-success'; }
+      else if (e.isSuspicious) { status = '可疑'; cls = 'tag-warning'; }
+      else if (e.isBlacklisted) { status = '黑名单'; cls = 'tag-danger'; }
+      const modelCount = e.models ? e.models.length : 0;
+      const modelTags = modelCount > 0 ? e.models.map(m => '<span class="model-tag">' + m + '</span>').join('') : '<span style="color:var(--muted)">无</span>';
+      return '<tr>' +
+        '<td><span class="tag ' + cls + '">' + status + '</span></td>' +
+        '<td style="font-family:monospace;font-size:11px;word-break:break-all">' + e.endpoint + '</td>' +
+        '<td><div style="max-height:60px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start">' + modelTags + '</div></td>' +
+        '<td style="text-align:center">' + (e.accessCount || 0) + '</td>' +
+        '<td style="font-size:11px">' + (e.lastAccess ? new Date(e.lastAccess).toLocaleDateString('zh-CN') : '-') + '</td>' +
+        '<td><button class="btn btn-sm btn-danger" onclick="quickBan(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')">禁</button>' +
+        '<button class="btn btn-sm btn-success" onclick="quickWhitelist(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')">白</button></td></tr>';
+    }).join('') + '</tbody></table>' + renderPagination(list.length, currentPage.endpoints, 'endpoints');
+  document.getElementById('endpoints-list').innerHTML = html;
+}
+
+function filterEndpoints() {
+  const search = document.getElementById('endpoint-search').value.toLowerCase();
+  const filter = document.getElementById('endpoint-filter').value;
+  let list = allEndpoints;
+  if (search) list = list.filter(e => e.endpoint.toLowerCase().includes(search));
+  if (filter === 'banned') list = list.filter(e => e.isBanned);
+  if (filter === 'whitelist') list = list.filter(e => e.isWhitelisted);
+  if (filter === 'suspicious') list = list.filter(e => e.isSuspicious);
+  if (filter === 'normal') list = list.filter(e => !e.isBanned && !e.isWhitelisted && !e.isSuspicious);
+  if (filter === 'new') list = list.filter(e => !e.isBanned && !e.isWhitelisted && !e.isSuspicious && !e.isBlacklisted);
+  renderEndpoints(list);
+}
+
+async function quickBan(url) {
+  if (!confirm('确定禁用 ' + url + '?')) return;
+  const r = await api('/ban-endpoint', { endpoint: url, reason: '管理员禁用' });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadEndpoints();
+}
+
+async function quickWhitelist(url) {
+  const r = await api('/whitelist-endpoint', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadEndpoints();
+}
+
+// 黑名单
+let blacklistData = [];
+async function loadBlacklist() {
+  const r = await api('/get-blacklist');
+  if (!r.success) return;
+  blacklistData = r.data || [];
+  renderBlacklist();
+}
+function renderBlacklist() {
+  if (blacklistData.length === 0) {
+    document.getElementById('blacklist-list').innerHTML = '<div class="empty">暂无黑名单</div>';
+    return;
+  }
+  const start = (currentPage.blacklist - 1) * PAGE_SIZE;
+  const pageList = blacklistData.slice(start, start + PAGE_SIZE);
+  const html = '<table class="table"><thead><tr><th>站点名称</th><th>URL</th><th>添加时间</th><th>操作</th></tr></thead><tbody>' +
+    pageList.map(info =>
+      '<tr><td><span class="tag tag-danger">' + (info.siteName || '未知') + '</span></td>' +
+      '<td>' + (info.endpoint || info.mainDomain || '-') + '</td>' +
+      '<td>' + (info.addedAt ? new Date(info.addedAt).toLocaleString('zh-CN') : '-') + '</td>' +
+      '<td><button class="btn btn-sm btn-secondary" onclick="removeBlacklist(\\'' + (info.endpoint || info.mainDomain || '').replace(/'/g, "\\\\'") + '\\')">移除</button></td></tr>'
+    ).join('') + '</tbody></table>' + renderPagination(blacklistData.length, currentPage.blacklist, 'blacklist');
+  document.getElementById('blacklist-list').innerHTML = html;
+}
+
+async function addBlacklist() {
+  const name = document.getElementById('blacklist-name').value.trim();
+  const url = document.getElementById('blacklist-url').value.trim();
+  if (!url) return toast('请输入URL', 'error');
+  const r = await api('/add-blacklist', { endpoint: url, siteName: name || '未知贩子' });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) { document.getElementById('blacklist-name').value = ''; document.getElementById('blacklist-url').value = ''; loadBlacklist(); }
+}
+
+async function removeBlacklist(url) {
+  if (!confirm('确定移除?')) return;
+  const r = await api('/remove-blacklist', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadBlacklist();
+}
+
+// 批量导入黑名单
+function handleBlacklistFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('blacklist-import-status');
+  status.textContent = '读取中...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('blacklist-import-content').value = e.target.result;
+    status.textContent = '已读取: ' + file.name;
+  };
+  reader.onerror = function() {
+    status.textContent = '读取失败';
+    toast('文件读取失败', 'error');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function batchImportBlacklist() {
+  const content = document.getElementById('blacklist-import-content').value.trim();
+  if (!content) return toast('请输入或上传导入内容', 'error');
+  const status = document.getElementById('blacklist-import-status');
+  status.textContent = '导入中...';
+  const r = await api('/batch-import-blacklist', { content });
+  toast(r.message, r.success ? 'success' : 'error');
+  status.textContent = r.success ? '导入完成' : '导入失败';
+  if (r.success) {
+    document.getElementById('blacklist-import-content').value = '';
+    document.getElementById('blacklist-import-file').value = '';
+    loadBlacklist();
+  }
+}
+
+// 导出黑名单
+function exportBlacklist(format) {
+  if (!blacklistData || blacklistData.length === 0) {
+    return toast('暂无数据可导出', 'error');
+  }
+  let content = '';
+  let filename = '黑名单_' + new Date().toISOString().slice(0,10);
+  let mimeType = 'text/plain';
+
+  if (format === 'csv') {
+    content = '站点名称,URL,添加时间\\n';
+    content += blacklistData.map(item =>
+      '"' + (item.siteName || '').replace(/"/g, '""') + '",' +
+      '"' + (item.endpoint || item.mainDomain || '') + '",' +
+      '"' + (item.addedAt ? new Date(item.addedAt).toLocaleString('zh-CN') : '') + '"'
+    ).join('\\n');
+    filename += '.csv';
+    mimeType = 'text/csv;charset=utf-8';
+  } else {
+    content = blacklistData.map(item =>
+      (item.siteName || '未知') + '|' + (item.endpoint || item.mainDomain || '')
+    ).join('\\n');
+    filename += '.txt';
+  }
+
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('导出成功: ' + filename, 'success');
+}
+
+// 白名单
+async function loadWhitelist() {
+  const r = await api('/get-whitelist-endpoints');
+  if (!r.success) return;
+  const list = r.data || [];
+  if (list.length === 0) {
+    document.getElementById('whitelist-list').innerHTML = '<div class="empty">暂无白名单</div>';
+    return;
+  }
+  const html = '<table class="table"><thead><tr><th style="width:50px">#</th><th>URL</th><th>添加时间</th><th>操作</th></tr></thead><tbody>' +
+    list.map((info, i) =>
+      '<tr><td style="text-align:center;color:var(--muted)">' + (i + 1) + '</td>' +
+      '<td style="font-family:monospace;font-size:12px">' + (info.endpoint || '-') + '</td>' +
+      '<td style="white-space:nowrap;color:var(--muted)">' + (info.addedAt ? new Date(info.addedAt).toLocaleString('zh-CN') : '-') + '</td>' +
+      '<td><button class="btn btn-sm btn-danger" onclick="removeWhitelist(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">移除</button></td></tr>'
+    ).join('') + '</tbody></table>';
+  document.getElementById('whitelist-list').innerHTML = html;
+}
+
+async function addWhitelist() {
+  const url = document.getElementById('whitelist-url').value.trim();
+  if (!url) return toast('请输入URL', 'error');
+  const r = await api('/whitelist-endpoint', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) { document.getElementById('whitelist-url').value = ''; loadWhitelist(); }
+}
+
+async function removeWhitelist(url) {
+  if (!confirm('确定移除?')) return;
+  const r = await api('/unwhitelist-endpoint', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadWhitelist();
+}
+
+// 禁用列表
+async function loadBanned() {
+  const r = await api('/get-banned-endpoints');
+  if (!r.success) return;
+  const list = r.data || [];
+  if (list.length === 0) {
+    document.getElementById('banned-list').innerHTML = '<div class="empty">暂无禁用</div>';
+    return;
+  }
+  const html = '<table class="table"><thead><tr><th>状态</th><th>URL</th><th>原因</th><th>禁用时间</th><th>操作</th></tr></thead><tbody>' +
+    list.map(info =>
+      '<tr><td><span class="tag tag-danger">已禁用</span></td>' +
+      '<td style="font-family:monospace;font-size:12px">' + (info.endpoint || '-') + '</td>' +
+      '<td style="color:var(--muted)">' + (info.reason || '-') + '</td>' +
+      '<td style="white-space:nowrap;color:var(--muted)">' + (info.bannedAt ? new Date(info.bannedAt).toLocaleString('zh-CN') : '-') + '</td>' +
+      '<td><button class="btn btn-sm btn-success" onclick="unban(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">解禁</button></td></tr>'
+    ).join('') + '</tbody></table>';
+  document.getElementById('banned-list').innerHTML = html;
+}
+
+async function banEndpoint() {
+  const url = document.getElementById('ban-url').value.trim();
+  const reason = document.getElementById('ban-reason').value.trim();
+  if (!url) return toast('请输入URL', 'error');
+  const r = await api('/ban-endpoint', { endpoint: url, reason: reason || '管理员禁用' });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) { document.getElementById('ban-url').value = ''; document.getElementById('ban-reason').value = ''; loadBanned(); }
+}
+
+async function unban(url) {
+  if (!confirm('确定解禁?')) return;
+  const r = await api('/unban-endpoint', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadBanned();
+}
+
+// 批量导入禁用列表
+function handleBannedFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('banned-import-status');
+  status.textContent = '读取中...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('banned-import-content').value = e.target.result;
+    status.textContent = '已读取: ' + file.name;
+  };
+  reader.onerror = function() {
+    status.textContent = '读取失败';
+    toast('文件读取失败', 'error');
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function batchImportBanned() {
+  const content = document.getElementById('banned-import-content').value.trim();
+  if (!content) return toast('请输入或上传导入内容', 'error');
+  const status = document.getElementById('banned-import-status');
+  status.textContent = '导入中...';
+  const r = await api('/batch-import-banned', { content });
+  toast(r.message, r.success ? 'success' : 'error');
+  status.textContent = r.success ? '导入完成' : '导入失败';
+  if (r.success) {
+    document.getElementById('banned-import-content').value = '';
+    document.getElementById('banned-import-file').value = '';
+    loadBanned();
+  }
+}
+
+// 可疑列表
+async function loadSuspicious() {
+  const r = await api('/get-suspicious-endpoints');
+  if (!r.success) return;
+  const list = r.data || [];
+  if (list.length === 0) {
+    document.getElementById('suspicious-list').innerHTML = '<div class="empty">暂无可疑端点</div>';
+    return;
+  }
+  const html = '<table class="table"><thead><tr><th style="width:50px">#</th><th>URL</th><th>添加时间</th><th>操作</th></tr></thead><tbody>' +
+    list.map((info, i) =>
+      '<tr><td style="text-align:center;color:var(--muted)">' + (i + 1) + '</td>' +
+      '<td style="font-family:monospace;font-size:12px">' + (info.endpoint || '-') + '</td>' +
+      '<td style="white-space:nowrap;color:var(--muted)">' + (info.addedAt ? new Date(info.addedAt).toLocaleString('zh-CN') : '-') + '</td>' +
+      '<td><div class="btn-group">' +
+      '<button class="btn btn-sm btn-danger" onclick="quickBan(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">禁用</button>' +
+      '<button class="btn btn-sm btn-success" onclick="quickWhitelist(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">白名单</button>' +
+      '<button class="btn btn-sm btn-secondary" onclick="removeSuspicious(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">移除</button></div></td></tr>'
+    ).join('') + '</tbody></table>';
+  document.getElementById('suspicious-list').innerHTML = html;
+}
+
+async function removeSuspicious(url) {
+  const r = await api('/unsuspicious-endpoint', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadSuspicious();
+}
+
+// 日志
+async function loadLogs() {
+  const r = await api('/stats');
+  if (r.success) {
+    allLogs = r.data.logs || [];
+    renderLogs(allLogs);
+  }
+}
+
+function renderLogs(list) {
+  const html = list.slice(0, 200).map(l =>
+    '<div class="endpoint-card ' + (l.isValid !== false ? '' : 'banned') + '">' +
+    '<div style="display:flex;justify-content:space-between">' +
+    '<span class="tag ' + (l.isValid !== false ? 'tag-success' : 'tag-danger') + '">' + (l.isValid !== false ? '成功' : '失败') + '</span>' +
+    '<span style="font-size:11px;color:var(--muted)">' + new Date(l.timestamp).toLocaleString('zh-CN') + '</span></div>' +
+    '<div class="endpoint-url" style="margin:6px 0">' + (l.apiEndpoint || '-') + '</div>' +
+    '<div class="endpoint-meta">授权码: ' + (l.code || '-') + (l.reason ? ' | 原因: ' + l.reason : '') + '</div></div>'
+  ).join('');
+  document.getElementById('logs-list').innerHTML = html || '<div class="empty">暂无日志</div>';
+}
+
+function filterLogs() {
+  const search = document.getElementById('log-search').value.toLowerCase();
+  let list = allLogs;
+  if (search) list = list.filter(l => (l.apiEndpoint || '').toLowerCase().includes(search) || (l.code || '').toLowerCase().includes(search));
+  renderLogs(list);
+}
+
+// 模型记录
+async function loadModelReports() {
+  const r = await api('/get-model-reports');
+  if (!r.success) return;
+  const list = r.data || [];
+  const html = list.map(item =>
+    '<div class="card">' +
+    '<div class="endpoint-url">' + item.endpoint + '</div>' +
+    '<div class="endpoint-meta" style="margin:8px 0">上报次数: ' + (item.reportCount || 0) + ' | 最后: ' + (item.lastReport ? new Date(item.lastReport).toLocaleString('zh-CN') : '-') + '</div>' +
+    '<div>' + (item.models || []).map(m => '<span class="model-tag">' + m + '</span>').join('') + '</div></div>'
+  ).join('');
+  document.getElementById('models-list').innerHTML = html || '<div class="empty">暂无模型记录</div>';
+}
+
+function filterModels() {
+  // TODO
+}
+
+// 自动更新
+async function loadAutoUpdate() {
+  const r = await fetch('/get-auto-update-config').then(r => r.json());
+  if (r.success && r.data) {
+    document.getElementById('auto-update-enabled').value = r.data.enabled ? 'true' : 'false';
+    document.getElementById('auto-update-hour').value = r.data.hour || 0;
+    document.getElementById('auto-update-days').value = r.data.days || 1;
+  }
+  loadStats();
+}
+
+async function saveAutoUpdate() {
+  const r = await api('/set-auto-update-config', {
+    enabled: document.getElementById('auto-update-enabled').value === 'true',
+    hour: parseInt(document.getElementById('auto-update-hour').value) || 0,
+    days: parseInt(document.getElementById('auto-update-days').value) || 1
+  });
+  toast(r.message, r.success ? 'success' : 'error');
+}
+
+// 设置
+async function loadSettings() {
+  const r1 = await api('/get-block-message');
+  if (r1.success) document.getElementById('block-message').value = r1.data || '';
+
+  const r2 = await fetch('/plugin-info').then(r => r.json());
+  if (r2.success && r2.data) {
+    document.getElementById('plugin-version').value = r2.data.version || '';
+    document.getElementById('plugin-changelog').value = r2.data.changelog || '';
+    document.getElementById('plugin-usage').value = r2.data.usage || '';
+  }
+}
+
+async function saveBlockMessage() {
+  const r = await api('/set-block-message', { message: document.getElementById('block-message').value });
+  toast(r.message, r.success ? 'success' : 'error');
+}
+
+async function cleanupDuplicates() {
+  if (!confirm('确定要清理所有重复数据吗？')) return;
+  const r = await api('/cleanup-duplicates');
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) {
+    console.log('清理结果:', r.data);
+    loadStats();
+  }
+}
+
+async function savePluginInfo() {
+  const r = await fetch('/update-plugin-info', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      version: document.getElementById('plugin-version').value,
+      changelog: document.getElementById('plugin-changelog').value,
+      usage: document.getElementById('plugin-usage').value
+    })
+  }).then(r => r.json());
+  toast(r.message, r.success ? 'success' : 'error');
+}
+
+function showEndpointDetail(url) {
+  // TODO: 弹窗显示详情
+  alert('端点: ' + url);
+}
+
+// 初始化 - 监听管理密钥输入
+document.getElementById('adminKey').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') loadStats();
+});
+document.getElementById('adminKey').addEventListener('change', () => loadStats());
+
+// 首次不自动加载，等用户输入密钥
+document.getElementById('current-code').textContent = '请输入管理密钥后按回车';
+
+// 一键清空列表
+async function clearList(listType) {
+  const names = { blacklist: '黑名单', whitelist: '白名单', banned: '禁用列表', suspicious: '可疑列表', all: '所有列表' };
+  if (!confirm('确定要清空' + names[listType] + '吗？此操作不可恢复！')) return;
+  const r = await api('/clear-list', { listType });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) {
+    if (listType === 'blacklist') loadBlacklist();
+    else if (listType === 'whitelist') loadWhitelist();
+    else if (listType === 'banned') loadBanned();
+    else if (listType === 'suspicious') loadSuspicious();
+    else loadStats();
+  }
+}
+</script>
 </body>
 </html>`;
 
   return new Response(html, {
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-    },
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
+}
+
+/**
+ * 清理重复数据
+ */
+async function handleCleanupDuplicates(request, env, corsHeaders) {
+  try {
+    const { adminKey } = await request.json();
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    const cleaned = { blacklist: 0, whitelist: 0, banned: 0, suspicious: 0, endpoints: 0 };
+
+    // 清理黑名单重复
+    const blacklistStr = await redisGet('blacklist_endpoints');
+    if (blacklistStr) {
+      const blacklist = JSON.parse(blacklistStr);
+      const originalCount = Object.keys(blacklist).length;
+      const seen = new Set();
+      for (const key of Object.keys(blacklist)) {
+        const endpoint = blacklist[key].endpoint || blacklist[key].mainDomain || key;
+        if (seen.has(endpoint)) {
+          delete blacklist[key];
+        } else {
+          seen.add(endpoint);
+        }
+      }
+      cleaned.blacklist = originalCount - Object.keys(blacklist).length;
+      await redisSet('blacklist_endpoints', JSON.stringify(blacklist));
+    }
+
+    // 清理白名单重复
+    const whitelistStr = await redisGet('whitelist_endpoints');
+    if (whitelistStr) {
+      const whitelist = JSON.parse(whitelistStr);
+      const originalCount = Object.keys(whitelist).length;
+      const seen = new Set();
+      for (const key of Object.keys(whitelist)) {
+        const endpoint = whitelist[key].endpoint || key;
+        if (seen.has(endpoint)) {
+          delete whitelist[key];
+        } else {
+          seen.add(endpoint);
+        }
+      }
+      cleaned.whitelist = originalCount - Object.keys(whitelist).length;
+      await redisSet('whitelist_endpoints', JSON.stringify(whitelist));
+    }
+
+    // 清理禁用列表重复
+    const bannedStr = await redisGet('banned_endpoints');
+    if (bannedStr) {
+      const banned = JSON.parse(bannedStr);
+      const originalCount = Object.keys(banned).length;
+      const seen = new Set();
+      for (const key of Object.keys(banned)) {
+        const endpoint = banned[key].endpoint || key;
+        if (seen.has(endpoint)) {
+          delete banned[key];
+        } else {
+          seen.add(endpoint);
+        }
+      }
+      cleaned.banned = originalCount - Object.keys(banned).length;
+      await redisSet('banned_endpoints', JSON.stringify(banned));
+    }
+
+    // 清理可疑列表重复
+    const suspiciousStr = await redisGet('suspicious_endpoints');
+    if (suspiciousStr) {
+      const suspicious = JSON.parse(suspiciousStr);
+      const originalCount = Object.keys(suspicious).length;
+      const seen = new Set();
+      for (const key of Object.keys(suspicious)) {
+        const endpoint = suspicious[key].endpoint || key;
+        if (seen.has(endpoint)) {
+          delete suspicious[key];
+        } else {
+          seen.add(endpoint);
+        }
+      }
+      cleaned.suspicious = originalCount - Object.keys(suspicious).length;
+      await redisSet('suspicious_endpoints', JSON.stringify(suspicious));
+    }
+
+    // 清理API端点重复
+    const endpointsStr = await redisGet('api_endpoints');
+    if (endpointsStr) {
+      const endpoints = JSON.parse(endpointsStr);
+      const originalCount = Object.keys(endpoints).length;
+      const seen = new Set();
+      for (const key of Object.keys(endpoints)) {
+        const endpoint = endpoints[key].endpoint || key;
+        if (seen.has(endpoint)) {
+          delete endpoints[key];
+        } else {
+          seen.add(endpoint);
+        }
+      }
+      cleaned.endpoints = originalCount - Object.keys(endpoints).length;
+      await redisSet('api_endpoints', JSON.stringify(endpoints));
+    }
+
+    const total = cleaned.blacklist + cleaned.whitelist + cleaned.banned + cleaned.suspicious + cleaned.endpoints;
+    return jsonResponse(
+      {
+        success: true,
+        message: `✅ 清理完成！共删除 ${total} 条重复数据`,
+        data: cleaned,
+      },
+      200,
+      corsHeaders,
+    );
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 清理失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 一键清空列表
+ */
+async function handleClearList(request, env, corsHeaders) {
+  try {
+    const { adminKey, listType } = await request.json();
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    const listMap = {
+      blacklist: 'blacklist_endpoints',
+      whitelist: 'whitelist_endpoints',
+      banned: 'banned_endpoints',
+      suspicious: 'suspicious_endpoints',
+      endpoints: 'api_endpoints',
+      all: ['blacklist_endpoints', 'whitelist_endpoints', 'banned_endpoints', 'suspicious_endpoints'],
+    };
+
+    const listNames = {
+      blacklist: '黑名单',
+      whitelist: '白名单',
+      banned: '禁用列表',
+      suspicious: '可疑列表',
+      endpoints: 'API端点',
+      all: '所有列表',
+    };
+
+    if (!listType || !listMap[listType]) {
+      return jsonResponse({ success: false, message: '❌ 无效的列表类型' }, 400, corsHeaders);
+    }
+
+    const keys = Array.isArray(listMap[listType]) ? listMap[listType] : [listMap[listType]];
+    for (const key of keys) {
+      await redisSet(key, '{}');
+    }
+
+    return jsonResponse({ success: true, message: `✅ ${listNames[listType]}已清空` }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 清空失败: ' + error.message }, 500, corsHeaders);
+  }
 }
 
 // ===== 辅助函数 =====
@@ -3046,59 +2226,52 @@ async function recordApiEndpoint(env, apiEndpoint, verifyResult = null, code = n
 
     const now = new Date().toISOString();
 
-    if (endpoints[apiEndpoint]) {
-      // API端点已存在，更新统计
-      endpoints[apiEndpoint].lastAccess = now;
-      endpoints[apiEndpoint].accessCount = (endpoints[apiEndpoint].accessCount || 0) + 1;
-    } else {
-      // 新的API端点
-      endpoints[apiEndpoint] = {
-        endpoint: apiEndpoint,
-        firstAccess: now,
-        lastAccess: now,
-        accessCount: 1,
-        models: [],
-      };
-    }
+    // 🔥 拆分多个 URL（用 | 分隔），分别存储
+    const urlList = apiEndpoint
+      .split(/\s*\|\s*/)
+      .map(u => u.trim().replace(/\/+$/, '').replace(/\/v1$/, ''))
+      .filter(u => u && u !== 'unknown' && u.length > 5);
 
-    // 🔥 记录模型（去重）
-    if (model && model !== 'unknown') {
-      if (!endpoints[apiEndpoint].models) {
-        endpoints[apiEndpoint].models = [];
-      }
-      // 拆分多个模型（可能用 | 或换行分隔）
-      const modelList = model
-        .split(/[|\n]/)
-        .map(m => m.trim())
-        .filter(m => m && m.length > 2);
-      for (const m of modelList) {
-        if (!endpoints[apiEndpoint].models.includes(m)) {
-          endpoints[apiEndpoint].models.push(m);
-        }
-      }
-      // 最多保留 20 个模型
-      if (endpoints[apiEndpoint].models.length > 20) {
-        endpoints[apiEndpoint].models = endpoints[apiEndpoint].models.slice(-20);
-      }
-    }
+    // 如果没有有效 URL，用原始值
+    const endpointsToRecord = urlList.length > 0 ? urlList : [apiEndpoint];
 
-    // 记录验证历史（最多保留50条）
-    if (!endpoints[apiEndpoint].verifyHistory) {
-      endpoints[apiEndpoint].verifyHistory = [];
-    }
-    endpoints[apiEndpoint].verifyHistory.unshift({
-      timestamp: now,
-      success: verifyResult === 'success',
-      code: code ? code.substring(0, 8) + '****' : null, // 脱敏
-      result: verifyResult || 'unknown',
-      model: model || null,
-    });
-    if (endpoints[apiEndpoint].verifyHistory.length > 50) {
-      endpoints[apiEndpoint].verifyHistory.length = 50;
+    for (const singleEndpoint of endpointsToRecord) {
+      if (endpoints[singleEndpoint]) {
+        // API端点已存在，更新统计
+        endpoints[singleEndpoint].lastAccess = now;
+        endpoints[singleEndpoint].accessCount = (endpoints[singleEndpoint].accessCount || 0) + 1;
+      } else {
+        // 新的API端点
+        endpoints[singleEndpoint] = {
+          endpoint: singleEndpoint,
+          firstAccess: now,
+          lastAccess: now,
+          accessCount: 1,
+          models: [],
+        };
+      }
+
+      // 🔥 不再在验证时记录模型（数据不准确）
+      // 模型数据现在来自 /report-models 接口（插件拉取模型列表时上报）
+
+      // 记录验证历史（最多保留50条）
+      if (!endpoints[singleEndpoint].verifyHistory) {
+        endpoints[singleEndpoint].verifyHistory = [];
+      }
+      endpoints[singleEndpoint].verifyHistory.unshift({
+        timestamp: now,
+        success: verifyResult === 'success',
+        code: code ? code.substring(0, 8) + '****' : null, // 脱敏
+        result: verifyResult || 'unknown',
+        model: model || null,
+      });
+      if (endpoints[singleEndpoint].verifyHistory.length > 50) {
+        endpoints[singleEndpoint].verifyHistory.length = 50;
+      }
     }
 
     await redisSet('api_endpoints', JSON.stringify(endpoints));
-    console.log(`📝 记录 API 端点: ${apiEndpoint}, 模型: ${model || 'unknown'}`);
+    console.log(`📝 记录 API 端点: ${endpointsToRecord.join(', ')}, 模型: ${model || 'unknown'}`);
   } catch (error) {
     console.error('记录API端点失败:', error);
   }
@@ -3302,6 +2475,102 @@ async function handleBanEndpoint(request, env, corsHeaders) {
   } catch (error) {
     console.error('禁用端点失败:', error);
     return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 批量导入禁用列表（支持txt格式）
+ * 格式：每行一个URL，或 "URL|原因"
+ */
+async function handleBatchImportBanned(request, env, corsHeaders) {
+  try {
+    const { adminKey, content } = await request.json();
+
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    if (!content || !content.trim()) {
+      return jsonResponse({ success: false, message: '❌ 导入内容不能为空' }, 400, corsHeaders);
+    }
+
+    const bannedStr = await redisGet('banned_endpoints');
+    const banned = bannedStr ? JSON.parse(bannedStr) : {};
+
+    const lines = content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    for (const line of lines) {
+      let endpoint = '';
+      let reason = '批量导入禁用';
+
+      // 智能解析格式：支持 "URL|原因" 或 "名称|URL" 两种格式
+      const separators = ['|', ',', '\t'];
+      let parsed = false;
+      for (const sep of separators) {
+        if (line.includes(sep)) {
+          const parts = line.split(sep).map(p => p.trim());
+          if (parts.length >= 2) {
+            // 检查哪个部分是URL
+            if (parts[1].includes('http') || (parts[1].includes('.') && !parts[0].includes('http'))) {
+              // 格式: 名称|URL - 第二部分是URL
+              endpoint = parts[1];
+              reason = parts[0] || '批量导入禁用';
+            } else if (parts[0].includes('.') || parts[0].includes('http')) {
+              // 格式: URL|原因 - 第一部分是URL
+              endpoint = parts[0];
+              reason = parts[1] || '批量导入禁用';
+            }
+            if (endpoint) {
+              parsed = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!parsed) {
+        if (line.includes('.') || line.includes('http')) {
+          endpoint = line;
+        } else {
+          continue;
+        }
+      }
+
+      if (!endpoint) continue;
+
+      // 去重检查
+      if (banned[endpoint]) {
+        skippedCount++;
+        continue;
+      }
+
+      banned[endpoint] = {
+        endpoint: endpoint,
+        reason: reason,
+        bannedAt: new Date().toISOString(),
+      };
+      addedCount++;
+    }
+
+    await redisSet('banned_endpoints', JSON.stringify(banned));
+
+    return jsonResponse(
+      {
+        success: true,
+        message: `✅ 批量导入完成：新增 ${addedCount} 条，跳过 ${skippedCount} 条重复`,
+        added: addedCount,
+        skipped: skippedCount,
+      },
+      200,
+      corsHeaders,
+    );
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 导入失败: ' + error.message }, 500, corsHeaders);
   }
 }
 
@@ -4055,6 +3324,95 @@ async function handleEditBlacklist(request, env, corsHeaders) {
 }
 
 /**
+ * 批量导入黑名单（支持txt格式）
+ * 格式：每行一个，格式为 "站点名称|URL" 或 "站点名称,URL" 或 "站点名称 URL"
+ * 也支持纯URL格式（站点名称默认为"未知贩子"）
+ */
+async function handleBatchImportBlacklist(request, env, corsHeaders) {
+  try {
+    const { adminKey, content } = await request.json();
+
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    if (!content || !content.trim()) {
+      return jsonResponse({ success: false, message: '❌ 导入内容不能为空' }, 400, corsHeaders);
+    }
+
+    const blacklistStr = await redisGet('blacklist_endpoints');
+    const blacklist = blacklistStr ? JSON.parse(blacklistStr) : {};
+
+    const lines = content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+    let addedCount = 0;
+    let skippedCount = 0;
+
+    for (const line of lines) {
+      let siteName = '未知贩子';
+      let endpoint = '';
+
+      // 尝试解析格式：站点名称|URL 或 站点名称,URL 或 站点名称\tURL
+      const separators = ['|', ',', '\t'];
+      let parsed = false;
+      for (const sep of separators) {
+        if (line.includes(sep)) {
+          const parts = line.split(sep).map(p => p.trim());
+          if (parts.length >= 2) {
+            siteName = parts[0] || '未知贩子';
+            endpoint = parts[1];
+            parsed = true;
+            break;
+          }
+        }
+      }
+
+      // 如果没有分隔符，检查是否是纯URL
+      if (!parsed) {
+        // 检查是否包含域名特征
+        if (line.includes('.') || line.includes('http')) {
+          endpoint = line;
+        } else {
+          continue; // 跳过无效行
+        }
+      }
+
+      if (!endpoint) continue;
+
+      // 检查是否已存在
+      if (blacklist[endpoint]) {
+        skippedCount++;
+        continue;
+      }
+
+      blacklist[endpoint] = {
+        endpoint: endpoint,
+        siteName: siteName,
+        addedAt: new Date().toISOString(),
+      };
+      addedCount++;
+    }
+
+    await redisSet('blacklist_endpoints', JSON.stringify(blacklist));
+
+    return jsonResponse(
+      {
+        success: true,
+        message: `✅ 批量导入完成：新增 ${addedCount} 条，跳过 ${skippedCount} 条重复`,
+        added: addedCount,
+        skipped: skippedCount,
+      },
+      200,
+      corsHeaders,
+    );
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 导入失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
  * 获取网页标题 + 完整 Ping 检测（域名信息）
  */
 async function handleFetchSiteTitle(request, env, corsHeaders) {
@@ -4635,13 +3993,13 @@ async function handleGetBlockMessage(request, env, corsHeaders) {
     return jsonResponse(
       {
         success: true,
-        message: message || '❌ 授权服务暂时不可用\n\n请稍后重试，若持续失败可前往帖子反馈',
+        data: message || '', // 返回 data 字段供前端使用
       },
       200,
       corsHeaders,
     );
   } catch (error) {
-    return jsonResponse({ success: false, message: '' }, 500, corsHeaders);
+    return jsonResponse({ success: false, data: '' }, 500, corsHeaders);
   }
 }
 

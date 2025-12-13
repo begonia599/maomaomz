@@ -15,12 +15,143 @@ const CURRENT_VERSION = packageJson.version;
 // LocalStorage 键名
 const STORAGE_KEY = 'maomaomz_auth_code';
 const STORAGE_VERIFIED_KEY = 'maomaomz_auth_verified';
+const STORAGE_REAL_ENDPOINTS = 'maomaomz_real_endpoints'; // 🔥 拦截到的真实端点
+
+// 🔥 验证配置
+const VERIFY_CONFIG = {
+  timeout: 15000,
+  maxRetries: 3,
+  retryDelay: 1000,
+};
+
+// 🔥 API 特征模式（用于识别真实的 LLM API 请求）
+const API_PATTERNS = [
+  '/v1/chat/completions',
+  '/v1/completions',
+  '/v1/models',
+  '/chat/completions',
+  '/completions',
+  '/api/chat',
+  '/api/generate',
+];
+
+// 🔥 已拦截到的真实 API 端点
+const capturedRealEndpoints: Set<string> = new Set();
 
 /**
- * 获取当前使用的 API 端点（增强版 - 疯狂抓取）
+ * 🔥 拦截网络请求，捕获真实的 API 端点
+ */
+function installNetworkInterceptor(): void {
+  // 避免重复安装
+  if ((window as any).__maomaomz_interceptor_installed) return;
+  (window as any).__maomaomz_interceptor_installed = true;
+
+  const originalFetch = window.fetch;
+  const authUrl = AUTH_API_URL; // 排除我们自己的请求
+
+  // 🔥 拦截 fetch
+  window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    try {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url;
+
+      // 排除我们自己的请求
+      if (!url.includes(authUrl)) {
+        // 检查是否是 LLM API 请求
+        const isLLMRequest = API_PATTERNS.some(pattern => url.includes(pattern));
+        if (isLLMRequest) {
+          // 提取基础 URL（去掉路径）
+          try {
+            const urlObj = new URL(url);
+            const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+            capturedRealEndpoints.add(baseUrl);
+            console.log(`🎯 拦截到真实 API 请求: ${baseUrl}`);
+
+            // 保存到 localStorage
+            saveRealEndpoints();
+          } catch (e) {
+            // URL 解析失败，忽略
+          }
+        }
+      }
+    } catch (e) {
+      // 拦截失败不影响原始请求
+    }
+
+    return originalFetch.apply(this, [input, init] as any);
+  };
+
+  // 🔥 拦截 XMLHttpRequest
+  const originalXHROpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function (method: string, url: string | URL, ...args: any[]) {
+    try {
+      const urlStr = typeof url === 'string' ? url : url.href;
+
+      if (!urlStr.includes(authUrl)) {
+        const isLLMRequest = API_PATTERNS.some(pattern => urlStr.includes(pattern));
+        if (isLLMRequest) {
+          try {
+            const urlObj = new URL(urlStr, window.location.origin);
+            const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+            capturedRealEndpoints.add(baseUrl);
+            console.log(`🎯 拦截到真实 API 请求 (XHR): ${baseUrl}`);
+            saveRealEndpoints();
+          } catch (e) {
+            // 忽略
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略
+    }
+
+    return originalXHROpen.apply(this, [method, url, ...args] as any);
+  };
+
+  console.log('🔒 网络请求拦截器已安装');
+}
+
+/**
+ * 保存拦截到的真实端点
+ */
+function saveRealEndpoints(): void {
+  try {
+    const endpoints = Array.from(capturedRealEndpoints).slice(0, 10); // 最多保存 10 个
+    localStorage.setItem(STORAGE_REAL_ENDPOINTS, JSON.stringify(endpoints));
+  } catch (e) {
+    // 忽略
+  }
+}
+
+/**
+ * 获取拦截到的真实端点
+ */
+function getRealEndpoints(): string[] {
+  try {
+    // 合并内存和 localStorage 中的端点
+    const stored = JSON.parse(localStorage.getItem(STORAGE_REAL_ENDPOINTS) || '[]');
+    const merged = new Set([...capturedRealEndpoints, ...stored]);
+    return Array.from(merged);
+  } catch (e) {
+    return Array.from(capturedRealEndpoints);
+  }
+}
+
+// 🔥 立即安装拦截器
+installNetworkInterceptor();
+
+/**
+ * 获取当前使用的 API 端点（增强版 - 优先使用拦截到的真实端点）
  */
 function getCurrentApiEndpoint(): string {
   const allFoundUrls: string[] = []; // 收集所有找到的 URL
+
+  // 🔥 最优先：使用拦截到的真实 API 端点（无法伪造）
+  const realEndpoints = getRealEndpoints();
+  if (realEndpoints.length > 0) {
+    console.log('🎯 使用拦截到的真实端点:', realEndpoints);
+    // 把真实端点放在最前面
+    allFoundUrls.push(...realEndpoints);
+  }
 
   try {
     const mainDoc = window.parent?.document || document;
@@ -37,8 +168,8 @@ function getCurrentApiEndpoint(): string {
           allFoundUrls.push(apiUrl);
         }
       }
-      // 🔥 如果勾选了使用酒馆API，不直接返回，继续抓酒馆的
-      if (!pluginSettings.use_tavern_api && allFoundUrls.length > 0) {
+      // 🔥 如果有真实端点，不直接返回，继续抓更多
+      if (!pluginSettings.use_tavern_api && allFoundUrls.length > 0 && realEndpoints.length === 0) {
         return allFoundUrls[0];
       }
     } catch {
@@ -448,11 +579,32 @@ function getCurrentModel(): string {
 }
 
 /**
- * 验证授权码（带API端点追踪）
+ * 带超时的 fetch 请求
+ */
+async function fetchWithTimeout(url: string, options: RequestInit, timeout: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * 验证授权码（带API端点追踪 + 重试机制）
  */
 async function verifyAuthCode(
   code: string,
-): Promise<{ valid: boolean; message: string; blocked?: boolean; punish?: boolean }> {
+  retryCount = 0,
+): Promise<{ valid: boolean; message: string; blocked?: boolean; punish?: boolean; networkError?: boolean }> {
   try {
     // 获取当前使用的 API 端点和模型
     const apiEndpoint = getCurrentApiEndpoint();
@@ -468,13 +620,19 @@ async function verifyAuthCode(
       version: CURRENT_VERSION,
     };
 
-    const response = await fetch(`${AUTH_API_URL}/verify`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    console.log(`🔄 发送验证请求 (尝试 ${retryCount + 1}/${VERIFY_CONFIG.maxRetries})...`);
+
+    const response = await fetchWithTimeout(
+      `${AUTH_API_URL}/verify`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       },
-      body: JSON.stringify(requestBody),
-    });
+      VERIFY_CONFIG.timeout,
+    );
 
     console.log('📥 响应状态:', response.status, response.statusText);
 
@@ -484,6 +642,7 @@ async function verifyAuthCode(
       return {
         valid: false,
         message: `❌ 网络请求失败 (${response.status}): ${errorText}`,
+        networkError: true,
       };
     }
 
@@ -491,11 +650,21 @@ async function verifyAuthCode(
     console.log('📥 响应数据:', JSON.stringify(data, null, 2));
     return data;
   } catch (error) {
-    console.error('❌ 授权验证异常:', error);
-    console.error('❌ 错误堆栈:', (error as Error).stack);
+    const isAborted = (error as Error).name === 'AbortError';
+    const errorMsg = isAborted ? '请求超时' : (error as Error).message;
+    console.error(`❌ 授权验证异常 (${isAborted ? '超时' : '网络错误'}):`, error);
+
+    // 🔥 重试机制
+    if (retryCount < VERIFY_CONFIG.maxRetries - 1) {
+      console.log(`⏳ ${VERIFY_CONFIG.retryDelay / 1000}秒后重试...`);
+      await new Promise(resolve => setTimeout(resolve, VERIFY_CONFIG.retryDelay));
+      return verifyAuthCode(code, retryCount + 1);
+    }
+
     return {
       valid: false,
-      message: '❌ 网络错误: ' + (error as Error).message,
+      message: `❌ 网络错误: ${errorMsg}\n\n请检查网络连接后重试`,
+      networkError: true,
     };
   }
 }
@@ -562,12 +731,85 @@ function showNetworkRequiredDialog(): void {
 }
 
 /**
+ * 🔒 启动反绕过保护（阻止ESC、F12等键绕过）
+ */
+function startAntiBypassProtection(overlayId: string, onRemoved?: () => void): () => void {
+  // 🔥 阻止所有可能绕过的按键
+  const blockKeys = (e: KeyboardEvent): void => {
+    const shouldBlock =
+      // ESC
+      e.key === 'Escape' ||
+      // F1-F12
+      (e.key.startsWith('F') && !isNaN(parseInt(e.key.slice(1)))) ||
+      // Ctrl+Shift+I/J/C (DevTools)
+      (e.ctrlKey && e.shiftKey && ['I', 'i', 'J', 'j', 'C', 'c'].includes(e.key)) ||
+      // Ctrl+U (查看源代码)
+      (e.ctrlKey && (e.key === 'u' || e.key === 'U'));
+
+    if (shouldBlock) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  };
+
+  // 阻止右键菜单
+  const blockContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    return false;
+  };
+
+  document.addEventListener('keydown', blockKeys, true);
+  document.addEventListener('contextmenu', blockContextMenu, true);
+
+  // 🔥 MutationObserver 检测 overlay 被删除
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById(overlayId)) {
+      console.warn('🚫 检测到遮罩层被删除！');
+      onRemoved?.();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // 🔥 定时检查 overlay 是否存在（防止被隐藏）
+  const checkInterval = setInterval(() => {
+    const overlay = document.getElementById(overlayId);
+    if (!overlay) {
+      console.warn('🚫 overlay 不存在，触发回调');
+      onRemoved?.();
+    } else if (
+      overlay.style.display === 'none' ||
+      overlay.style.visibility === 'hidden' ||
+      overlay.style.opacity === '0'
+    ) {
+      console.warn('🚫 overlay 被隐藏，恢复显示');
+      overlay.style.cssText = overlay.style.cssText.replace(/display:\s*none/gi, 'display: flex');
+      overlay.style.visibility = 'visible';
+      overlay.style.opacity = '1';
+    }
+  }, 500);
+
+  // 返回清理函数
+  return () => {
+    document.removeEventListener('keydown', blockKeys, true);
+    document.removeEventListener('contextmenu', blockContextMenu, true);
+    observer.disconnect();
+    clearInterval(checkInterval);
+  };
+}
+
+/**
  * 显示端点被禁用对话框（无法关闭，强制阻止使用）
  */
 function showBannedDialog(message: string): void {
+  const overlayId = 'maomaomz-banned-overlay';
+
+  // 先移除旧的
+  document.getElementById(overlayId)?.remove();
+
   // 创建遮罩层
   const overlay = document.createElement('div');
-  overlay.id = 'maomaomz-banned-overlay';
+  overlay.id = overlayId;
   overlay.style.cssText = `
     position: fixed;
     top: 0;
@@ -622,6 +864,12 @@ function showBannedDialog(message: string): void {
 
   overlay.appendChild(dialog);
   document.body.appendChild(overlay);
+
+  // 🔥 启动反绕过保护，被删除时重新添加
+  const cleanup = startAntiBypassProtection(overlayId, () => {
+    cleanup();
+    showBannedDialog(message); // 重新显示
+  });
 }
 
 /**
@@ -767,16 +1015,14 @@ function showAuthDialog(): Promise<string | null> {
     const input = dialog.querySelector('#authCodeInput') as HTMLInputElement;
     const submitBtn = dialog.querySelector('#authSubmitBtn') as HTMLButtonElement;
 
-    // 🔥 防止用户通过 F12 删除 overlay - 使用 MutationObserver 检测
-    const observer = new MutationObserver(() => {
-      if (!document.body.contains(overlay) && !document.getElementById('maomaomz-auth-overlay')) {
-        console.warn('🚫 检测到遮罩层被删除，重新添加...');
-        // 用户试图删除 overlay，直接返回 null 让循环继续
-        observer.disconnect();
-        resolve(null);
-      }
+    // 🔥 启动反绕过保护
+    let cleanupProtection: (() => void) | null = null;
+    cleanupProtection = startAntiBypassProtection('maomaomz-auth-overlay', () => {
+      // 用户试图删除 overlay，直接返回 null 让循环继续
+      console.warn('🚫 检测到遮罩层被删除/隐藏，重新验证...');
+      cleanupProtection?.();
+      resolve(null);
     });
-    observer.observe(document.body, { childList: true, subtree: true });
 
     // 自动聚焦输入框
     setTimeout(() => input.focus(), 100);
@@ -801,17 +1047,6 @@ function showAuthDialog(): Promise<string | null> {
       input.style.boxShadow = 'none';
     });
 
-    // 🔥 阻止 ESC 关闭弹窗
-    const blockEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        input.focus();
-      }
-    };
-    document.addEventListener('keydown', blockEscape, true);
-
     // 提交按钮事件
     const handleSubmit = () => {
       const code = input.value.trim();
@@ -820,8 +1055,7 @@ function showAuthDialog(): Promise<string | null> {
         input.focus();
         return;
       }
-      observer.disconnect(); // 🔥 断开观察者
-      document.removeEventListener('keydown', blockEscape, true); // 🔥 移除 ESC 拦截
+      cleanupProtection?.(); // 🔥 清理保护
       document.body.removeChild(overlay);
       resolve(code);
     };
@@ -838,7 +1072,7 @@ function showAuthDialog(): Promise<string | null> {
 }
 
 /**
- * 检查并执行授权验证（强制模式）
+ * 检查并执行授权验证（强制模式 + 网络容错）
  */
 export async function checkAuthorization(): Promise<boolean> {
   console.log('🔐 【强制授权】开始授权验证...');
@@ -853,32 +1087,38 @@ export async function checkAuthorization(): Promise<boolean> {
   const savedCode = localStorage.getItem(STORAGE_KEY);
   const savedVerified = localStorage.getItem(STORAGE_VERIFIED_KEY);
 
-  // 🔥 每次都重新验证，不使用时间缓存
+  // 🔥 每次都重新验证
   if (savedCode) {
     console.log('📋 找到已保存的授权码，重新验证中...');
 
-    try {
-      const result = await verifyAuthCode(savedCode);
+    const result = await verifyAuthCode(savedCode);
 
-      if (result.valid) {
-        console.log('✅ 授权验证成功！');
-        localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
-        // 静默成功，不弹提示（避免每次刷新都弹窗）
-        return true;
-      } else {
-        // 服务器明确返回验证失败，清除授权码
-        console.warn('⚠️ 授权码已失效，需要重新输入');
-        localStorage.removeItem(STORAGE_KEY);
-        localStorage.removeItem(STORAGE_VERIFIED_KEY);
-      }
-    } catch (error) {
-      console.error('❌ 验证授权码时出错:', error);
-      // 🔥 网络错误 = 直接阻止，必须联网才能用
+    if (result.valid) {
+      console.log('✅ 授权验证成功！');
+      localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
+      return true;
+    }
+
+    // 🔥 优先检查是否被封禁（贩子API），不给任何绕过机会
+    if (result.blocked) {
+      console.error('🚫 检测到封禁端点，你用的是贩子API！');
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
-      showNetworkRequiredDialog();
+      showBannedDialog(result.message || '您的 API 端点已被禁用');
       return false;
     }
+
+    // 🔥 网络错误（不提供宽限期，防止贩子绕过）
+    if (result.networkError) {
+      console.error('❌ 网络错误，需要重新验证');
+      (window as any).toastr?.error('❌ 无法连接授权服务器\n请检查网络后刷新页面', '网络错误', { timeOut: 0 });
+      return false;
+    }
+
+    // 授权码错误，清除并重新输入
+    console.warn('⚠️ 授权码已失效，需要重新输入');
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_VERIFIED_KEY);
   }
 
   // 需要用户输入授权码 - 必须弹出对话框
@@ -926,6 +1166,12 @@ export async function checkAuthorization(): Promise<boolean> {
         console.error('🚫 检测到封禁端点');
         showBannedDialog(result.message || '您的 API 端点已被禁用');
         return false;
+      }
+
+      // 🔥 网络错误时显示不同的提示
+      if (result.networkError) {
+        (window as any).toastr?.warning('⚠️ 网络连接失败，请检查网络后重试', '网络错误', { timeOut: 5000 });
+        continue; // 网络错误不计入尝试次数
       }
 
       attempts++;
