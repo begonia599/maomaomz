@@ -326,6 +326,36 @@ ${updateInfo.notes}
   // 添加到页面
   document.body.insertAdjacentHTML('beforeend', dialogHtml);
 
+  // 🔥 强制模式：阻止关闭弹窗
+  if (forceUpdate) {
+    // 阻止 ESC 键
+    const blockEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('keydown', blockEscape, true);
+
+    // 防止弹窗被删除
+    const observer = new MutationObserver(() => {
+      if (!document.getElementById('maomaomz-update-overlay')) {
+        document.body.insertAdjacentHTML('beforeend', dialogHtml);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // 定时检查弹窗是否被隐藏
+    setInterval(() => {
+      const overlay = document.getElementById('maomaomz-update-overlay');
+      if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.visibility = 'visible';
+        overlay.style.opacity = '1';
+      }
+    }, 500);
+  }
+
   // 绑定事件
   document.getElementById('maomaomz-update-now')?.addEventListener('click', async () => {
     const TH = (window as any).TavernHelper;
@@ -386,15 +416,7 @@ ${updateInfo.notes}
       }
 
       if (updateSuccess) {
-        // 关闭对话框
-        document.getElementById('maomaomz-update-overlay')?.remove();
-
-        (window as any).toastr?.success(
-          `✅ 更新请求已发送！\n\n如果刷新后仍提示更新，请手动执行：\ncd public/scripts/extensions/third-party/maomaomz && git pull`,
-          '🎉 更新中',
-          { timeOut: 5000 },
-        );
-
+        (window as any).toastr?.success('✅ 更新成功！3秒后刷新页面...', '完成', { timeOut: 3000 });
         // 3秒后刷新页面
         setTimeout(() => {
           window.location.reload();
@@ -412,13 +434,11 @@ ${updateInfo.notes}
         updateButton.style.opacity = '1';
       }
 
-      // 降级：显示手动更新指引
-      document.getElementById('maomaomz-update-overlay')?.remove();
-
+      // 🔥 强制模式：不关闭弹窗，只显示提示
       (window as any).toastr?.warning(
-        `⚠️ 自动更新失败\n\n请尝试以下方法：\n\n方法1：扩展管理\n点击左侧【扩展】→ 找到插件 → 点击【立即更新】\n\n方法2：终端命令\ncd public/scripts/extensions/third-party/maomaomz && git pull`,
+        `⚠️ 自动更新失败，请手动更新后点击刷新按钮\n\n终端命令：cd public/scripts/extensions/third-party/maomaomz && git pull`,
         '请手动更新',
-        { timeOut: 0, extendedTimeOut: 0, closeButton: true },
+        { timeOut: 0, closeButton: true },
       );
     }
   });
