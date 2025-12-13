@@ -54,7 +54,7 @@ $(() => {
     if (updateResult && updateResult.hasUpdate) {
       console.log(`🚨 发现新版本，必须更新才能使用: ${updateResult.currentVersion} → ${updateResult.latestVersion}`);
       // 🔥 强制更新模式：不允许跳过
-      showUpdateDialog(
+      const dialogShown = showUpdateDialog(
         {
           latestVersion: updateResult.latestVersion || CURRENT_VERSION,
           latestCommit: updateResult.latestCommit || '',
@@ -65,8 +65,11 @@ $(() => {
         },
         true,
       ); // 强制更新，不允许跳过
-      // 🚫 有更新时不加载 UI，强制用户更新
-      return;
+      // 🚫 只有真正显示了弹窗才阻止加载，否则继续加载（5分钟内跳过弹窗时允许继续使用）
+      if (dialogShown) {
+        return;
+      }
+      console.log('⏰ 更新弹窗被跳过，继续加载插件...');
     }
 
     console.log('✅ 版本已是最新，初始化插件功能...');

@@ -210,18 +210,18 @@ export function showUpdateDialog(
     notes: string;
   },
   forceUpdate: boolean = false,
-): void {
+): boolean {
   // 防止无限循环：检查是否刚刚尝试过更新
   const lastUpdateAttempt = localStorage.getItem('maomaomz_last_update_attempt');
   if (lastUpdateAttempt) {
     const timeSinceLastAttempt = Date.now() - parseInt(lastUpdateAttempt, 10);
     // 5分钟内完全不弹窗，避免"假成功"后无限循环
     if (timeSinceLastAttempt < 5 * 60 * 1000) {
-      console.log('⏰ 刚刚尝试过更新（5分钟内），完全跳过弹窗');
+      console.log('⏰ 刚刚尝试过更新（5分钟内），跳过弹窗但允许继续加载');
       (window as any).toastr?.info('⏰ 刚尝试过更新，5分钟内不再提示。如需手动更新请用 git pull', '', {
         timeOut: 5000,
       });
-      return; // 完全跳过，不显示弹窗
+      return false; // 返回 false 表示没有显示弹窗，允许继续加载
     }
   }
 
@@ -229,7 +229,7 @@ export function showUpdateDialog(
   const skipUntil = localStorage.getItem('maomaomz_skip_update_until');
   if (skipUntil && Date.now() < parseInt(skipUntil, 10)) {
     console.log('⏰ 在跳过时间内，不显示更新提示');
-    return;
+    return false; // 返回 false 表示没有显示弹窗
   }
 
   const dialogHtml = `
@@ -506,6 +506,8 @@ export function showUpdateDialog(
       (window as any).toastr?.info('⏰ 已跳过本次更新提示，1小时后再提醒', '', { timeOut: 3000 });
     });
   }
+
+  return true; // 返回 true 表示显示了弹窗
 }
 
 /**
