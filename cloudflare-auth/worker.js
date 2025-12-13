@@ -116,6 +116,10 @@ export default {
         return await handleRemoveBlacklist(request, env, corsHeaders);
       } else if (path === '/edit-blacklist') {
         return await handleEditBlacklist(request, env, corsHeaders);
+      } else if (path === '/fetch-site-name') {
+        return await handleFetchSiteName(request, env, corsHeaders);
+      } else if (path === '/detect-site-name') {
+        return await handleDetectSiteName(request, env, corsHeaders);
       } else if (path === '/batch-import-blacklist') {
         return await handleBatchImportBlacklist(request, env, corsHeaders);
       } else if (path === '/report-models') {
@@ -130,6 +134,10 @@ export default {
         return await handleUnwhitelistEndpoint(request, env, corsHeaders);
       } else if (path === '/get-whitelist-endpoints') {
         return await handleGetWhitelistEndpoints(request, env, corsHeaders);
+      } else if (path === '/update-whitelist-name') {
+        return await handleUpdateWhitelistName(request, env, corsHeaders);
+      } else if (path === '/update-banned-name') {
+        return await handleUpdateBannedName(request, env, corsHeaders);
       } else if (path === '/suspicious-endpoint') {
         return await handleSuspiciousEndpoint(request, env, corsHeaders);
       } else if (path === '/unsuspicious-endpoint') {
@@ -956,6 +964,14 @@ async function handleStats(request, env, corsHeaders) {
     const suspiciousStr = await redisGet('suspicious_endpoints');
     const suspicious = suspiciousStr ? JSON.parse(suspiciousStr) : {};
 
+    // 获取黑名单
+    const blacklistStr = await redisGet('blacklist_endpoints');
+    const blacklist = blacklistStr ? JSON.parse(blacklistStr) : {};
+
+    // 获取站点名称缓存
+    const siteNamesStr = await redisGet('site_names');
+    const siteNames = siteNamesStr ? JSON.parse(siteNamesStr) : {};
+
     // 🔥 获取模型上报数据（这是准确的模型列表）
     const modelReportsStr = await redisGet('model_reports');
     const modelReports = modelReportsStr ? JSON.parse(modelReportsStr) : {};
@@ -981,12 +997,23 @@ async function handleStats(request, env, corsHeaders) {
       } catch {
         /* ignore */
       }
+      // 获取站点名称（从多个来源）
+      const siteName =
+        siteNames[ep.endpoint]?.siteName ||
+        blacklist[ep.endpoint]?.siteName ||
+        whitelist[ep.endpoint]?.siteName ||
+        bannedEndpoints[ep.endpoint]?.siteName ||
+        suspicious[ep.endpoint]?.siteName ||
+        '';
       return {
         ...ep,
         models: matchedModels, // 使用上报的准确模型，不用验证时的
+        siteName: siteName,
         isBanned: !!bannedEndpoints[ep.endpoint],
+        isBlacklisted: !!blacklist[ep.endpoint],
         isWhitelisted: !!whitelist[ep.endpoint],
         isSuspicious: !!suspicious[ep.endpoint],
+        blacklistInfo: blacklist[ep.endpoint] || null,
       };
     });
 
@@ -1244,7 +1271,7 @@ function handleAdmin(env) {
 
     <!-- API端点 -->
     <div id="page-endpoints" class="page">
-      <h1 class="page-title">📡 API端点统计</h1>
+      <h1 class="page-title">📡 API端点统计 <button class="btn btn-sm btn-info" style="margin-left:12px" onclick="batchFetchEndpointNames()">🔍 一键检测</button></h1>
       <div class="search-box">
         <input type="text" id="endpoint-search" placeholder="搜索端点..." oninput="filterEndpoints()">
         <select id="endpoint-filter" onchange="filterEndpoints()">
@@ -1256,7 +1283,7 @@ function handleAdmin(env) {
           <option value="suspicious">可疑</option>
         </select>
       </div>
-      <div class="grid grid-3" id="endpoints-list"></div>
+      <div id="endpoints-list"></div>
     </div>
 
     <!-- 黑名单 -->
@@ -1287,6 +1314,7 @@ function handleAdmin(env) {
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
           <span>黑名单列表</span>
           <div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-info" onclick="batchFetchSiteNames()">🔍 一键检测</button>
             <button class="btn btn-sm btn-secondary" onclick="exportBlacklist('txt')">📤 导出TXT</button>
             <button class="btn btn-sm btn-secondary" onclick="exportBlacklist('csv')">📤 导出CSV</button>
           </div>
@@ -1517,7 +1545,7 @@ async function loadEndpoints() {
   const r = await api('/stats');
   if (r.success) {
     allEndpoints = r.data.apiEndpoints || [];
-    renderEndpoints(allEndpoints);
+    filterEndpoints(); // 保持当前筛选状态
   }
 }
 
@@ -1528,7 +1556,7 @@ function renderEndpoints(list) {
   }
   const start = (currentPage.endpoints - 1) * PAGE_SIZE;
   const pageList = list.slice(start, start + PAGE_SIZE);
-  const html = '<table class="table" style="width:100%"><thead><tr><th style="width:60px">状态</th><th style="width:200px">URL</th><th>模型</th><th style="width:50px">次数</th><th style="width:80px">访问</th><th style="width:70px">操作</th></tr></thead><tbody>' +
+  const html = '<table class="table" style="width:100%"><thead><tr><th style="width:60px">状态</th><th style="width:120px">站点</th><th>URL</th><th>模型</th><th style="width:50px">次数</th><th style="width:80px">访问</th><th style="width:100px">操作</th></tr></thead><tbody>' +
     pageList.map(e => {
       let status = '正常', cls = 'tag-info';
       if (e.isBanned) { status = '已禁用'; cls = 'tag-danger'; }
@@ -1537,14 +1565,18 @@ function renderEndpoints(list) {
       else if (e.isBlacklisted) { status = '黑名单'; cls = 'tag-danger'; }
       const modelCount = e.models ? e.models.length : 0;
       const modelTags = modelCount > 0 ? e.models.map(m => '<span class="model-tag">' + m + '</span>').join('') : '<span style="color:var(--muted)">无</span>';
+      const siteName = e.siteName || e.blacklistInfo?.siteName || '';
       return '<tr>' +
         '<td><span class="tag ' + cls + '">' + status + '</span></td>' +
-        '<td style="font-family:monospace;font-size:11px;word-break:break-all">' + e.endpoint + '</td>' +
+        '<td style="font-size:12px">' + (siteName ? '<span style="color:#fbbf24">' + siteName + '</span>' : '<button class="btn btn-sm btn-info" onclick="fetchEndpointName(\\'' + e.endpoint.replace(/'/g, "\\\\'") + '\\')">检测</button>') + '</td>' +
+        '<td style="font-family:monospace;font-size:14px;word-break:break-all"><a href="' + e.endpoint + '" target="_blank" style="color:#60a5fa;text-decoration:none" title="点击打开">' + e.endpoint + '</a></td>' +
         '<td><div style="max-height:60px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:2px;align-content:flex-start">' + modelTags + '</div></td>' +
         '<td style="text-align:center">' + (e.accessCount || 0) + '</td>' +
-        '<td style="font-size:11px">' + (e.lastAccess ? new Date(e.lastAccess).toLocaleDateString('zh-CN') : '-') + '</td>' +
-        '<td><button class="btn btn-sm btn-danger" onclick="quickBan(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')">禁</button>' +
-        '<button class="btn btn-sm btn-success" onclick="quickWhitelist(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')">白</button></td></tr>';
+        '<td style="font-size:14px">' + (e.lastAccess ? new Date(e.lastAccess).toLocaleDateString('zh-CN') : '-') + '</td>' +
+        '<td><button class="btn btn-sm btn-danger" onclick="quickBan(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')" title="禁用">禁</button>' +
+        '<button class="btn btn-sm btn-success" onclick="quickWhitelist(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')" title="白名单">白</button>' +
+        '<button class="btn btn-sm" style="background:#dc2626" onclick="addToBlacklist(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')" title="加入黑名单">黑</button>' +
+        '<button class="btn btn-sm" style="background:#6b7280" onclick="deleteEndpoint(' + "'" + e.endpoint.replace(/'/g, "\\'") + "'" + ')" title="删除记录">删</button></td></tr>';
     }).join('') + '</tbody></table>' + renderPagination(list.length, currentPage.endpoints, 'endpoints');
   document.getElementById('endpoints-list').innerHTML = html;
 }
@@ -1575,6 +1607,62 @@ async function quickWhitelist(url) {
   loadEndpoints();
 }
 
+async function deleteEndpoint(url) {
+  if (!confirm('确定删除 ' + url + ' 的记录？删除后用户需要重新授权获取')) return;
+  const r = await api('/delete-endpoint', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  loadEndpoints();
+}
+
+async function addToBlacklist(url) {
+  if (!confirm('加入黑名单: ' + url + '?')) return;
+  toast('正在添加并获取站点名称...', 'info');
+  // 先添加到黑名单
+  const r1 = await api('/add-blacklist', { endpoint: url, siteName: '获取中...' });
+  if (!r1.success) { toast(r1.message, 'error'); return; }
+  // 自动获取站点名称
+  const r2 = await api('/fetch-site-name', { endpoint: url });
+  toast(r2.success ? '✅ 已加入黑名单: ' + (r2.siteName || url) : '⚠️ 已加入黑名单，名称获取失败', r2.success ? 'success' : 'warning');
+  loadEndpoints();
+}
+
+async function fetchEndpointName(url) {
+  toast('正在检测站点名称...', 'info');
+  // 只获取名称，不加入黑名单
+  const r = await api('/detect-site-name', { endpoint: url });
+  toast(r.success ? '✅ ' + (r.siteName || url) : '⚠️ 检测失败', r.success ? 'success' : 'warning');
+  loadEndpoints();
+}
+
+async function batchFetchEndpointNames() {
+  // 筛选没有站点名称的端点
+  const toFetch = allEndpoints.filter(x => !x.siteName);
+  if (toFetch.length === 0) {
+    toast('所有端点都已有站点名称', 'info');
+    return;
+  }
+  if (!confirm('将检测 ' + toFetch.length + ' 个端点的站点名称，是否继续？')) return;
+
+  let success = 0, fail = 0;
+  toast('正在批量检测 ' + toFetch.length + ' 个站点...', 'info');
+
+  for (let i = 0; i < toFetch.length; i++) {
+    const item = toFetch[i];
+    try {
+      // 只获取名称，不加入黑名单
+      const r = await api('/detect-site-name', { endpoint: item.endpoint });
+      if (r.success && r.siteName) success++;
+      else fail++;
+    } catch (e) { fail++; }
+    if ((i + 1) % 3 === 0 || i === toFetch.length - 1) {
+      toast('进度: ' + (i + 1) + '/' + toFetch.length + ' (成功:' + success + ' 失败:' + fail + ')', 'info');
+    }
+  }
+
+  toast('✅ 检测完成！成功:' + success + ' 失败:' + fail, success > 0 ? 'success' : 'warning');
+  loadEndpoints();
+}
+
 // 黑名单
 let blacklistData = [];
 async function loadBlacklist() {
@@ -1595,7 +1683,9 @@ function renderBlacklist() {
       '<tr><td><span class="tag tag-danger">' + (info.siteName || '未知') + '</span></td>' +
       '<td>' + (info.endpoint || info.mainDomain || '-') + '</td>' +
       '<td>' + (info.addedAt ? new Date(info.addedAt).toLocaleString('zh-CN') : '-') + '</td>' +
-      '<td><button class="btn btn-sm btn-secondary" onclick="removeBlacklist(\\'' + (info.endpoint || info.mainDomain || '').replace(/'/g, "\\\\'") + '\\')">移除</button></td></tr>'
+      '<td><button class="btn btn-sm btn-info" onclick="fetchSiteName(\\'' + (info.endpoint || info.mainDomain || '').replace(/'/g, "\\\\'") + '\\')" title="获取网站标题">获取</button>' +
+      '<button class="btn btn-sm btn-warning" onclick="editSiteName(\\'' + (info.endpoint || info.mainDomain || '').replace(/'/g, "\\\\'") + '\\')" title="手动编辑">编辑</button>' +
+      '<button class="btn btn-sm btn-secondary" onclick="removeBlacklist(\\'' + (info.endpoint || info.mainDomain || '').replace(/'/g, "\\\\'") + '\\')">移除</button></td></tr>'
     ).join('') + '</tbody></table>' + renderPagination(blacklistData.length, currentPage.blacklist, 'blacklist');
   document.getElementById('blacklist-list').innerHTML = html;
 }
@@ -1613,6 +1703,50 @@ async function removeBlacklist(url) {
   if (!confirm('确定移除?')) return;
   const r = await api('/remove-blacklist', { endpoint: url });
   toast(r.message, r.success ? 'success' : 'error');
+  loadBlacklist();
+}
+
+async function fetchSiteName(url) {
+  toast('正在获取站点名称...', 'info');
+  const r = await api('/fetch-site-name', { endpoint: url });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) loadBlacklist();
+}
+
+async function editSiteName(url) {
+  const name = prompt('请输入站点名称:');
+  if (!name) return;
+  const r = await api('/edit-blacklist', { endpoint: url, siteName: name.trim() });
+  toast(r.message, r.success ? 'success' : 'error');
+  if (r.success) loadBlacklist();
+}
+
+async function batchFetchSiteNames() {
+  // 筛选出需要检测的项（未知贩子或获取中）
+  const toFetch = blacklistData.filter(x => !x.siteName || x.siteName === '未知贩子' || x.siteName === '获取中...' || x.siteName === '未知');
+  if (toFetch.length === 0) {
+    toast('没有需要检测的项', 'info');
+    return;
+  }
+  if (!confirm('将检测 ' + toFetch.length + ' 个站点名称，是否继续？')) return;
+
+  let success = 0, fail = 0;
+  toast('正在批量检测 ' + toFetch.length + ' 个站点...', 'info');
+
+  for (let i = 0; i < toFetch.length; i++) {
+    const item = toFetch[i];
+    try {
+      const r = await api('/fetch-site-name', { endpoint: item.endpoint });
+      if (r.success && r.siteName) success++;
+      else fail++;
+    } catch (e) { fail++; }
+    // 每5个刷新一次显示进度
+    if ((i + 1) % 5 === 0 || i === toFetch.length - 1) {
+      toast('进度: ' + (i + 1) + '/' + toFetch.length + ' (成功:' + success + ' 失败:' + fail + ')', 'info');
+    }
+  }
+
+  toast('✅ 检测完成！成功:' + success + ' 失败:' + fail, success > 0 ? 'success' : 'warning');
   loadBlacklist();
 }
 
@@ -1693,13 +1827,16 @@ async function loadWhitelist() {
     document.getElementById('whitelist-list').innerHTML = '<div class="empty">暂无白名单</div>';
     return;
   }
-  const html = '<table class="table"><thead><tr><th style="width:50px">#</th><th>URL</th><th>添加时间</th><th>操作</th></tr></thead><tbody>' +
-    list.map((info, i) =>
-      '<tr><td style="text-align:center;color:var(--muted)">' + (i + 1) + '</td>' +
+  const html = '<table class="table"><thead><tr><th style="width:50px">#</th><th style="width:120px">站点</th><th>URL</th><th>添加时间</th><th>操作</th></tr></thead><tbody>' +
+    list.map((info, i) => {
+      const siteName = info.siteName || '';
+      return '<tr><td style="text-align:center;color:var(--muted)">' + (i + 1) + '</td>' +
+      '<td style="font-size:12px">' + (siteName ? '<span style="color:#22c55e">' + siteName + '</span>' : '<button class="btn btn-sm btn-info" onclick="fetchWhitelistName(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">检测</button>') + '</td>' +
       '<td style="font-family:monospace;font-size:12px">' + (info.endpoint || '-') + '</td>' +
       '<td style="white-space:nowrap;color:var(--muted)">' + (info.addedAt ? new Date(info.addedAt).toLocaleString('zh-CN') : '-') + '</td>' +
-      '<td><button class="btn btn-sm btn-danger" onclick="removeWhitelist(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">移除</button></td></tr>'
-    ).join('') + '</tbody></table>';
+      '<td><button class="btn btn-sm" style="background:#dc2626" onclick="whitelistToBlacklist(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')" title="转移到黑名单">转黑</button>' +
+      '<button class="btn btn-sm btn-danger" onclick="removeWhitelist(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">移除</button></td></tr>';
+    }).join('') + '</tbody></table>';
   document.getElementById('whitelist-list').innerHTML = html;
 }
 
@@ -1718,6 +1855,30 @@ async function removeWhitelist(url) {
   loadWhitelist();
 }
 
+async function fetchWhitelistName(url) {
+  toast('正在检测站点名称...', 'info');
+  const r = await api('/fetch-site-name', { endpoint: url });
+  if (r.success && r.siteName) {
+    // 更新白名单中的站点名称
+    await api('/update-whitelist-name', { endpoint: url, siteName: r.siteName });
+  }
+  toast(r.success ? '✅ ' + (r.siteName || url) : '⚠️ 检测失败', r.success ? 'success' : 'warning');
+  loadWhitelist();
+}
+
+async function whitelistToBlacklist(url) {
+  if (!confirm('转移到黑名单: ' + url + '?')) return;
+  toast('正在转移并获取站点名称...', 'info');
+  // 先从白名单移除
+  await api('/unwhitelist-endpoint', { endpoint: url });
+  // 添加到黑名单
+  await api('/add-blacklist', { endpoint: url, siteName: '获取中...' });
+  // 获取站点名称
+  const r = await api('/fetch-site-name', { endpoint: url });
+  toast(r.success ? '✅ 已转移到黑名单: ' + (r.siteName || url) : '⚠️ 已转移，名称获取失败', r.success ? 'success' : 'warning');
+  loadWhitelist();
+}
+
 // 禁用列表
 async function loadBanned() {
   const r = await api('/get-banned-endpoints');
@@ -1727,14 +1888,17 @@ async function loadBanned() {
     document.getElementById('banned-list').innerHTML = '<div class="empty">暂无禁用</div>';
     return;
   }
-  const html = '<table class="table"><thead><tr><th>状态</th><th>URL</th><th>原因</th><th>禁用时间</th><th>操作</th></tr></thead><tbody>' +
-    list.map(info =>
-      '<tr><td><span class="tag tag-danger">已禁用</span></td>' +
+  const html = '<table class="table"><thead><tr><th>状态</th><th style="width:120px">站点</th><th>URL</th><th>原因</th><th>禁用时间</th><th>操作</th></tr></thead><tbody>' +
+    list.map(info => {
+      const siteName = info.siteName || '';
+      return '<tr><td><span class="tag tag-danger">已禁用</span></td>' +
+      '<td style="font-size:12px">' + (siteName ? '<span style="color:#ef4444">' + siteName + '</span>' : '<button class="btn btn-sm btn-info" onclick="fetchBannedName(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">检测</button>') + '</td>' +
       '<td style="font-family:monospace;font-size:12px">' + (info.endpoint || '-') + '</td>' +
       '<td style="color:var(--muted)">' + (info.reason || '-') + '</td>' +
       '<td style="white-space:nowrap;color:var(--muted)">' + (info.bannedAt ? new Date(info.bannedAt).toLocaleString('zh-CN') : '-') + '</td>' +
-      '<td><button class="btn btn-sm btn-success" onclick="unban(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">解禁</button></td></tr>'
-    ).join('') + '</tbody></table>';
+      '<td><button class="btn btn-sm" style="background:#dc2626" onclick="bannedToBlacklist(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')" title="加入黑名单">加黑</button>' +
+      '<button class="btn btn-sm btn-success" onclick="unban(\\'' + (info.endpoint || '').replace(/'/g, "\\\\'") + '\\')">解禁</button></td></tr>';
+    }).join('') + '</tbody></table>';
   document.getElementById('banned-list').innerHTML = html;
 }
 
@@ -1751,6 +1915,27 @@ async function unban(url) {
   if (!confirm('确定解禁?')) return;
   const r = await api('/unban-endpoint', { endpoint: url });
   toast(r.message, r.success ? 'success' : 'error');
+  loadBanned();
+}
+
+async function bannedToBlacklist(url) {
+  if (!confirm('加入黑名单: ' + url + '?')) return;
+  toast('正在添加并获取站点名称...', 'info');
+  // 添加到黑名单
+  await api('/add-blacklist', { endpoint: url, siteName: '获取中...' });
+  // 获取站点名称
+  const r = await api('/fetch-site-name', { endpoint: url });
+  toast(r.success ? '✅ 已加入黑名单: ' + (r.siteName || url) : '⚠️ 已加入黑名单，名称获取失败', r.success ? 'success' : 'warning');
+  loadBanned();
+}
+
+async function fetchBannedName(url) {
+  toast('正在检测站点名称...', 'info');
+  const r = await api('/fetch-site-name', { endpoint: url });
+  if (r.success && r.siteName) {
+    await api('/update-banned-name', { endpoint: url, siteName: r.siteName });
+  }
+  toast(r.success ? '✅ ' + (r.siteName || url) : '⚠️ 检测失败', r.success ? 'success' : 'warning');
   loadBanned();
 }
 
@@ -3125,6 +3310,48 @@ async function handleGetWhitelistEndpoints(request, env, corsHeaders) {
 }
 
 /**
+ * 更新白名单站点名称
+ */
+async function handleUpdateWhitelistName(request, env, corsHeaders) {
+  try {
+    const { adminKey, endpoint, siteName } = await request.json();
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+    const whitelistStr = await redisGet('whitelist_endpoints');
+    const whitelist = whitelistStr ? JSON.parse(whitelistStr) : {};
+    if (whitelist[endpoint]) {
+      whitelist[endpoint].siteName = siteName;
+      await redisSet('whitelist_endpoints', JSON.stringify(whitelist));
+    }
+    return jsonResponse({ success: true, message: '✅ 已更新' }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 更新禁用列表站点名称
+ */
+async function handleUpdateBannedName(request, env, corsHeaders) {
+  try {
+    const { adminKey, endpoint, siteName } = await request.json();
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+    const bannedStr = await redisGet('banned_endpoints');
+    const banned = bannedStr ? JSON.parse(bannedStr) : {};
+    if (banned[endpoint]) {
+      banned[endpoint].siteName = siteName;
+      await redisSet('banned_endpoints', JSON.stringify(banned));
+    }
+    return jsonResponse({ success: true, message: '✅ 已更新' }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
  * 添加端点到可疑列表
  */
 async function handleSuspiciousEndpoint(request, env, corsHeaders) {
@@ -3285,6 +3512,370 @@ async function handleRemoveBlacklist(request, env, corsHeaders) {
     await redisSet('blacklist_endpoints', JSON.stringify(blacklist));
 
     return jsonResponse({ success: true, message: '✅ 已从黑名单移除' }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 获取网站标题并更新黑名单
+ */
+async function handleFetchSiteName(request, env, corsHeaders) {
+  try {
+    const { adminKey, endpoint } = await request.json();
+
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    if (!endpoint) {
+      return jsonResponse({ success: false, message: '❌ 端点不能为空' }, 400, corsHeaders);
+    }
+
+    // 提取网站名称的辅助函数
+    const extractFromHtml = html => {
+      let name = null;
+      let match;
+
+      // 1. title 标签
+      match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (match && match[1] && match[1].trim()) name = match[1].replace(/\s+/g, ' ').trim();
+
+      // 2. og:title / og:site_name
+      if (!name) {
+        match =
+          html.match(/<meta[^>]+(?:property|name)=["']og:(?:title|site_name)["'][^>]+content=["']([^"']+)["']/i) ||
+          html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:(?:title|site_name)["']/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 3. twitter:title
+      if (!name) {
+        match = html.match(/<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["']/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 4. application-name / apple-mobile-web-app-title
+      if (!name) {
+        match = html.match(
+          /<meta[^>]+name=["'](?:application-name|apple-mobile-web-app-title)["'][^>]+content=["']([^"']+)["']/i,
+        );
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 5. h1/h2 标签
+      if (!name) {
+        match = html.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/i);
+        if (match && match[1])
+          name = match[1]
+            .replace(/<[^>]+>/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+      }
+
+      // 6. JSON-LD
+      if (!name) {
+        match = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i);
+        if (match && match[1]) {
+          try {
+            const j = JSON.parse(match[1]);
+            name = j.name || j.headline || j.siteName || (j['@graph'] && j['@graph'].find(x => x.name)?.name);
+          } catch (e) {}
+        }
+      }
+
+      // 7. logo alt 属性
+      if (!name) {
+        match =
+          html.match(/<img[^>]+(?:class|id)=["'][^"']*logo[^"']*["'][^>]+alt=["']([^"']+)["']/i) ||
+          html.match(/<img[^>]+alt=["']([^"']+)["'][^>]+(?:class|id)=["'][^"']*logo[^"']*["']/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 8. 页面内 JS 变量
+      if (!name) {
+        match = html.match(/(?:site[_-]?name|app[_-]?name|brand)['":\s]+['"]([^'"]+)['"]/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 8.5 NewAPI 特有：systemName、serverAddress 等配置
+      if (!name) {
+        match = html.match(/(?:systemName|system_name|serverName|server_name)['":\s]+['"]([^'"]+)['"]/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 8.6 NewAPI: window.config 或 __CONFIG__
+      if (!name) {
+        match = html.match(
+          /(?:window\.config|__CONFIG__|globalConfig)\s*=\s*\{[^}]*(?:name|title|systemName)['":\s]+['"]([^'"]+)['"]/i,
+        );
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 8.7 React/Vue 组件中的 props
+      if (!name) {
+        match = html.match(/(?:siteName|siteTitle|appTitle|systemTitle)['":\s]+['"]([^'"]+)['"]/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 9. Next.js __NEXT_DATA__
+      if (!name) {
+        match = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+        if (match && match[1]) {
+          try {
+            const d = JSON.parse(match[1]);
+            name = d.props?.pageProps?.site?.name || d.props?.pageProps?.title || d.buildId?.split('-')[0]; // 有时 buildId 包含项目名
+          } catch (e) {}
+        }
+      }
+
+      // 10. Nuxt __NUXT__
+      if (!name) {
+        match = html.match(/window\.__NUXT__\s*=\s*(\{[\s\S]*?\});?\s*<\/script>/i);
+        if (match && match[1]) {
+          try {
+            const nuxtMatch = match[1].match(/(?:title|name|siteName)['":\s]+['"]([^'"]+)['"]/i);
+            if (nuxtMatch) name = nuxtMatch[1];
+          } catch (e) {}
+        }
+      }
+
+      // 11. 从 link 标签的 href 提取（如 /static/xxx-api/）
+      if (!name) {
+        match = html.match(/<link[^>]+href=["'][^"']*\/([a-zA-Z][\w-]{2,20})(?:-api)?[\/."']/i);
+        if (match && match[1] && match[1].length > 2) {
+          name = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+        }
+      }
+
+      // 12. 页脚 copyright
+      if (!name) {
+        match = html.match(/(?:copyright|©|\(c\))\s*(?:\d{4}\s*)?([A-Za-z][\w\s]{2,25}?)(?:\s*[.|,|All])/i);
+        if (match && match[1]) name = match[1].trim();
+      }
+
+      // 13. 导航栏 navbar-brand
+      if (!name) {
+        match =
+          html.match(/<[^>]+class=["'][^"']*navbar-brand[^"']*["'][^>]*>([^<]+)</i) ||
+          html.match(/<a[^>]+class=["'][^"']*(?:logo|brand)[^"']*["'][^>]*>([^<]+)</i);
+        if (match && match[1]) name = match[1].replace(/\s+/g, ' ').trim();
+      }
+
+      return name;
+    };
+
+    // 从 JSON API 响应提取名称（支持 NewAPI、manifest.json 等）
+    const extractFromJson = text => {
+      try {
+        const json = JSON.parse(text);
+
+        // NewAPI /api/status 响应格式
+        if (json.data) {
+          const d = json.data;
+          if (d.system_name) return d.system_name;
+          if (d.server_name) return d.server_name;
+          if (d.site_name) return d.site_name;
+          if (d.name) return d.name;
+          if (d.title) return d.title;
+        }
+
+        // NewAPI /api/notice 响应
+        if (json.message && typeof json.message === 'string' && json.message.length < 50) {
+          return null; // 跳过普通消息
+        }
+
+        // manifest.json 字段
+        if (json.short_name) return json.short_name;
+        if (json.name) return json.name;
+
+        // 直接字段
+        if (json.system_name) return json.system_name;
+        if (json.server_name) return json.server_name;
+        if (json.site_name) return json.site_name;
+        if (json.title) return json.title;
+        if (json.siteName) return json.siteName;
+        if (json.appName) return json.appName;
+        if (json.app_name) return json.app_name;
+        if (json.brand) return json.brand;
+
+        return null;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // 从 URL 提取域名
+    const extractFromUrl = url => {
+      try {
+        const urlObj = new URL(url);
+        const host = urlObj.hostname.replace(/^(www|api|v1|v2)\./, '');
+        const parts = host.split('.');
+        if (parts.length >= 2 && parts[0].length > 1) {
+          return parts[0].charAt(0).toUpperCase() + parts[0].slice(1) + ' API';
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    // 尝试获取网页标题（超级增强版）
+    let siteName = null;
+    const headers = {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    };
+
+    // 尝试多个 URL（包括 NewAPI 特有端点）
+    const urlObj = new URL(endpoint);
+    const urlsToTry = [
+      urlObj.origin + '/api/status', // NewAPI 状态接口 ⭐
+      urlObj.origin + '/api/notice', // NewAPI 公告接口
+      urlObj.origin + '/', // 根域名
+      urlObj.origin, // 根域名（无斜杠）
+      urlObj.origin + '/manifest.json', // PWA manifest
+      urlObj.origin + '/site.webmanifest', // Web manifest
+      urlObj.origin + '/docs', // 文档页
+      urlObj.origin + '/about', // 关于页
+      endpoint, // 原始 URL
+    ];
+
+    for (const url of urlsToTry) {
+      if (siteName) break;
+      try {
+        const response = await fetch(url, { method: 'GET', headers, redirect: 'follow' });
+        if (response.ok) {
+          const contentType = response.headers.get('content-type') || '';
+          const text = await response.text();
+
+          if (contentType.includes('json')) {
+            // JSON 响应
+            siteName = extractFromJson(text);
+          } else {
+            // HTML 响应
+            siteName = extractFromHtml(text);
+          }
+        }
+      } catch (e) {
+        console.log('获取失败:', url, e.message);
+      }
+    }
+
+    // 最后手段：从 URL 提取
+    if (!siteName) {
+      siteName = extractFromUrl(endpoint);
+    }
+
+    // 清理
+    if (siteName) {
+      siteName = siteName
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      // 过滤无意义的标题
+      if (['404', 'error', 'not found', '403', '500', 'forbidden'].some(x => siteName.toLowerCase().includes(x))) {
+        siteName = extractFromUrl(endpoint);
+      }
+      if (siteName && siteName.length > 50) siteName = siteName.substring(0, 47) + '...';
+    }
+
+    // 如果还是没获取到，返回提示让用户手动编辑
+    if (!siteName) {
+      return jsonResponse({ success: false, message: '⚠️ 无法自动获取，请手动编辑名称' }, 200, corsHeaders);
+    }
+
+    // 更新黑名单中的站点名称
+    const blacklistStr = await redisGet('blacklist_endpoints');
+    const blacklist = blacklistStr ? JSON.parse(blacklistStr) : {};
+
+    if (blacklist[endpoint]) {
+      blacklist[endpoint].siteName = siteName;
+      await redisSet('blacklist_endpoints', JSON.stringify(blacklist));
+    }
+
+    return jsonResponse({ success: true, message: '✅ 获取成功: ' + siteName, siteName }, 200, corsHeaders);
+  } catch (error) {
+    return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
+  }
+}
+
+/**
+ * 检测站点名称（不加入黑名单，只保存名称）
+ */
+async function handleDetectSiteName(request, env, corsHeaders) {
+  try {
+    const { adminKey, endpoint } = await request.json();
+
+    if (!adminKey || adminKey !== env.ADMIN_SECRET) {
+      return jsonResponse({ success: false, message: '❌ 管理员密钥错误' }, 403, corsHeaders);
+    }
+
+    if (!endpoint) {
+      return jsonResponse({ success: false, message: '❌ 端点不能为空' }, 400, corsHeaders);
+    }
+
+    // 复用 fetch-site-name 的检测逻辑，但保存到 site_names
+    const extractFromUrl = url => {
+      try {
+        const urlObj = new URL(url);
+        const host = urlObj.hostname.replace(/^(www|api|v1|v2)\./, '');
+        const parts = host.split('.');
+        if (parts.length >= 2 && parts[0].length > 1) {
+          return parts[0].charAt(0).toUpperCase() + parts[0].slice(1) + ' API';
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    // 尝试从 NewAPI /api/status 获取
+    let siteName = null;
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      Accept: 'application/json,text/html,*/*',
+    };
+
+    const urlObj = new URL(endpoint);
+    const urlsToTry = [urlObj.origin + '/api/status', urlObj.origin + '/', urlObj.origin + '/manifest.json'];
+
+    for (const url of urlsToTry) {
+      if (siteName) break;
+      try {
+        const response = await fetch(url, { method: 'GET', headers, redirect: 'follow' });
+        if (response.ok) {
+          const text = await response.text();
+          try {
+            const json = JSON.parse(text);
+            siteName = json.data?.system_name || json.data?.name || json.short_name || json.name || json.title;
+          } catch {
+            // HTML - 提取 title
+            const match = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            if (match && match[1]) siteName = match[1].replace(/\s+/g, ' ').trim();
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!siteName) siteName = extractFromUrl(endpoint);
+    if (siteName) {
+      siteName = siteName
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (siteName.length > 50) siteName = siteName.substring(0, 47) + '...';
+    }
+
+    if (!siteName) {
+      return jsonResponse({ success: false, message: '⚠️ 无法自动获取' }, 200, corsHeaders);
+    }
+
+    // 保存到 site_names（不是黑名单）
+    const siteNamesStr = await redisGet('site_names');
+    const siteNames = siteNamesStr ? JSON.parse(siteNamesStr) : {};
+    siteNames[endpoint] = { siteName, detectedAt: new Date().toISOString() };
+    await redisSet('site_names', JSON.stringify(siteNames));
+
+    return jsonResponse({ success: true, message: '✅ ' + siteName, siteName }, 200, corsHeaders);
   } catch (error) {
     return jsonResponse({ success: false, message: '❌ 操作失败: ' + error.message }, 500, corsHeaders);
   }

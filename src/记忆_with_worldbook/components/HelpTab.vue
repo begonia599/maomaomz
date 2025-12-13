@@ -53,8 +53,7 @@
         >
           <span class="version-info">版本 v{{ currentVersion }}</span>
           <button
-            @click="checkForUpdates"
-            :disabled="isCheckingUpdate"
+            :disabled="isCheckingUpdate || isForceUpdating"
             style="
               padding: 8px 16px;
               background: rgba(255, 255, 255, 0.2);
@@ -74,11 +73,40 @@
               opacity: isCheckingUpdate ? 0.6 : 1,
               cursor: isCheckingUpdate ? 'not-allowed' : 'pointer',
             }"
+            @click="checkForUpdates"
             @mouseenter="e => !isCheckingUpdate && (e.target.style.background = 'rgba(255, 255, 255, 0.3)')"
             @mouseleave="e => (e.target.style.background = 'rgba(255, 255, 255, 0.2)')"
           >
             <i :class="isCheckingUpdate ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-sync-alt'"></i>
-            {{ isCheckingUpdate ? '检查中...' : '检查更新' }}
+            {{ isCheckingUpdate ? '检查中...' : '版本检测' }}
+          </button>
+          <button
+            :disabled="isForceUpdating || isCheckingUpdate"
+            style="
+              padding: 8px 16px;
+              background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
+              border: none;
+              border-radius: 8px;
+              color: white;
+              cursor: pointer;
+              font-size: 13px;
+              font-weight: 500;
+              transition: all 0.2s;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+            "
+            :style="{
+              opacity: isForceUpdating ? 0.6 : 1,
+              cursor: isForceUpdating ? 'not-allowed' : 'pointer',
+            }"
+            @click="forceUpdate"
+            @mouseenter="e => !isForceUpdating && (e.target.style.transform = 'translateY(-1px)')"
+            @mouseleave="e => (e.target.style.transform = '')"
+          >
+            <i :class="isForceUpdating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-download'"></i>
+            {{ isForceUpdating ? '更新中...' : '强制更新' }}
           </button>
         </div>
 
@@ -118,7 +146,6 @@
       "
     >
       <h3
-        @click="toggleSection('usageGuide')"
         style="
           margin: 0 0 20px 0;
           color: #fff;
@@ -130,6 +157,7 @@
           cursor: pointer;
           user-select: none;
         "
+        @click="toggleSection('usageGuide')"
       >
         <i class="fa-solid fa-book" style="color: #17a2b8; font-size: 18px"></i>
         使用说明
@@ -145,9 +173,9 @@
         style="color: #e0e0e0; font-size: 14px; line-height: 1.8; animation: fadeIn 0.3s ease-in"
       >
         <div
-          v-html="renderMarkdown(pluginUsage)"
           style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
           class="markdown-content"
+          v-html="renderMarkdown(pluginUsage)"
         ></div>
       </div>
     </div>
@@ -163,7 +191,6 @@
       "
     >
       <h3
-        @click="toggleSection('changelog')"
         style="
           margin: 0 0 20px 0;
           color: #fff;
@@ -175,6 +202,7 @@
           cursor: pointer;
           user-select: none;
         "
+        @click="toggleSection('changelog')"
       >
         <i class="fa-solid fa-clock-rotate-left" style="color: #28a745; font-size: 18px"></i>
         更新日志
@@ -190,9 +218,9 @@
         style="color: #e0e0e0; font-size: 14px; line-height: 1.8; animation: fadeIn 0.3s ease-in"
       >
         <div
-          v-html="renderMarkdown(pluginChangelog)"
           style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
           class="markdown-content"
+          v-html="renderMarkdown(pluginChangelog)"
         ></div>
 
         <!-- 旧的硬编码版本记录（作为备份） -->
@@ -383,13 +411,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { CURRENT_VERSION, manualCheckUpdates } from '../versionCheck';
 
 const AUTH_API_URL = 'https://maomaomz-auth.baobaoyu999727272.workers.dev';
 
 const currentVersion = CURRENT_VERSION;
 const isCheckingUpdate = ref(false);
+const isForceUpdating = ref(false);
 const pluginUsage = ref('加载中...');
 const pluginChangelog = ref('加载中...');
 
@@ -412,6 +441,70 @@ const checkForUpdates = async () => {
     console.error('❌ 检查更新失败:', error);
   } finally {
     isCheckingUpdate.value = false;
+  }
+};
+
+// 强制更新
+const forceUpdate = async () => {
+  if (isForceUpdating.value) return;
+
+  isForceUpdating.value = true;
+  (window as any).toastr?.info('🔄 正在强制更新插件...', '更新中');
+
+  try {
+    let updateSuccess = false;
+    const TH = (window as any).TavernHelper;
+
+    // 方法1: TavernHelper API
+    if (TH?.updateExtension) {
+      try {
+        const response = await TH.updateExtension('maomaomz');
+        if (response && response.ok) updateSuccess = true;
+      } catch (e) {
+        console.warn('TavernHelper API 更新失败', e);
+      }
+    }
+
+    // 方法2: 直接调用 SillyTavern API
+    if (!updateSuccess) {
+      const extensionNames = ['maomaomz', 'third-party/maomaomz'];
+      for (const name of extensionNames) {
+        if (updateSuccess) break;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000);
+          const response = await fetch('/api/extensions/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ extensionName: name }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (response.ok) {
+            updateSuccess = true;
+            console.log(`✅ 更新成功: ${name}`);
+          }
+        } catch (e: any) {
+          console.warn(`更新失败 (${name}):`, e);
+        }
+      }
+    }
+
+    if (updateSuccess) {
+      (window as any).toastr?.success('✅ 更新成功！3秒后刷新页面...', '完成');
+      setTimeout(() => window.location.reload(), 3000);
+    } else {
+      (window as any).toastr?.warning(
+        '⚠️ 自动更新失败，请手动执行:\ncd public/scripts/extensions/third-party/maomaomz && git pull',
+        '请手动更新',
+        { timeOut: 0, closeButton: true },
+      );
+    }
+  } catch (error) {
+    console.error('❌ 强制更新失败:', error);
+    (window as any).toastr?.error('❌ 更新失败，请查看控制台', '错误');
+  } finally {
+    isForceUpdating.value = false;
   }
 };
 
@@ -506,7 +599,7 @@ const renderMarkdown = (text: string): string => {
 
   // 换行（两个空格+换行 或 \n\n）
   html = html.replace(/\n\n/g, '<br><br>');
-  html = html.replace(/  \n/g, '<br>');
+  html = html.replace(/ {2}\n/g, '<br>');
 
   return html;
 };
