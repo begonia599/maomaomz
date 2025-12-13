@@ -229,12 +229,10 @@
               type="range"
               min="10"
               max="80"
-              :value="preferences.backgroundOpacity"
+              v-model.number="preferences.backgroundOpacity"
               style="flex: 1; accent-color: var(--maomaomz-theme-color, #4a9eff)"
-              @input="
-                preferences.backgroundOpacity = parseInt(($event.target as HTMLInputElement).value);
-                savePreferences();
-              "
+              @input="applyPreferences()"
+              @change="savePreferences()"
             />
             <span style="color: #e0e0e0; font-size: 12px; min-width: 35px">{{ preferences.backgroundOpacity }}%</span>
           </div>
