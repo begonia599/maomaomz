@@ -91,16 +91,16 @@
               style="
                 width: 100%;
                 padding: 12px;
-                background: #f5f5f5 !important;
-                border: 1px solid #3a3a3a;
+                background: #1e2d3d !important;
+                border: 1px solid rgba(84, 107, 131, 0.3);
                 border-radius: 6px;
-                color: #1a1a1a !important;
+                color: #e0e0e0 !important;
                 font-size: 13px;
                 resize: vertical;
                 line-height: 1.5;
                 transition: all 0.2s ease;
                 -webkit-appearance: none;
-                -webkit-text-fill-color: #1a1a1a !important;
+                -webkit-text-fill-color: #e0e0e0 !important;
               "
               @focus="(e: any) => (e.target.style.borderColor = '#667eea')"
               @blur="(e: any) => (e.target.style.borderColor = '#3a3a3a')"
@@ -261,17 +261,17 @@
               width: 100%;
               height: 120px;
               padding: 12px;
-              background: #f5f5f5 !important;
-              border: 1px solid #3a3a3a;
+              background: #1e2d3d !important;
+              border: 1px solid rgba(84, 107, 131, 0.3);
               border-radius: 6px;
-              color: #1a1a1a !important;
+              color: #e0e0e0 !important;
               font-size: 13px;
               resize: vertical;
               font-family: 'Courier New', monospace;
               line-height: 1.5;
               transition: all 0.2s ease;
               -webkit-appearance: none;
-              -webkit-text-fill-color: #1a1a1a !important;
+              -webkit-text-fill-color: #e0e0e0 !important;
             "
             @focus="(e: any) => (e.target.style.borderColor = '#4a9eff')"
             @blur="(e: any) => (e.target.style.borderColor = '#3a3a3a')"
@@ -490,16 +490,16 @@
               style="
                 width: 100%;
                 padding: 12px;
-                background: #f5f5f5 !important;
-                border: 1px solid #3a3a3a;
+                background: #1e2d3d !important;
+                border: 1px solid rgba(84, 107, 131, 0.3);
                 border-radius: 6px;
-                color: #1a1a1a !important;
+                color: #e0e0e0 !important;
                 font-size: 13px;
                 resize: vertical;
                 line-height: 1.5;
                 transition: all 0.2s ease;
                 -webkit-appearance: none;
-                -webkit-text-fill-color: #1a1a1a !important;
+                -webkit-text-fill-color: #e0e0e0 !important;
               "
               @focus="(e: any) => (e.target.style.borderColor = '#fbbf24')"
               @blur="(e: any) => (e.target.style.borderColor = '#3a3a3a')"
@@ -638,17 +638,17 @@
             style="
               width: 100%;
               padding: 12px;
-              background: #f5f5f5 !important;
-              border: 1px solid #3a3a3a;
+              background: #1e2d3d !important;
+              border: 1px solid rgba(84, 107, 131, 0.3);
               border-radius: 6px;
-              color: #1a1a1a !important;
+              color: #e0e0e0 !important;
               font-size: 13px;
               resize: vertical;
               font-family: 'Courier New', monospace;
               line-height: 1.5;
               transition: all 0.2s ease;
               -webkit-appearance: none;
-              -webkit-text-fill-color: #1a1a1a !important;
+              -webkit-text-fill-color: #e0e0e0 !important;
             "
             @focus="(e: any) => (e.target.style.borderColor = '#fbbf24')"
             @blur="(e: any) => (e.target.style.borderColor = '#3a3a3a')"
