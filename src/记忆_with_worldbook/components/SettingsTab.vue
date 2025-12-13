@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-tab" style="padding: 25px !important; background: #1a1a1a !important">
+  <div class="settings-tab" style="padding: 25px !important; background: #0d0d1a !important">
     <!-- API 配置 -->
     <div
       class="config-section"
@@ -12,37 +12,24 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 28px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
-          border-radius: 18px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+          padding: 18px 24px;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          border-radius: 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(138, 43, 226, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
           position: relative;
           overflow: hidden;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         "
         @click="toggleSection('api')"
         @mouseenter="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(42, 42, 42, 0.98) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(42, 42, 42, 0.98) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'translateX(4px) scale(1.005)';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '3px solid rgba(255, 193, 7, 0.6)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.5)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(138, 43, 226, 0.25)';
         "
         @mouseleave="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'none';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '1px solid rgba(255, 255, 255, 0.06)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(138, 43, 226, 0.2)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
         "
       >
         <h3
@@ -53,20 +40,19 @@
             align-items: center;
             gap: 12px;
             margin: 0;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
           "
         >
-          <i class="fa-solid fa-cog" style="color: #17a2b8; font-size: 18px"></i>
+          <i class="fa-solid fa-cog" style="color: #a855f7; font-size: 16px"></i>
           API 配置
         </h3>
         <i
           :class="expandedSections['api'] ? 'fa-chevron-up' : 'fa-chevron-down'"
           class="fa-solid"
-          style="color: rgba(255, 255, 255, 0.6); font-size: 14px; transition: transform 0.3s"
+          style="color: rgba(168, 85, 247, 0.7); font-size: 12px; transition: transform 0.3s"
         ></i>
       </div>
 
@@ -651,7 +637,7 @@
     <!-- 自动总结 -->
     <div
       class="config-section"
-      style="padding: 20px 25px !important; border-bottom: 1px solid #3a3a3a; margin-bottom: 5px"
+      style="padding: 20px 25px !important; border-bottom: 1px solid rgba(138, 43, 226, 0.1); margin-bottom: 5px"
     >
       <div
         style="
@@ -660,37 +646,24 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 28px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
-          border-radius: 18px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+          padding: 18px 24px;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          border-radius: 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(138, 43, 226, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
           position: relative;
           overflow: hidden;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         "
         @click="toggleSection('autoSummary')"
         @mouseenter="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(42, 42, 42, 0.98) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(42, 42, 42, 0.98) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'translateX(4px) scale(1.005)';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '3px solid rgba(255, 193, 7, 0.6)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.5)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(138, 43, 226, 0.25)';
         "
         @mouseleave="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'none';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '1px solid rgba(255, 255, 255, 0.06)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(138, 43, 226, 0.2)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
         "
       >
         <h3
@@ -701,20 +674,19 @@
             align-items: center;
             gap: 12px;
             margin: 0;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
           "
         >
-          <i class="fa-solid fa-bolt" style="color: #ffc107; font-size: 18px"></i>
+          <i class="fa-solid fa-bolt" style="color: #fbbf24; font-size: 16px"></i>
           自动总结
         </h3>
         <i
           :class="expandedSections['autoSummary'] ? 'fa-chevron-up' : 'fa-chevron-down'"
           class="fa-solid"
-          style="color: rgba(255, 255, 255, 0.6); font-size: 14px; transition: transform 0.3s"
+          style="color: rgba(168, 85, 247, 0.7); font-size: 12px; transition: transform 0.3s"
         ></i>
       </div>
 
@@ -888,37 +860,24 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 28px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
-          border-radius: 18px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+          padding: 18px 24px;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          border-radius: 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(138, 43, 226, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
           position: relative;
           overflow: hidden;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         "
         @click="toggleSection('manualSummary')"
         @mouseenter="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(42, 42, 42, 0.98) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(42, 42, 42, 0.98) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'translateX(4px) scale(1.005)';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '3px solid rgba(255, 193, 7, 0.6)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.5)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(138, 43, 226, 0.25)';
         "
         @mouseleave="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'none';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '1px solid rgba(255, 255, 255, 0.06)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(138, 43, 226, 0.2)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
         "
       >
         <h3
@@ -929,20 +888,19 @@
             align-items: center;
             gap: 12px;
             margin: 0;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
           "
         >
-          <i class="fa-solid fa-pen-to-square" style="color: #28a745; font-size: 18px"></i>
+          <i class="fa-solid fa-pen-to-square" style="color: #34d399; font-size: 16px"></i>
           手动总结
         </h3>
         <i
           :class="expandedSections['manualSummary'] ? 'fa-chevron-up' : 'fa-chevron-down'"
           class="fa-solid"
-          style="color: rgba(255, 255, 255, 0.6); font-size: 14px; transition: transform 0.3s"
+          style="color: rgba(168, 85, 247, 0.7); font-size: 12px; transition: transform 0.3s"
         ></i>
       </div>
 
@@ -1053,37 +1011,24 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 28px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
-          border-radius: 18px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+          padding: 18px 24px;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          border-radius: 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(138, 43, 226, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
           position: relative;
           overflow: hidden;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         "
         @click="toggleSection('tableGeneration')"
         @mouseenter="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(42, 42, 42, 0.98) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(42, 42, 42, 0.98) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'translateX(4px) scale(1.005)';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '3px solid rgba(255, 193, 7, 0.6)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.5)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(138, 43, 226, 0.25)';
         "
         @mouseleave="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'none';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '1px solid rgba(255, 255, 255, 0.06)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(138, 43, 226, 0.2)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
         "
       >
         <h3
@@ -1094,20 +1039,19 @@
             align-items: center;
             gap: 12px;
             margin: 0;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
           "
         >
-          <i class="fa-solid fa-table" style="color: #6f42c1; font-size: 18px"></i>
+          <i class="fa-solid fa-table" style="color: #a855f7; font-size: 16px"></i>
           表格生成
         </h3>
         <i
           :class="expandedSections['tableGeneration'] ? 'fa-chevron-up' : 'fa-chevron-down'"
           class="fa-solid"
-          style="color: rgba(255, 255, 255, 0.6); font-size: 14px; transition: transform 0.3s"
+          style="color: rgba(168, 85, 247, 0.7); font-size: 12px; transition: transform 0.3s"
         ></i>
       </div>
 
@@ -1353,7 +1297,7 @@
     <!-- 楼层管理 -->
     <div
       class="config-section"
-      style="padding: 20px 25px !important; border-bottom: 1px solid #3a3a3a; margin-bottom: 5px"
+      style="padding: 20px 25px !important; border-bottom: 1px solid rgba(138, 43, 226, 0.1); margin-bottom: 5px"
     >
       <div
         style="
@@ -1362,37 +1306,24 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 28px;
-          background: linear-gradient(
-            135deg,
-            rgba(30, 30, 30, 0.95) 0%,
-            rgba(38, 38, 38, 0.9) 50%,
-            rgba(30, 30, 30, 0.95) 100%
-          );
-          backdrop-filter: blur(12px);
-          border-radius: 18px;
-          margin-bottom: 20px;
-          border: 1px solid rgba(255, 255, 255, 0.06);
-          box-shadow:
-            0 3px 12px rgba(0, 0, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.04),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+          padding: 18px 24px;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          border-radius: 12px;
+          margin-bottom: 16px;
+          border: 1px solid rgba(138, 43, 226, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
           position: relative;
           overflow: hidden;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         "
         @click="toggleSection('messageManagement')"
         @mouseenter="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(42, 42, 42, 0.98) 0%, rgba(50, 50, 50, 0.95) 50%, rgba(42, 42, 42, 0.98) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'translateX(4px) scale(1.005)';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '3px solid rgba(255, 193, 7, 0.6)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(168, 85, 247, 0.5)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(138, 43, 226, 0.25)';
         "
         @mouseleave="
-          ($event.currentTarget as HTMLElement).style.background =
-            'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(38, 38, 38, 0.9) 50%, rgba(30, 30, 30, 0.95) 100%)';
-          ($event.currentTarget as HTMLElement).style.transform = 'none';
-          ($event.currentTarget as HTMLElement).style.borderLeft = '1px solid rgba(255, 255, 255, 0.06)';
+          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(138, 43, 226, 0.2)';
+          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
         "
       >
         <h3
@@ -1403,20 +1334,19 @@
             align-items: center;
             gap: 12px;
             margin: 0;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            color: #e0e0e0;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
           "
         >
-          <i class="fa-solid fa-layer-group" style="color: #dc3545; font-size: 18px"></i>
+          <i class="fa-solid fa-layer-group" style="color: #f87171; font-size: 16px"></i>
           楼层管理
         </h3>
         <i
           :class="expandedSections['messageManagement'] ? 'fa-chevron-up' : 'fa-chevron-down'"
           class="fa-solid"
-          style="color: rgba(255, 255, 255, 0.6); font-size: 14px; transition: transform 0.3s"
+          style="color: rgba(168, 85, 247, 0.7); font-size: 12px; transition: transform 0.3s"
         ></i>
       </div>
 

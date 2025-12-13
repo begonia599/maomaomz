@@ -1,20 +1,20 @@
 <template>
   <div
     class="memory-panel-container"
-    style="display: flex; flex-direction: column; height: 100%; background: #1a1a1a; color: #e0e0e0"
+    style="display: flex; flex-direction: column; height: 100%; background: #0d0d1a; color: #e0e0e0"
   >
     <!-- 面板头部 -->
     <div
       class="panel-header"
       style="
         padding: 16px 24px;
-        background: #252525;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        border-bottom: 1px solid rgba(138, 43, 226, 0.2);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 20px rgba(138, 43, 226, 0.15);
       "
     >
       <div class="header-left" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
@@ -24,17 +24,19 @@
           >🐱</span
         >
         <div style="display: flex; flex-direction: column; gap: 4px">
-          <span class="panel-title" style="font-size: 16px; font-weight: 600; color: #fff; letter-spacing: 0.5px"
-            >猫猫的小破烂</span
-          >
           <span
+            class="panel-title"
             style="
-              font-size: 11px;
-              color: #ef4444;
-              font-weight: 700;
-              text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+              font-size: 16px;
+              font-weight: 600;
+              background: linear-gradient(90deg, #a855f7, #ec4899);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
               letter-spacing: 0.5px;
             "
+            >猫猫的小破烂</span
+          >
+          <span style="font-size: 11px; color: #f472b6; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8"
             >⚠️ 禁止商业化 | 禁止倒卖 ⚠️</span
           >
         </div>
@@ -49,10 +51,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: none;
-            background: rgba(255, 255, 255, 0.05);
-            color: #e0e0e0;
-            border-radius: 6px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            background: rgba(138, 43, 226, 0.1);
+            color: #a855f7;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
             font-size: 14px;
@@ -70,10 +72,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: none;
-            background: rgba(255, 255, 255, 0.05);
-            color: #e0e0e0;
-            border-radius: 6px;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            background: rgba(138, 43, 226, 0.1);
+            color: #a855f7;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
             font-size: 14px;
@@ -157,8 +159,8 @@
       class="panel-tabs"
       style="
         display: flex;
-        background: #222;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background: #0f0f1f;
+        border-bottom: 1px solid rgba(138, 43, 226, 0.15);
         flex-shrink: 0;
         overflow-x: auto;
         scrollbar-width: none;
@@ -172,21 +174,20 @@
         class="tab-item"
         :style="{
           flex: '0 0 auto',
-          minWidth: '120px',
-          padding: '14px 20px',
+          minWidth: '100px',
+          padding: '12px 16px',
           cursor: 'pointer',
           textAlign: 'center',
           transition: 'all 0.25s ease',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '8px',
+          gap: '6px',
           position: 'relative',
-          background: activeTab === tab.key ? '#1a1a1a' : 'transparent',
-          color: activeTab === tab.key ? 'var(--maomaomz-theme-color, #4a9eff)' : '#999',
-          borderBottom:
-            activeTab === tab.key ? '2px solid var(--maomaomz-theme-color, #4a9eff)' : '2px solid transparent',
-          fontSize: '13px',
+          background: activeTab === tab.key ? 'rgba(138, 43, 226, 0.15)' : 'transparent',
+          color: activeTab === tab.key ? '#a855f7' : '#6b7280',
+          borderBottom: activeTab === tab.key ? '2px solid #a855f7' : '2px solid transparent',
+          fontSize: '12px',
           fontWeight: '500',
         }"
         @click="switchTab(tab.key)"
