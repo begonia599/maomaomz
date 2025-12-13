@@ -3055,6 +3055,78 @@ function sanitizeFileContent(filePath: string, raw: string): string {
     content = content.replace(/<!DOCTYPE html>/i, match => match.toUpperCase());
   }
 
+  // 🔧 修复CSS语法错误：AI可能生成缺少冒号的CSS属性
+  if (filePath.endsWith('.css')) {
+    // 常见CSS属性列表
+    const cssProps = [
+      'font-size',
+      'font-weight',
+      'font-family',
+      'font-style',
+      'color',
+      'background',
+      'background-color',
+      'background-image',
+      'width',
+      'height',
+      'max-width',
+      'max-height',
+      'min-width',
+      'min-height',
+      'margin',
+      'margin-top',
+      'margin-right',
+      'margin-bottom',
+      'margin-left',
+      'padding',
+      'padding-top',
+      'padding-right',
+      'padding-bottom',
+      'padding-left',
+      'border',
+      'border-radius',
+      'border-color',
+      'border-width',
+      'border-style',
+      'display',
+      'position',
+      'top',
+      'right',
+      'bottom',
+      'left',
+      'flex',
+      'flex-direction',
+      'justify-content',
+      'align-items',
+      'gap',
+      'grid',
+      'grid-template-columns',
+      'grid-template-rows',
+      'transform',
+      'transition',
+      'animation',
+      'opacity',
+      'visibility',
+      'box-shadow',
+      'text-shadow',
+      'text-align',
+      'line-height',
+      'letter-spacing',
+      'overflow',
+      'overflow-x',
+      'overflow-y',
+      'z-index',
+      'cursor',
+    ];
+    // 修复缺少冒号的属性（如 "font-size 14px" -> "font-size: 14px"）
+    for (const prop of cssProps) {
+      const regex = new RegExp(`(${prop})\\s+(?!:)([^;{}\\n]+)`, 'gi');
+      content = content.replace(regex, '$1: $2');
+    }
+    // 修复双冒号问题（如果上面的修复产生了 "font-size:: 14px"）
+    content = content.replace(/:\s*:/g, ':');
+  }
+
   return content;
 }
 
