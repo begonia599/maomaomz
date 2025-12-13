@@ -94,7 +94,7 @@
           <i class="fa-solid fa-palette" style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"></i>
           主题色
         </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 12px">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
           <div
             v-for="color in themeColors"
             :key="color.value"
@@ -120,6 +120,134 @@
               preferences.themeColor = color.value;
               savePreferences();
             "
+          ></div>
+          <!-- 自定义颜色选择器 -->
+          <div style="display: flex; align-items: center; gap: 8px; margin-left: 8px">
+            <input
+              type="color"
+              :value="preferences.themeColor"
+              title="自定义颜色"
+              style="
+                width: 40px;
+                height: 40px;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                background: transparent;
+                padding: 0;
+              "
+              @input="
+                preferences.themeColor = ($event.target as HTMLInputElement).value;
+                savePreferences();
+              "
+            />
+            <input
+              type="text"
+              :value="preferences.themeColor"
+              placeholder="#4a9eff"
+              title="输入颜色代码"
+              style="
+                width: 80px;
+                height: 32px;
+                background: #1a1a1a;
+                border: 1px solid rgba(84, 107, 131, 0.3);
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 12px;
+                font-family: monospace;
+                text-align: center;
+                padding: 0 8px;
+              "
+              @change="
+                const val = ($event.target as HTMLInputElement).value;
+                if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                  preferences.themeColor = val;
+                  savePreferences();
+                }
+              "
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- 背景图片设置 -->
+      <div
+        style="
+          padding: 15px;
+          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
+          border-radius: 10px;
+          margin-top: 12px;
+          border: 1px solid rgba(84, 107, 131, 0.3);
+        "
+      >
+        <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 12px">
+          <i class="fa-solid fa-image" style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"></i>
+          背景图片
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+          <label
+            style="
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 16px;
+              background: rgba(74, 158, 255, 0.1);
+              border: 1px solid rgba(74, 158, 255, 0.3);
+              border-radius: 8px;
+              color: #4a9eff;
+              font-size: 13px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            "
+          >
+            <i class="fa-solid fa-upload"></i>
+            上传图片
+            <input type="file" accept="image/*" style="display: none" @change="handleBackgroundUpload" />
+          </label>
+          <button
+            v-if="preferences.backgroundImage"
+            style="
+              padding: 8px 16px;
+              background: rgba(239, 68, 68, 0.1);
+              border: 1px solid rgba(239, 68, 68, 0.3);
+              border-radius: 8px;
+              color: #ef4444;
+              font-size: 13px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            "
+            @click="clearBackground"
+          >
+            <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
+            清除背景
+          </button>
+        </div>
+        <div v-if="preferences.backgroundImage" style="margin-top: 12px">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px">
+            <span style="color: #888; font-size: 12px">透明度:</span>
+            <input
+              type="range"
+              min="10"
+              max="80"
+              :value="preferences.backgroundOpacity"
+              style="flex: 1; accent-color: var(--maomaomz-theme-color, #4a9eff)"
+              @input="
+                preferences.backgroundOpacity = parseInt(($event.target as HTMLInputElement).value);
+                savePreferences();
+              "
+            />
+            <span style="color: #e0e0e0; font-size: 12px; min-width: 35px">{{ preferences.backgroundOpacity }}%</span>
+          </div>
+          <div
+            style="
+              width: 100%;
+              height: 60px;
+              border-radius: 8px;
+              background-size: cover;
+              background-position: center;
+              border: 1px solid rgba(84, 107, 131, 0.3);
+            "
+            :style="{ backgroundImage: `url(${preferences.backgroundImage})` }"
           ></div>
         </div>
       </div>
@@ -221,6 +349,8 @@ interface Preferences {
   showErrorToast: boolean;
   themeColor: string;
   defaultSectionsExpanded: boolean; // 设置页面折叠区块默认展开
+  backgroundImage: string; // 背景图片 (base64 或 URL)
+  backgroundOpacity: number; // 背景透明度 0-100
 }
 
 // 主题色预设
@@ -244,6 +374,8 @@ const defaultPreferences: Preferences = {
   showErrorToast: true,
   themeColor: '#4a9eff',
   defaultSectionsExpanded: true, // 默认展开
+  backgroundImage: '', // 默认无背景
+  backgroundOpacity: 30, // 默认 30% 透明度
 };
 
 // 偏好设置状态
@@ -293,6 +425,17 @@ const applyPreferences = () => {
     // 应用主题色 CSS 变量
     document.documentElement.style.setProperty('--maomaomz-theme-color', preferences.themeColor);
     console.log('🎨 主题色已更新:', preferences.themeColor);
+
+    // 应用背景图片到面板
+    document.documentElement.style.setProperty(
+      '--maomaomz-bg-image',
+      preferences.backgroundImage ? `url(${preferences.backgroundImage})` : 'none',
+    );
+    document.documentElement.style.setProperty(
+      '--maomaomz-bg-opacity',
+      (preferences.backgroundOpacity / 100).toString(),
+    );
+    console.log('🖼️ 背景设置已更新');
 
     // 立即应用任务管理器显示状态
     try {
@@ -352,6 +495,35 @@ const resetPreferences = () => {
     savePreferences();
     (window as any).toastr?.success('已恢复默认设置');
   }
+};
+
+// 处理背景图片上传
+const handleBackgroundUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  // 检查文件大小 (限制 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    (window as any).toastr?.error('图片大小不能超过 2MB');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    preferences.backgroundImage = e.target?.result as string;
+    savePreferences();
+    (window as any).toastr?.success('背景图片已设置');
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // 清空 input 以便再次选择同一文件
+};
+
+// 清除背景图片
+const clearBackground = () => {
+  preferences.backgroundImage = '';
+  savePreferences();
+  (window as any).toastr?.info('背景图片已清除');
 };
 
 // 组件挂载时加载

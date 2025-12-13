@@ -1,8 +1,32 @@
 <template>
   <div
     class="memory-panel-container"
-    style="display: flex; flex-direction: column; height: 100%; background: #1a2332; color: #e0e0e0"
+    :style="{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      background: '#1a2332',
+      color: '#e0e0e0',
+      position: 'relative',
+    }"
   >
+    <!-- 背景图片层 -->
+    <div
+      class="panel-bg-layer"
+      :style="{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundImage: 'var(--maomaomz-bg-image, none)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: 'var(--maomaomz-bg-opacity, 0.3)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }"
+    ></div>
     <!-- 面板头部 -->
     <div
       class="panel-header"
