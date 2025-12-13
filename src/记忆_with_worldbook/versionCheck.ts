@@ -215,10 +215,13 @@ export function showUpdateDialog(
   const lastUpdateAttempt = localStorage.getItem('maomaomz_last_update_attempt');
   if (lastUpdateAttempt) {
     const timeSinceLastAttempt = Date.now() - parseInt(lastUpdateAttempt, 10);
-    // 5分钟内不再强制弹窗，避免无限循环
+    // 5分钟内完全不弹窗，避免"假成功"后无限循环
     if (timeSinceLastAttempt < 5 * 60 * 1000) {
-      console.log('⏰ 刚刚尝试过更新，跳过强制弹窗');
-      forceUpdate = false; // 降级为非强制模式
+      console.log('⏰ 刚刚尝试过更新（5分钟内），完全跳过弹窗');
+      (window as any).toastr?.info('⏰ 刚尝试过更新，5分钟内不再提示。如需手动更新请用 git pull', '', {
+        timeOut: 5000,
+      });
+      return; // 完全跳过，不显示弹窗
     }
   }
 
