@@ -9,12 +9,12 @@
       style="
         padding: 16px 24px;
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+        border-bottom: 1px solid rgba(84, 107, 131, 0.3);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-shrink: 0;
-        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+        box-shadow: 0 4px 20px rgba(84, 107, 131, 0.2);
       "
     >
       <div class="header-left" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
@@ -29,14 +29,14 @@
             style="
               font-size: 16px;
               font-weight: 600;
-              background: linear-gradient(90deg, #3b82f6, #06b6d4);
+              background: linear-gradient(90deg, #546b83, #7a9bb8);
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
               letter-spacing: 0.5px;
             "
             >猫猫的小破烂</span
           >
-          <span style="font-size: 11px; color: #60a5fa; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8"
+          <span style="font-size: 11px; color: #7a9bb8; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8"
             >⚠️ 禁止商业化 | 禁止倒卖 ⚠️</span
           >
         </div>
@@ -51,9 +51,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
+            border: 1px solid rgba(84, 107, 131, 0.4);
+            background: rgba(84, 107, 131, 0.15);
+            color: #6b8299;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -72,9 +72,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            background: rgba(59, 130, 246, 0.1);
-            color: #3b82f6;
+            border: 1px solid rgba(84, 107, 131, 0.4);
+            background: rgba(84, 107, 131, 0.15);
+            color: #6b8299;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -160,7 +160,7 @@
       style="
         display: flex;
         background: #0f0f1f;
-        border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+        border-bottom: 1px solid rgba(84, 107, 131, 0.2);
         flex-shrink: 0;
         overflow-x: auto;
         scrollbar-width: none;
@@ -184,9 +184,9 @@
           justifyContent: 'center',
           gap: '6px',
           position: 'relative',
-          background: activeTab === tab.key ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-          color: activeTab === tab.key ? '#3b82f6' : '#6b7280',
-          borderBottom: activeTab === tab.key ? '2px solid #3b82f6' : '2px solid transparent',
+          background: activeTab === tab.key ? 'rgba(84, 107, 131, 0.2)' : 'transparent',
+          color: activeTab === tab.key ? '#546B83' : '#6b7280',
+          borderBottom: activeTab === tab.key ? '2px solid #546B83' : '2px solid transparent',
           fontSize: '12px',
           fontWeight: '500',
         }"
