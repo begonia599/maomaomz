@@ -120,6 +120,10 @@ async function fetchRemoteVersion(): Promise<string | null> {
         console.log('📡 GitHub API 获取版本成功:', manifest.version);
         return manifest.version || null;
       }
+    } else if (response.status === 403) {
+      // GitHub API 限流，跳过版本检测，避免无限循环
+      console.warn('⚠️ GitHub API 限流 (403)，跳过版本检测');
+      return null;
     }
   } catch (e) {
     console.warn('GitHub API 获取失败，尝试备用源:', e);
