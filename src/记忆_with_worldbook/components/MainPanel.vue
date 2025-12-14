@@ -16,16 +16,14 @@
     <div class="panel-bg-layer"></div>
     <!-- 面板头部 -->
     <div
-      class="panel-header"
+      class="panel-header glass-effect"
       style="
         padding: 16px 24px;
-        background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
         border-bottom: 1px solid rgba(84, 107, 131, 0.3);
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-shrink: 0;
-        box-shadow: 0 4px 20px rgba(84, 107, 131, 0.2);
         position: relative;
         z-index: 1;
       "
@@ -169,10 +167,9 @@
     <!-- 面板标签栏（桌面端） -->
     <div
       v-else
-      class="panel-tabs"
+      class="panel-tabs glass-effect"
       style="
         display: flex;
-        background: #1e2d3d;
         border-bottom: 1px solid rgba(84, 107, 131, 0.2);
         flex-shrink: 0;
         overflow-x: auto;
@@ -218,7 +215,7 @@
 
     <!-- 面板内容 -->
     <div
-      class="panel-content"
+      class="panel-content glass-effect"
       style="
         flex: 1;
         overflow-y: auto;
@@ -226,7 +223,7 @@
         padding: 0;
         min-height: 0;
         scrollbar-width: thin;
-        scrollbar-color: var(--maomaomz-theme-color, #4a9eff) #2a2a2a;
+        scrollbar-color: var(--maomaomz-theme-color, #4a9eff) transparent;
         position: relative;
         z-index: 1;
       "
@@ -387,18 +384,7 @@ const closePanel = () => {
 </script>
 
 <style>
-/* 底色层 */
-.panel-base-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #1a2332;
-  z-index: -1;
-}
-
-/* 背景图片层 - 非 scoped 以确保能读取 :root CSS 变量 */
+/* 背景图片层 - 铺满整个面板 */
 .panel-bg-layer {
   position: absolute;
   top: 0;
@@ -408,9 +394,27 @@ const closePanel = () => {
   background-image: var(--maomaomz-bg-image, none);
   background-size: cover;
   background-position: center;
-  opacity: var(--maomaomz-bg-opacity, 0.3);
   pointer-events: none;
   z-index: 0;
+}
+
+/* 底色层 - 半透明遮罩，透明度由用户设置控制 */
+.panel-base-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(26, 35, 50, calc(1 - var(--maomaomz-bg-opacity, 0.3)));
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 玻璃效果 - 半透明毛玻璃 */
+.glass-effect {
+  background: rgba(30, 45, 61, 0.75) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 </style>
 
