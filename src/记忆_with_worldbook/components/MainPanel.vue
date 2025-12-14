@@ -11,22 +11,7 @@
     }"
   >
     <!-- 背景图片层 -->
-    <div
-      class="panel-bg-layer"
-      :style="{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundImage: 'var(--maomaomz-bg-image, none)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 'var(--maomaomz-bg-opacity, 0.3)',
-        pointerEvents: 'none',
-        zIndex: 0,
-      }"
-    ></div>
+    <div class="panel-bg-layer"></div>
     <!-- 面板头部 -->
     <div
       class="panel-header"
@@ -398,6 +383,23 @@ const closePanel = () => {
   $('#memoryManagementPanel').fadeOut(200);
 };
 </script>
+
+<style>
+/* 背景图片层 - 非 scoped 以确保能读取 :root CSS 变量 */
+.panel-bg-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: var(--maomaomz-bg-image, none);
+  background-size: cover;
+  background-position: center;
+  opacity: var(--maomaomz-bg-opacity, 0.3);
+  pointer-events: none;
+  z-index: 0;
+}
+</style>
 
 <style scoped>
 /* 头部按钮样式 */
