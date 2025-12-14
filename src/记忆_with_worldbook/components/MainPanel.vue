@@ -315,9 +315,57 @@ const loadAndApplyPreferences = () => {
   }
 };
 
+// 注入背景和玻璃效果样式
+const injectGlassStyles = () => {
+  const styleId = 'maomaomz-glass-styles';
+  if (document.getElementById(styleId)) return;
+
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    /* 背景图片层 - 铺满整个面板，透明度由用户控制 */
+    .panel-bg-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: var(--maomaomz-bg-image, none);
+      background-size: cover;
+      background-position: center;
+      opacity: var(--maomaomz-bg-opacity, 0.3);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 底色层 - 纯色底层，在背景图片下面 */
+    .panel-base-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #1a2332;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* 玻璃效果 - 半透明毛玻璃，让背景透出来 */
+    .glass-effect {
+      background: rgba(26, 35, 50, 0.6) !important;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+  `;
+  document.head.appendChild(style);
+  console.log('🎨 玻璃效果样式已注入');
+};
+
 onMounted(() => {
   updateIsMobile();
   window.addEventListener('resize', updateIsMobile);
+  // 注入玻璃效果样式
+  injectGlassStyles();
   // 初始化偏好设置
   loadAndApplyPreferences();
 });
@@ -382,42 +430,6 @@ const closePanel = () => {
   $('#memoryManagementPanel').fadeOut(200);
 };
 </script>
-
-<style>
-/* 背景图片层 - 铺满整个面板，透明度由用户控制 */
-.panel-bg-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: var(--maomaomz-bg-image, none);
-  background-size: cover;
-  background-position: center;
-  opacity: var(--maomaomz-bg-opacity, 0.3);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* 底色层 - 纯色底层，在背景图片下面 */
-.panel-base-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: #1a2332;
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* 玻璃效果 - 半透明毛玻璃，让背景透出来 */
-.glass-effect {
-  background: rgba(26, 35, 50, 0.6) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-</style>
 
 <style scoped>
 /* 头部按钮样式 */
