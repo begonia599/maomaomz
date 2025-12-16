@@ -446,9 +446,17 @@ export function showUpdateDialog(
             console.log(`🔄 尝试更新: ${name}`);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000);
+            // 获取 SillyTavern 请求头（包含认证信息）
+            const stHeaders =
+              typeof SillyTavern !== 'undefined' && SillyTavern.getRequestHeaders
+                ? SillyTavern.getRequestHeaders()
+                : {};
             const response = await fetch('/api/extensions/update', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...stHeaders,
+              },
               body: JSON.stringify({ extensionName: name }),
               signal: controller.signal,
             });
@@ -456,6 +464,9 @@ export function showUpdateDialog(
             if (response.ok) {
               updateSuccess = true;
               console.log(`✅ 更新成功: ${name}`);
+            } else {
+              const errorText = await response.text();
+              console.warn(`更新失败 (${name}): ${response.status} - ${errorText}`);
             }
           } catch (e) {
             console.warn(`更新失败 (${name}):`, e);
