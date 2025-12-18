@@ -8,7 +8,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 - **作者**: mzrodyu
 - **许可**: Aladdin License
-- **⚠️ 商业化死全家，贩子死全家 ⚠️**
+- **⚠️ 本插件免费提供，禁止倒卖 ⚠️**
 
 ## 常用命令
 

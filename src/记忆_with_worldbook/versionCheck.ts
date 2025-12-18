@@ -1,7 +1,6 @@
 /**
  * 🔄 版本检测模块
  * 作者: mzrodyu
- * ⚠️ 商业化死全家，贩子死全家 ⚠️
  */
 
 import packageJson from '../../package.json';
@@ -300,7 +299,7 @@ export function showUpdateDialog(
           margin-bottom: 24px;
         ">
           <div style="color: #fca5a5; font-size: 12px; font-weight: 500;">
-            ⚠️ 商业化死全家，贩子死全家 · 本插件免费禁止倒卖
+            ⚠️ 本插件免费提供，禁止倒卖
           </div>
         </div>
 

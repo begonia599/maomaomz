@@ -1,7 +1,6 @@
 /**
  * 🔐 授权验证模块 - 简化版
  * 作者: mzrodyu
- * ⚠️ 商业化死全家，贩子死全家 ⚠️
  */
 
 import packageJson from '../../package.json';
@@ -418,7 +417,7 @@ function getCurrentApiEndpoint(): string {
       }
     }
 
-    // 🔥 返回找到的 URL（优先返回非官方的，更可能是贩子站）
+    // 🔥 返回找到的 URL
 
     // 去重：去掉 /v1 后缀再比较
     const normalizeUrl = (url: string) =>
@@ -435,7 +434,7 @@ function getCurrentApiEndpoint(): string {
       return true;
     });
 
-    // 排序：优先返回看起来像贩子站的 URL
+    // 排序：优先返回第三方 URL
     const suspiciousPatterns = ['zeabur', 'vercel', 'railway', 'render', 'fly.io', '.app', '.dev', '.icu', '.xyz'];
     const sortedUrls = uniqueUrls.sort((a, b) => {
       const aScore = suspiciousPatterns.some(p => a.toLowerCase().includes(p)) ? 1 : 0;
@@ -1122,16 +1121,16 @@ export async function checkAuthorization(): Promise<boolean> {
       return true;
     }
 
-    // 🔥 优先检查是否被封禁（贩子API），不给任何绕过机会
+    // 🔥 优先检查是否被封禁
     if (result.blocked) {
-      console.error('🚫 检测到封禁端点，你用的是贩子API！');
+      console.error('🚫 检测到封禁端点');
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
       showBannedDialog(result.message || '您的 API 端点已被禁用');
       return false;
     }
 
-    // 🔥 网络错误（不提供宽限期，防止贩子绕过）
+    // 🔥 网络错误
     if (result.networkError) {
       console.error('❌ 网络错误，需要重新验证');
       (window as any).toastr?.error('❌ 无法连接授权服务器\n请检查网络后刷新页面', '网络错误', { timeOut: 0 });
@@ -1184,7 +1183,7 @@ export async function checkAuthorization(): Promise<boolean> {
       });
       return true;
     } else {
-      // 🔥 检测到贩子API，显示封禁对话框阻止使用
+      // 🔥 检测到封禁端点，显示封禁对话框
       if (result.blocked) {
         console.error('🚫 检测到封禁端点');
         showBannedDialog(result.message || '您的 API 端点已被禁用');

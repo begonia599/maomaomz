@@ -138,7 +138,7 @@ serve(async req => {
       return new Response(
         JSON.stringify({
           valid: false,
-          message: '❌ 授权码错误或已过期\n\n📢 请前往 Discord 查看今日最新授权码！\n⚠️ 商业化死全家，贩子死全家',
+          message: '❌ 授权码错误或已过期\n\n📢 请前往 Discord 查看今日最新授权码！',
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
