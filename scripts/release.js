@@ -116,6 +116,12 @@ function updateVersionFiles(newVersion, changelog) {
 
   // 更新 manifest.json
   manifestJson.version = newVersion;
+
+  // 🔥 自动更新 js 版本戳，确保浏览器不会使用缓存
+  const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12); // 格式: 202412181849
+  manifestJson.js = `dist/index.js?v=${timestamp}`;
+  console.log(`✅ 已更新 js 版本戳: ?v=${timestamp}`);
+
   // 添加新版本的 changelog
   const newChangelog = {};
   newChangelog[newVersion] = changelog;
