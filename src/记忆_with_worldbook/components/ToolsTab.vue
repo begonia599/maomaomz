@@ -3850,92 +3850,112 @@
             background: #1a1a1a;
             display: flex;
             flex-wrap: wrap;
-            justify-content: flex-end;
-            gap: 8px;
+            align-items: center;
+            gap: 12px;
           "
         >
-          <button
-            v-if="!isBatchGenerating && batchResults.length === 0"
-            :disabled="!batchInput.trim()"
-            style="
-              padding: 10px 20px;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-              border: none;
-              border-radius: 6px;
-              color: white;
-              font-size: 13px;
-              cursor: pointer;
-              opacity: 1;
-            "
-            :style="{ opacity: !batchInput.trim() ? 0.5 : 1 }"
-            @click="handleBatchGenerate"
-          >
-            <i class="fa-solid fa-magic" style="margin-right: 6px"></i>
-            开始批量生成
-          </button>
-          <button
-            v-if="!isBatchGenerating && batchResults.length > 0"
-            style="
-              padding: 10px 20px;
-              background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
-              border: none;
-              border-radius: 6px;
-              color: white;
-              font-size: 13px;
-              cursor: pointer;
-            "
-            @click="handleBatchInsert"
-          >
-            <i class="fa-solid fa-plus" style="margin-right: 6px"></i>
-            全部插入到世界书
-          </button>
-          <button
-            v-if="!isBatchGenerating && batchResults.length > 0"
-            style="
-              padding: 10px 20px;
-              background: #dc3545;
-              border: none;
-              border-radius: 6px;
-              color: white;
-              font-size: 13px;
-              cursor: pointer;
-            "
-            @click="clearBatchResults"
-          >
-            <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
-            清空
-          </button>
-          <button
-            v-if="isBatchGenerating"
-            style="
-              padding: 10px 20px;
-              background: linear-gradient(135deg, #4a9eff 0%, #667eea 100%);
-              border: none;
-              border-radius: 6px;
-              color: white;
-              font-size: 13px;
-              cursor: pointer;
-            "
-            @click="minimizeBatchDialog"
-          >
-            <i class="fa-solid fa-window-minimize" style="margin-right: 6px"></i>
-            后台运行
-          </button>
-          <button
-            v-if="!isBatchGenerating"
-            style="
-              padding: 10px 20px;
-              background: #3a3a3a;
-              border: none;
-              border-radius: 6px;
-              color: #ccc;
-              font-size: 13px;
-              cursor: pointer;
-            "
-            @click="closeBatchDialog"
-          >
-            {{ batchResults.length > 0 ? '关闭' : '取消' }}
-          </button>
+          <!-- 🔥 在弹窗中直接选择世界书，优化用户体验 -->
+          <div v-if="!isBatchGenerating && batchResults.length > 0" style="flex: 1; min-width: 200px">
+            <select
+              v-model="selectedWorldbook"
+              style="
+                width: 100%;
+                padding: 10px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 13px;
+              "
+            >
+              <option value="" disabled>选择目标世界书...</option>
+              <option v-for="wb in availableWorldbooks" :key="wb" :value="wb">{{ wb }}</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <button
+              v-if="!isBatchGenerating && batchResults.length === 0"
+              :disabled="!batchInput.trim()"
+              style="
+                padding: 10px 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 13px;
+                cursor: pointer;
+                opacity: 1;
+              "
+              :style="{ opacity: !batchInput.trim() ? 0.5 : 1 }"
+              @click="handleBatchGenerate"
+            >
+              <i class="fa-solid fa-magic" style="margin-right: 6px"></i>
+              开始批量生成
+            </button>
+            <button
+              v-if="!isBatchGenerating && batchResults.length > 0"
+              style="
+                padding: 10px 20px;
+                background: linear-gradient(135deg, #51cf66 0%, #40c057 100%);
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 13px;
+                cursor: pointer;
+              "
+              @click="handleBatchInsert"
+            >
+              <i class="fa-solid fa-plus" style="margin-right: 6px"></i>
+              全部插入到世界书
+            </button>
+            <button
+              v-if="!isBatchGenerating && batchResults.length > 0"
+              style="
+                padding: 10px 20px;
+                background: #dc3545;
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 13px;
+                cursor: pointer;
+              "
+              @click="clearBatchResults"
+            >
+              <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
+              清空
+            </button>
+            <button
+              v-if="isBatchGenerating"
+              style="
+                padding: 10px 20px;
+                background: linear-gradient(135deg, #4a9eff 0%, #667eea 100%);
+                border: none;
+                border-radius: 6px;
+                color: white;
+                font-size: 13px;
+                cursor: pointer;
+              "
+              @click="minimizeBatchDialog"
+            >
+              <i class="fa-solid fa-window-minimize" style="margin-right: 6px"></i>
+              后台运行
+            </button>
+            <button
+              v-if="!isBatchGenerating"
+              style="
+                padding: 10px 20px;
+                background: #3a3a3a;
+                border: none;
+                border-radius: 6px;
+                color: #ccc;
+                font-size: 13px;
+                cursor: pointer;
+              "
+              @click="closeBatchDialog"
+            >
+              {{ batchResults.length > 0 ? '关闭' : '取消' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
