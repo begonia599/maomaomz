@@ -217,9 +217,6 @@ export function showUpdateDialog(
     // 5分钟内完全不弹窗，避免"假成功"后无限循环
     if (timeSinceLastAttempt < 5 * 60 * 1000) {
       console.log('⏰ 刚刚尝试过更新（5分钟内），跳过弹窗但允许继续加载');
-      (window as any).toastr?.info('⏰ 刚尝试过更新，5分钟内不再提示。如需手动更新请用 git pull', '', {
-        timeOut: 5000,
-      });
       return false; // 返回 false 表示没有显示弹窗，允许继续加载
     }
   }
