@@ -212,14 +212,30 @@ export function showUpdateDialog(
 ): boolean {
   // 防止无限循环：检查是否刚刚尝试过更新
   const lastUpdateAttempt = localStorage.getItem('maomaomz_last_update_attempt');
+  const forceRefreshCount = parseInt(localStorage.getItem('maomaomz_force_refresh_count') || '0', 10);
+
   if (lastUpdateAttempt) {
     const timeSinceLastAttempt = Date.now() - parseInt(lastUpdateAttempt, 10);
-    // 5分钟内完全不弹窗，避免"假成功"后无限循环
+    // 5分钟内检测到版本不匹配，说明浏览器缓存了旧代码
     if (timeSinceLastAttempt < 5 * 60 * 1000) {
-      console.log('⏰ 刚刚尝试过更新（5分钟内），跳过弹窗但允许继续加载');
-      return false; // 返回 false 表示没有显示弹窗，允许继续加载
+      // 🔥 自动强制刷新（最多尝试2次，避免无限循环）
+      if (forceRefreshCount < 2) {
+        console.log(`🔄 检测到浏览器缓存旧代码，自动强制刷新... (尝试 ${forceRefreshCount + 1}/2)`);
+        localStorage.setItem('maomaomz_force_refresh_count', (forceRefreshCount + 1).toString());
+        // 强制刷新，跳过缓存
+        window.location.reload();
+        return false;
+      } else {
+        console.log('⏰ 已尝试2次强制刷新，跳过弹窗但允许继续加载');
+        // 重置计数器
+        localStorage.removeItem('maomaomz_force_refresh_count');
+        return false;
+      }
     }
   }
+
+  // 版本匹配或首次加载，重置强制刷新计数器
+  localStorage.removeItem('maomaomz_force_refresh_count');
 
   // 检查跳过时间
   const skipUntil = localStorage.getItem('maomaomz_skip_update_until');
