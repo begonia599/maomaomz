@@ -7,27 +7,120 @@
         前端界面生成器
       </h3>
       <div style="display: flex; gap: 10px; flex-wrap: wrap">
-        <button class="action-button primary" @click="loadExample">
+        <button
+          style="
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          "
+          @click="loadExample"
+        >
           <i class="fa-solid fa-lightbulb"></i>
           加载示例
         </button>
-        <button class="action-button warning" :disabled="isGenerating" @click="generateWithAI">
+        <button
+          style="
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          "
+          :disabled="isGenerating"
+          @click="generateWithAI"
+        >
           <i :class="isGenerating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-wand-magic-sparkles'"></i>
           {{ isGenerating ? '生成中...' : 'AI 生成' }}
         </button>
-        <button class="action-button info" :disabled="!generatedCode" @click="modifyWithAI">
+        <button
+          style="
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+          "
+          :disabled="!generatedCode"
+          @click="modifyWithAI"
+        >
           <i class="fa-solid fa-pen-to-square"></i>
           AI 修改
         </button>
-        <button class="action-button success" :disabled="!generatedCode" @click="exportRegex">
+        <button
+          style="
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          "
+          :disabled="!generatedCode"
+          @click="exportRegex"
+        >
           <i class="fa-solid fa-download"></i>
           导出正则
         </button>
-        <button class="action-button purple" @click="restoreFromBackup">
+        <button
+          style="
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+          "
+          @click="restoreFromBackup"
+        >
           <i class="fa-solid fa-clock-rotate-left"></i>
           恢复备份
         </button>
-        <button class="action-button danger" @click="clearAll">
+        <button
+          style="
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          "
+          @click="clearAll"
+        >
           <i class="fa-solid fa-trash"></i>
           清空
         </button>
