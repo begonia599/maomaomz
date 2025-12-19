@@ -356,29 +356,48 @@ $(() => {
 
                       // 创建世界书条目
                       const entryName = `总结_楼层${start_id}-${end_id}`;
-                      const newEntry = {
-                        name: entryName,
-                        enabled: true,
-                        strategy: {
-                          type: 'constant' as const,
-                          keys: [],
-                          keys_secondary: { logic: 'and_any' as const, keys: [] },
-                          scan_depth: 'same_as_global' as const,
-                        },
-                        position: {
-                          type: 'before_character_definition' as const,
-                          role: 'system' as const,
-                          depth: 1,
-                        },
-                        content: summary,
-                        comment: `自动生成的总结条目 - 楼层范围: ${start_id} - ${end_id}`,
-                        insertion_order: 0,
-                        uid: Date.now(),
-                      };
 
-                      await TH.createWorldbookEntries?.(worldbookName, [newEntry], { render: 'immediate' });
-                      window.toastr.info(`📚 总结已绑定到世界书: ${worldbookName}`);
-                      console.log('✅ 自动绑定世界书成功');
+                      // 🔧 检查是否已存在同名条目，避免重复创建
+                      let existingEntries: any[] = [];
+                      try {
+                        existingEntries = TH.getWorldbookEntries?.(worldbookName) || [];
+                      } catch (e) {
+                        console.warn('获取世界书条目列表失败:', e);
+                      }
+
+                      const isDuplicate = existingEntries.some(
+                        (entry: any) =>
+                          entry.name === entryName || entry.comment?.includes(`楼层范围: ${start_id} - ${end_id}`),
+                      );
+
+                      if (isDuplicate) {
+                        console.log(`⏭️ 跳过重复条目: ${entryName}`);
+                        window.toastr.info(`📚 条目 "${entryName}" 已存在，跳过创建`);
+                      } else {
+                        const newEntry = {
+                          name: entryName,
+                          enabled: true,
+                          strategy: {
+                            type: 'constant' as const,
+                            keys: [],
+                            keys_secondary: { logic: 'and_any' as const, keys: [] },
+                            scan_depth: 'same_as_global' as const,
+                          },
+                          position: {
+                            type: 'before_character_definition' as const,
+                            role: 'system' as const,
+                            depth: 1,
+                          },
+                          content: summary,
+                          comment: `自动生成的总结条目 - 楼层范围: ${start_id} - ${end_id}`,
+                          insertion_order: 0,
+                          uid: Date.now(),
+                        };
+
+                        await TH.createWorldbookEntries?.(worldbookName, [newEntry], { render: 'immediate' });
+                        window.toastr.info(`📚 总结已绑定到世界书: ${worldbookName}`);
+                        console.log('✅ 自动绑定世界书成功');
+                      }
                     } else {
                       console.warn('⚠️ TavernHelper 不可用，无法自动绑定世界书');
                     }

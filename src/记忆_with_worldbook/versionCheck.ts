@@ -451,7 +451,8 @@ export function showUpdateDialog(
 
       // 方法2: 直接调用 SillyTavern API
       if (!updateSuccess) {
-        const extensionNames = ['maomaomz', 'third-party/maomaomz'];
+        // 🔧 扩展名格式：优先尝试完整路径格式
+        const extensionNames = ['third-party/maomaomz', 'maomaomz', 'third-party\\maomaomz'];
         for (const name of extensionNames) {
           if (updateSuccess) break;
           try {
@@ -473,7 +474,18 @@ export function showUpdateDialog(
               signal: controller.signal,
             });
             clearTimeout(timeoutId);
+
+            // 🔧 检查响应状态和响应体
             if (response.ok) {
+              const responseText = await response.text();
+              console.log(`📥 更新响应 (${name}):`, responseText);
+
+              // 检查响应体是否表示成功（有些API返回200但body可能有错误信息）
+              if (responseText.toLowerCase().includes('error') || responseText.toLowerCase().includes('fail')) {
+                console.warn(`⚠️ 更新响应包含错误 (${name}):`, responseText);
+                continue;
+              }
+
               updateSuccess = true;
               console.log(`✅ 更新成功: ${name}`);
             } else {
@@ -500,9 +512,29 @@ export function showUpdateDialog(
               console.warn('清除缓存失败:', e);
             }
           }
-          // 🔥 使用时间戳强制刷新，避免浏览器缓存
+
+          // 🔥 尝试注销 Service Worker
+          if ('serviceWorker' in navigator) {
+            try {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              for (const registration of registrations) {
+                await registration.unregister();
+              }
+              console.log('✅ 已注销所有 Service Worker');
+            } catch (e) {
+              console.warn('注销 Service Worker 失败:', e);
+            }
+          }
+
+          // 🔥 清除更新尝试记录，避免循环刷新问题
+          localStorage.removeItem('maomaomz_last_update_attempt');
+          localStorage.removeItem('maomaomz_force_refresh_count');
+
+          // 🔥 使用 location.reload(true) 强制从服务器重新加载
+          // 注：现代浏览器可能忽略此参数，所以也添加时间戳
           const url = new URL(window.location.href);
           url.searchParams.set('_t', Date.now().toString());
+          url.searchParams.set('_nocache', Math.random().toString(36).substring(7));
           window.location.href = url.toString();
         }, 3000);
       } else {

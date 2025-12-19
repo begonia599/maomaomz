@@ -673,6 +673,14 @@ export const useSummaryHistoryStore = defineStore('summaryHistory', () => {
         console.warn('读取聊天总结历史失败:', e);
       }
 
+      // 🔧 检查是否已存在相同楼层范围的总结，避免重复添加
+      const isDuplicate = chatHistory.some(item => item.start_id === start_id && item.end_id === end_id);
+
+      if (isDuplicate) {
+        console.log(`⏭️ 跳过重复总结: 楼层 ${start_id}-${end_id}`);
+        return;
+      }
+
       // 添加新的总结
       chatHistory.unshift({
         start_id,

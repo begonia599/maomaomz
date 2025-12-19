@@ -6050,8 +6050,9 @@ const generateWithStreaming = async (
     const content = data.choices?.[0]?.message?.content?.trim();
     if (!content) {
       console.warn('⚠️ API 返回数据缺少内容:', JSON.stringify(data).substring(0, 300));
+      throw new Error('AI 返回了空内容，请检查 API 设置或重试');
     }
-    return content || '';
+    return content;
   }
 
   // 对于支持流式的服务，确保 stream 参数存在
@@ -6136,6 +6137,12 @@ const generateWithStreaming = async (
   }
 
   progressRef.value = 100;
+
+  // 🔧 检查流式结果是否为空
+  if (!result || result.trim() === '') {
+    throw new Error('AI 返回了空内容，请检查 API 设置或重试');
+  }
+
   return result;
 };
 

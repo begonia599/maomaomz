@@ -195,7 +195,12 @@ export async function callAIWithTavernSupport(
   const data = await response.json();
   options?.onProgress?.(100);
 
-  return data.choices?.[0]?.message?.content?.trim() || '';
+  const content = data.choices?.[0]?.message?.content?.trim();
+  if (!content) {
+    console.warn('⚠️ API 返回空内容:', JSON.stringify(data).substring(0, 300));
+    throw new Error('AI 返回了空内容，请检查 API 设置或重试');
+  }
+  return content;
 }
 
 // 带重试的 fetch 函数（处理 503 等临时错误）
