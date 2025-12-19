@@ -621,6 +621,9 @@ watch(
   flex-direction: column;
   gap: 20px;
   height: 100%;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
 }
 
 .section-header {

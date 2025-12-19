@@ -1403,6 +1403,9 @@ const copyWorldbookContent = async () => {
 .pageable-statusbar-generator {
   position: relative;
   z-index: 1;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 12px;
 }
 
 .action-button {
