@@ -5,10 +5,12 @@
   "optional": [],
   "js": "dist/index.js?v=202412182022",
   "author": "猫猫 (mzrodyu)",
-  "version": "2.0.51",
+  "version": "2.0.53",
   "homePage": "https://github.com/mzrodyu/maomaomz",
   "auto_update": true,
   "changelog": {
+    "2.0.53": "状态栏生成器支持XML格式",
+    "2.0.52": "更新",
     "2.0.51": "更新",
     "2.0.50": "更新",
     "2.0.49": "更新",
