@@ -160,7 +160,18 @@
                 : '✨ 描述你想要的界面：\n\n例如：\n- 一个简单的登录表单\n- 卡片式的产品展示页面\n- 带进度条的任务列表'
             "
             :disabled="isGenerating"
-            class="prompt-textarea"
+            style="
+              width: 100%;
+              padding: 12px;
+              background: #1a1a2e;
+              border: 1px solid #3a3a5a;
+              border-radius: 8px;
+              color: #e0e0e0;
+              font-size: 12px;
+              font-family: 'Courier New', monospace;
+              resize: none;
+              min-height: 180px;
+            "
           ></textarea>
         </div>
 
@@ -169,7 +180,20 @@
             <i class="fa-solid fa-code" style="color: #10b981"></i>
             触发正则
           </h4>
-          <input v-model="triggerRegex" type="text" placeholder="/【界面】/g" class="regex-input" />
+          <input
+            v-model="triggerRegex"
+            type="text"
+            placeholder="/【界面】/g"
+            style="
+              width: 100%;
+              padding: 10px 12px;
+              background: #1a1a2e;
+              border: 1px solid #3a3a5a;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 13px;
+            "
+          />
         </div>
 
         <div v-if="isModifyMode" class="modify-tips">
@@ -197,7 +221,19 @@
         <textarea
           v-model="generatedCode"
           placeholder="AI 生成的 HTML 代码将显示在这里..."
-          class="code-textarea"
+          style="
+            width: 100%;
+            flex: 1;
+            padding: 12px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a5a;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            resize: none;
+            min-height: 300px;
+          "
         ></textarea>
       </div>
 
@@ -217,7 +253,7 @@
           <i class="fa-solid fa-eye"></i>
           <span>实时预览</span>
         </div>
-        <div class="preview-container">
+        <div style="flex: 1; background: #f8f9fa; border-radius: 12px; overflow: hidden; border: 2px solid #3a3a5a">
           <iframe
             v-if="generatedCode"
             :srcdoc="previewHTML"
