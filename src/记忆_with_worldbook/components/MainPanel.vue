@@ -345,14 +345,14 @@ const injectGlassStyles = () => {
       left: 0;
       right: 0;
       bottom: 0;
-      background: #e0f2fe;
+      background: #1e2d3d;
       z-index: -1;
       pointer-events: none;
     }
 
     /* 玻璃效果 - 半透明毛玻璃，让背景透出来 */
     .glass-effect {
-      background: rgba(30, 60, 90, 0.75) !important;
+      background: rgba(30, 50, 70, 0.6) !important;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
