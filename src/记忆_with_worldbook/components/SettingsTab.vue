@@ -12,25 +12,16 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 24px;
-          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
-          border-radius: 12px;
-          margin-bottom: 16px;
-          border: 1px solid rgba(84, 107, 131, 0.3);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 14px 20px;
+          background: #1e2530;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          border-left: 3px solid #6b8299;
+          transition: all 0.2s ease;
         "
         @click="toggleSection('api')"
-        @mouseenter="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.6)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(84, 107, 131, 0.3)';
-        "
-        @mouseleave="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.3)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-        "
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
       >
         <h3
           style="
@@ -71,7 +62,9 @@
             "
           >
             <div>
-              <div style="color: #ffc107; font-size: 13px; font-weight: 600; margin-bottom: 4px">🍺 使用酒馆 API</div>
+              <div style="color: #ffc107; font-size: 13px; font-weight: 600; margin-bottom: 4px">
+                <i class="fa-solid fa-beer-mug-empty" style="margin-right: 6px"></i>使用酒馆 API
+              </div>
               <div style="color: #999; font-size: 11px; line-height: 1.4">
                 直接使用酒馆主界面配置的 API，完美绕过 CORS 问题<br />
                 无需在插件中单独配置，推荐反代用户开启
@@ -646,25 +639,16 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 24px;
-          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
-          border-radius: 12px;
-          margin-bottom: 16px;
-          border: 1px solid rgba(84, 107, 131, 0.3);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 14px 20px;
+          background: #1e2530;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          border-left: 3px solid #fbbf24;
+          transition: all 0.2s ease;
         "
         @click="toggleSection('autoSummary')"
-        @mouseenter="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.6)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(84, 107, 131, 0.3)';
-        "
-        @mouseleave="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.3)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-        "
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
       >
         <h3
           style="
@@ -719,9 +703,9 @@
               cursor: pointer;
             "
           >
-            <option value="concise">📝 简洁模式 - 提取关键信息，精简扼要</option>
-            <option value="detailed">📋 详细模式 - 保留更多细节和上下文</option>
-            <option value="narrative">📖 叙事模式 - 以故事形式描述剧情发展</option>
+            <option value="concise">▸ 简洁模式 - 提取关键信息，精简扼要</option>
+            <option value="detailed">▸ 详细模式 - 保留更多细节和上下文</option>
+            <option value="narrative">▸ 叙事模式 - 以故事形式描述剧情发展</option>
           </select>
           <small style="color: #888; font-size: 11px; margin-top: 4px; display: block">
             选择不同风格会影响总结的详细程度和表达方式
@@ -860,25 +844,16 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 24px;
-          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
-          border-radius: 12px;
-          margin-bottom: 16px;
-          border: 1px solid rgba(84, 107, 131, 0.3);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 14px 20px;
+          background: #1e2530;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          border-left: 3px solid #34d399;
+          transition: all 0.2s ease;
         "
         @click="toggleSection('manualSummary')"
-        @mouseenter="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.6)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(84, 107, 131, 0.3)';
-        "
-        @mouseleave="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.3)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-        "
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
       >
         <h3
           style="
@@ -1011,25 +986,16 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 24px;
-          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
-          border-radius: 12px;
-          margin-bottom: 16px;
-          border: 1px solid rgba(84, 107, 131, 0.3);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 14px 20px;
+          background: #1e2530;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          border-left: 3px solid #60a5fa;
+          transition: all 0.2s ease;
         "
         @click="toggleSection('tableGeneration')"
-        @mouseenter="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.6)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(84, 107, 131, 0.3)';
-        "
-        @mouseleave="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.3)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-        "
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
       >
         <h3
           style="
@@ -1306,25 +1272,16 @@
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 24px;
-          background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
-          border-radius: 12px;
-          margin-bottom: 16px;
-          border: 1px solid rgba(84, 107, 131, 0.3);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 14px 20px;
+          background: #1e2530;
+          border-radius: 8px;
+          margin-bottom: 12px;
+          border-left: 3px solid #f472b6;
+          transition: all 0.2s ease;
         "
         @click="toggleSection('messageManagement')"
-        @mouseenter="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.6)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(84, 107, 131, 0.3)';
-        "
-        @mouseleave="
-          ($event.currentTarget as HTMLElement).style.borderColor = 'rgba(84, 107, 131, 0.3)';
-          ($event.currentTarget as HTMLElement).style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-        "
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
       >
         <h3
           style="
