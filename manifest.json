@@ -5,10 +5,11 @@
   "optional": [],
   "js": "dist/index.js?v=202412182022",
   "author": "猫猫 (mzrodyu)",
-  "version": "2.0.62",
+  "version": "2.0.63",
   "homePage": "https://github.com/mzrodyu/maomaomz",
   "auto_update": true,
   "changelog": {
+    "2.0.63": "调亮设置页整体背景色",
     "2.0.62": "UI美化 - 调亮面板背景、彩色按钮",
     "2.0.61": "状态栏生成器按钮美化",
     "2.0.60": "UI美化 - 蓝白色清新风格",

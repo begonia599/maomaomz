@@ -3667,7 +3667,7 @@ const handle_unhide_single = async (messageId: number) => {
   height: 100%;
   overflow-y: auto;
   padding: 25px !important;
-  background: #1a1a1a !important;
+  background: #252a30 !important;
 }
 
 /* 滚动条样式 */
