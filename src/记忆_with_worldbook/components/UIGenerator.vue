@@ -35,7 +35,15 @@
     </div>
 
     <!-- 主内容区 -->
-    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 20px; min-height: 520px; flex: 1">
+    <div
+      style="
+        display: grid;
+        grid-template-columns: minmax(250px, 1fr) minmax(300px, 1.5fr) minmax(350px, 2fr);
+        gap: 16px;
+        min-height: 450px;
+        flex: 1;
+      "
+    >
       <!-- 左侧：需求输入区 -->
       <div
         style="
