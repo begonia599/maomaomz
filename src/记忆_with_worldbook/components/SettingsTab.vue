@@ -13,15 +13,15 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 20px;
-          background: #1e2530;
+          background: rgba(240, 248, 255, 0.08);
           border-radius: 8px;
           margin-bottom: 12px;
-          border-left: 3px solid #6b8299;
+          border-left: 3px solid #7dd3fc;
           transition: all 0.2s ease;
         "
         @click="toggleSection('api')"
-        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
-        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.15)'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.08)'"
       >
         <h3
           style="
@@ -640,15 +640,15 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 20px;
-          background: #1e2530;
+          background: rgba(240, 248, 255, 0.08);
           border-radius: 8px;
           margin-bottom: 12px;
-          border-left: 3px solid #fbbf24;
+          border-left: 3px solid #38bdf8;
           transition: all 0.2s ease;
         "
         @click="toggleSection('autoSummary')"
-        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
-        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.15)'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.08)'"
       >
         <h3
           style="
@@ -845,15 +845,15 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 20px;
-          background: #1e2530;
+          background: rgba(240, 248, 255, 0.08);
           border-radius: 8px;
           margin-bottom: 12px;
-          border-left: 3px solid #34d399;
+          border-left: 3px solid #0ea5e9;
           transition: all 0.2s ease;
         "
         @click="toggleSection('manualSummary')"
-        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
-        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.15)'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.08)'"
       >
         <h3
           style="
@@ -987,15 +987,15 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 20px;
-          background: #1e2530;
+          background: rgba(240, 248, 255, 0.08);
           border-radius: 8px;
           margin-bottom: 12px;
-          border-left: 3px solid #60a5fa;
+          border-left: 3px solid #06b6d4;
           transition: all 0.2s ease;
         "
         @click="toggleSection('tableGeneration')"
-        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
-        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.15)'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.08)'"
       >
         <h3
           style="
@@ -1273,15 +1273,15 @@
           align-items: center;
           justify-content: space-between;
           padding: 14px 20px;
-          background: #1e2530;
+          background: rgba(240, 248, 255, 0.08);
           border-radius: 8px;
           margin-bottom: 12px;
-          border-left: 3px solid #f472b6;
+          border-left: 3px solid #22d3ee;
           transition: all 0.2s ease;
         "
         @click="toggleSection('messageManagement')"
-        @mouseenter="($event.currentTarget as HTMLElement).style.background = '#252d3a'"
-        @mouseleave="($event.currentTarget as HTMLElement).style.background = '#1e2530'"
+        @mouseenter="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.15)'"
+        @mouseleave="($event.currentTarget as HTMLElement).style.background = 'rgba(240, 248, 255, 0.08)'"
       >
         <h3
           style="
