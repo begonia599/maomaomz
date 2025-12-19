@@ -45,7 +45,7 @@
         <div style="position: relative" class="dropdown-container">
           <button
             class="toolbar-btn"
-            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%)"
+            style="background: #2a3540; border: 1px solid #3d4f5f"
             @click="showTemplateMenu = !showTemplateMenu"
           >
             <i class="fa-solid fa-layer-group"></i>
@@ -95,27 +95,19 @@
             </div>
           </div>
         </div>
-        <button
-          class="toolbar-btn"
-          style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)"
-          @click="showAIDialog"
-        >
+        <button class="toolbar-btn" style="background: #2a3540; border: 1px solid #3d4f5f" @click="showAIDialog">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
           <span class="btn-text-full">AI 编辑界面</span>
           <span class="btn-text-short">AI编辑</span>
         </button>
-        <button
-          class="toolbar-btn"
-          style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)"
-          @click="exportRegex"
-        >
+        <button class="toolbar-btn" style="background: #2a3540; border: 1px solid #3d4f5f" @click="exportRegex">
           <i class="fa-solid fa-download"></i>
           <span class="btn-text-full">导出 JSON</span>
           <span class="btn-text-short">导出</span>
         </button>
         <button
           class="toolbar-btn"
-          style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%)"
+          style="background: #2a3540; border: 1px solid #3d4f5f"
           title="清空所有配置和代码"
           @click="clearAll"
         >
