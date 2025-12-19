@@ -503,11 +503,25 @@ export const useSettingsStore = defineStore('settings', () => {
       console.warn('从 localStorage 读取设置失败:', e);
     }
 
-    // 尝试从 SillyTavern 读取 API 配置
+    // 🔧 检查本地是否已保存 API 配置（如果用户手动配置过，优先使用本地配置）
+    const hasLocalApiConfig = localSettings.api_endpoint && localSettings.api_key;
+
+    if (hasLocalApiConfig) {
+      // 本地已有 API 配置，直接使用本地设置
+      console.log('✅ 使用本地保存的 API 配置（用户手动配置）');
+      const parsed = Settings.parse(localSettings);
+      console.log('📋 本地设置:', {
+        api_endpoint: parsed.api_endpoint,
+        model: parsed.model,
+      });
+      return ref(parsed);
+    }
+
+    // 本地没有 API 配置，尝试从 SillyTavern 读取
     const tavernConfig = getTavernApiConfig();
     if (tavernConfig) {
-      console.log('✅ 检测到 SillyTavern API 配置，合并设置');
-      // 🔧 合并设置：本地设置优先，只覆盖 API 相关字段
+      console.log('✅ 本地无 API 配置，使用 SillyTavern API 配置');
+      // 合并设置：其他本地设置 + ST 的 API 配置
       const mergedSettings = {
         ...localSettings, // 本地设置优先（包含 summary_style, summarize_interval 等）
         api_provider: tavernConfig.api_provider,
@@ -523,9 +537,8 @@ export const useSettingsStore = defineStore('settings', () => {
 
       const parsed = Settings.parse(mergedSettings);
       console.log('📋 合并后的设置:', {
-        summary_style: parsed.summary_style,
-        summarize_interval: parsed.summarize_interval,
-        auto_summarize_enabled: parsed.auto_summarize_enabled,
+        api_endpoint: parsed.api_endpoint,
+        model: parsed.model,
       });
       return ref(parsed);
     }
