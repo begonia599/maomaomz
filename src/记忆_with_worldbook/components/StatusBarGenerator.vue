@@ -2473,13 +2473,11 @@ function generateFromFields() {
   // 🆕 如果使用XML格式，生成XML正则
   if (config.value.useXmlFormat) {
     const wrapper = config.value.xmlWrapper || 'state_bar';
-    // 生成匹配XML标签的正则：<wrapper><tag1>(.+?)</tag1>...<tagN>(.+?)</tagN></wrapper>
-    const tagPatterns = fields.map(f => {
-      const tag = f.xmlTag || f.name;
-      return `<${tag}>([\\s\\S]*?)</${tag}>`;
-    });
-    config.value.findRegex = `<${wrapper}>[\\s\\S]*?${tagPatterns.join('[\\s\\S]*?')}[\\s\\S]*?</${wrapper}>`;
-    console.log('✅ 自动生成的 findRegex (XML格式):', config.value.findRegex);
+    // 🔧 修复：使用简单的包裹标签匹配，不要求字段顺序
+    // 之前的正则要求所有字段按固定顺序出现，导致AI输出顺序不同时匹配失败
+    // 现在只匹配 <wrapper>...</wrapper> 整体，字段解析由渲染器处理
+    config.value.findRegex = `<${wrapper}>[\\s\\S]*?</${wrapper}>`;
+    console.log('✅ 自动生成的 findRegex (XML格式，宽松匹配):', config.value.findRegex);
     console.log('📊 XML包裹标签:', wrapper);
     console.log('📊 字段数量:', totalFields);
   } else if (totalFields <= 4) {
