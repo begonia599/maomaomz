@@ -35,9 +35,17 @@
     </div>
 
     <!-- 主内容区 -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; min-height: 500px">
+    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 20px; min-height: 520px; flex: 1">
       <!-- 左侧：需求输入区 -->
-      <div style="background: #2a2a2a; border-radius: 12px; padding: 16px; border: 1px solid #3a3a3a">
+      <div
+        style="
+          background: linear-gradient(145deg, rgba(45, 55, 72, 0.9), rgba(30, 40, 55, 0.95));
+          border-radius: 16px;
+          padding: 20px;
+          border: 1px solid rgba(74, 158, 255, 0.2);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        "
+      >
         <div class="input-section">
           <h4>
             <i class="fa-solid fa-sparkles" style="color: #f59e0b"></i>
@@ -72,10 +80,11 @@
       <!-- 中间：代码编辑区 -->
       <div
         style="
-          background: #2a2a2a;
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid #3a3a3a;
+          background: linear-gradient(145deg, rgba(40, 50, 65, 0.9), rgba(25, 35, 50, 0.95));
+          border-radius: 16px;
+          padding: 20px;
+          border: 1px solid rgba(102, 126, 234, 0.25);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;
         "
@@ -94,10 +103,11 @@
       <!-- 右侧：预览区 -->
       <div
         style="
-          background: #2a2a2a;
-          border-radius: 12px;
-          padding: 16px;
-          border: 1px solid #3a3a3a;
+          background: linear-gradient(145deg, rgba(50, 60, 75, 0.9), rgba(35, 45, 60, 0.95));
+          border-radius: 16px;
+          padding: 20px;
+          border: 1px solid rgba(16, 185, 129, 0.25);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;
         "
