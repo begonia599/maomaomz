@@ -169,6 +169,95 @@
             />
           </div>
         </div>
+
+        <!-- 渐变色设置 -->
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(84, 107, 131, 0.2)">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px">
+            <div style="color: #e0e0e0; font-size: 14px; font-weight: 500">
+              <i
+                class="fa-solid fa-wand-magic-sparkles"
+                style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"
+              ></i>
+              渐变色模式
+            </div>
+            <label class="maomaomz-toggle-switch">
+              <input v-model="preferences.useGradient" type="checkbox" @change="savePreferences" />
+              <span class="maomaomz-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- 渐变色设置（仅在开启时显示） -->
+          <div v-if="preferences.useGradient" style="display: flex; flex-direction: column; gap: 12px">
+            <!-- 第二颜色选择 -->
+            <div style="display: flex; align-items: center; gap: 12px">
+              <span style="color: #888; font-size: 12px; min-width: 60px">第二颜色</span>
+              <input
+                type="color"
+                :value="preferences.gradientColor2"
+                style="
+                  width: 36px;
+                  height: 36px;
+                  border: none;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  background: transparent;
+                  padding: 0;
+                "
+                @input="
+                  preferences.gradientColor2 = ($event.target as HTMLInputElement).value;
+                  applyPreferences();
+                "
+                @change="savePreferencesQuiet()"
+              />
+              <input
+                type="text"
+                :value="preferences.gradientColor2"
+                placeholder="#8b5cf6"
+                style="
+                  width: 80px;
+                  height: 28px;
+                  background: #1a1a1a;
+                  border: 1px solid rgba(84, 107, 131, 0.3);
+                  border-radius: 6px;
+                  color: #e0e0e0;
+                  font-size: 12px;
+                  font-family: monospace;
+                  text-align: center;
+                "
+                @change="
+                  const val = ($event.target as HTMLInputElement).value;
+                  if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                    preferences.gradientColor2 = val;
+                    savePreferences();
+                  }
+                "
+              />
+            </div>
+
+            <!-- 渐变角度 -->
+            <div style="display: flex; align-items: center; gap: 12px">
+              <span style="color: #888; font-size: 12px; min-width: 60px">渐变角度</span>
+              <input
+                v-model.number="preferences.gradientAngle"
+                type="range"
+                min="0"
+                max="360"
+                style="flex: 1; accent-color: var(--maomaomz-theme-color, #4a9eff)"
+                @input="applyPreferences()"
+                @change="savePreferencesQuiet()"
+              />
+              <span style="color: #e0e0e0; font-size: 12px; min-width: 35px">{{ preferences.gradientAngle }}°</span>
+            </div>
+
+            <!-- 预览 -->
+            <div
+              style="height: 40px; border-radius: 8px; margin-top: 4px"
+              :style="{
+                background: `linear-gradient(${preferences.gradientAngle}deg, ${preferences.themeColor} 0%, ${preferences.gradientColor2} 100%)`,
+              }"
+            ></div>
+          </div>
+        </div>
       </div>
 
       <!-- 背景图片设置 -->
@@ -347,6 +436,9 @@ interface Preferences {
   showSuccessToast: boolean;
   showErrorToast: boolean;
   themeColor: string;
+  useGradient: boolean; // 是否使用渐变色
+  gradientColor2: string; // 渐变色第二个颜色
+  gradientAngle: number; // 渐变角度 0-360
   defaultSectionsExpanded: boolean; // 设置页面折叠区块默认展开
   backgroundImage: string; // 背景图片 (base64 或 URL)
   backgroundOpacity: number; // 背景透明度 0-100
@@ -372,6 +464,9 @@ const defaultPreferences: Preferences = {
   showSuccessToast: true,
   showErrorToast: true,
   themeColor: '#4a9eff',
+  useGradient: false, // 默认不使用渐变
+  gradientColor2: '#8b5cf6', // 默认第二颜色为紫色
+  gradientAngle: 135, // 默认135度角
   defaultSectionsExpanded: true, // 默认展开
   backgroundImage: '', // 默认无背景
   backgroundOpacity: 30, // 默认 30% 透明度
@@ -433,7 +528,14 @@ const applyPreferences = () => {
 
     // 应用主题色 CSS 变量
     document.documentElement.style.setProperty('--maomaomz-theme-color', preferences.themeColor);
-    console.log('🎨 主题色已更新:', preferences.themeColor);
+    document.documentElement.style.setProperty('--maomaomz-theme-color-2', preferences.gradientColor2 || '#8b5cf6');
+    document.documentElement.style.setProperty('--maomaomz-gradient-angle', `${preferences.gradientAngle || 135}deg`);
+    document.documentElement.style.setProperty('--maomaomz-use-gradient', preferences.useGradient ? '1' : '0');
+    console.log(
+      '🎨 主题色已更新:',
+      preferences.themeColor,
+      preferences.useGradient ? `渐变到 ${preferences.gradientColor2}` : '纯色',
+    );
 
     // 应用背景图片到面板
     document.documentElement.style.setProperty(
@@ -445,6 +547,17 @@ const applyPreferences = () => {
       (preferences.backgroundOpacity / 100).toString(),
     );
     console.log('🖼️ 背景设置已更新');
+
+    // 应用渐变模式 class
+    const baseLayer = document.querySelector('.panel-base-layer');
+    const glassEffects = document.querySelectorAll('.glass-effect');
+    if (preferences.useGradient) {
+      baseLayer?.classList.add('gradient-mode');
+      glassEffects.forEach(el => el.classList.add('gradient-mode'));
+    } else {
+      baseLayer?.classList.remove('gradient-mode');
+      glassEffects.forEach(el => el.classList.remove('gradient-mode'));
+    }
 
     // 立即应用任务管理器显示状态
     try {

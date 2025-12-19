@@ -338,7 +338,7 @@ const injectGlassStyles = () => {
       z-index: 0;
     }
 
-    /* 底色层 - 纯色底层，在背景图片下面 */
+    /* 底色层 - 支持纯色或渐变 */
     .panel-base-layer {
       position: absolute;
       top: 0;
@@ -350,11 +350,29 @@ const injectGlassStyles = () => {
       pointer-events: none;
     }
 
+    /* 渐变模式底色 */
+    .panel-base-layer.gradient-mode {
+      background: linear-gradient(
+        var(--maomaomz-gradient-angle, 135deg),
+        color-mix(in srgb, var(--maomaomz-theme-color, #546b83) 35%, #1a1a1a),
+        color-mix(in srgb, var(--maomaomz-theme-color-2, #8b5cf6) 35%, #1a1a1a)
+      );
+    }
+
     /* 玻璃效果 - 半透明毛玻璃，让背景透出来 */
     .glass-effect {
       background: color-mix(in srgb, var(--maomaomz-theme-color, #546b83) 15%, rgba(26, 26, 26, 0.85)) !important;
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* 渐变模式玻璃效果 */
+    .glass-effect.gradient-mode {
+      background: linear-gradient(
+        var(--maomaomz-gradient-angle, 135deg),
+        color-mix(in srgb, var(--maomaomz-theme-color, #546b83) 20%, rgba(26, 26, 26, 0.8)),
+        color-mix(in srgb, var(--maomaomz-theme-color-2, #8b5cf6) 20%, rgba(26, 26, 26, 0.8))
+      ) !important;
     }
   `;
   document.head.appendChild(style);
