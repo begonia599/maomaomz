@@ -485,48 +485,59 @@ export const useSettingsStore = defineStore('settings', () => {
   const initSettings = () => {
     console.log('🔧 插件环境：优先读取 SillyTavern API 配置，然后使用 localStorage');
 
-    // 首先尝试从 SillyTavern 读取 API 配置
-    const tavernConfig = getTavernApiConfig();
-    if (tavernConfig) {
-      console.log('✅ 使用 SillyTavern 主界面的 API 配置');
-      // 合并 SillyTavern 配置和本地设置
-      try {
-        const saved = localStorage.getItem('tavern_helper_settings');
-        const localSettings = saved ? JSON.parse(saved) : {};
-
-        // 用 SillyTavern 的 API 配置覆盖本地配置
-        const mergedSettings = {
-          ...localSettings,
-          api_provider: tavernConfig.api_provider,
-          api_endpoint: tavernConfig.api_endpoint,
-          api_key: tavernConfig.api_key,
-          model: tavernConfig.model,
-          max_tokens: tavernConfig.max_tokens,
-          temperature: tavernConfig.temperature,
-          top_p: tavernConfig.top_p,
-          presence_penalty: tavernConfig.presence_penalty,
-          frequency_penalty: tavernConfig.frequency_penalty,
-        };
-
-        return ref(Settings.parse(mergedSettings));
-      } catch (e) {
-        console.warn('合并设置失败，使用 SillyTavern 配置:', e);
-        return ref(Settings.parse(tavernConfig));
-      }
-    }
-
-    // 如果没有 SillyTavern 配置，使用本地存储
-    console.log('⚠️ 未找到 SillyTavern API 配置，使用本地存储');
+    // 🔧 首先读取本地存储的设置
+    let localSettings: any = {};
     try {
       const saved = localStorage.getItem('tavern_helper_settings');
       if (saved) {
-        return ref(Settings.parse(JSON.parse(saved)));
+        localSettings = JSON.parse(saved);
+        console.log('📦 从 localStorage 读取到的设置:', {
+          summary_style: localSettings.summary_style,
+          summarize_interval: localSettings.summarize_interval,
+          auto_summarize_enabled: localSettings.auto_summarize_enabled,
+        });
+      } else {
+        console.log('📦 localStorage 中没有保存的设置');
       }
     } catch (e) {
       console.warn('从 localStorage 读取设置失败:', e);
     }
 
-    return ref(Settings.parse({}));
+    // 尝试从 SillyTavern 读取 API 配置
+    const tavernConfig = getTavernApiConfig();
+    if (tavernConfig) {
+      console.log('✅ 检测到 SillyTavern API 配置，合并设置');
+      // 🔧 合并设置：本地设置优先，只覆盖 API 相关字段
+      const mergedSettings = {
+        ...localSettings, // 本地设置优先（包含 summary_style, summarize_interval 等）
+        api_provider: tavernConfig.api_provider,
+        api_endpoint: tavernConfig.api_endpoint,
+        api_key: tavernConfig.api_key,
+        model: tavernConfig.model,
+        max_tokens: tavernConfig.max_tokens,
+        temperature: tavernConfig.temperature,
+        top_p: tavernConfig.top_p,
+        presence_penalty: tavernConfig.presence_penalty,
+        frequency_penalty: tavernConfig.frequency_penalty,
+      };
+
+      const parsed = Settings.parse(mergedSettings);
+      console.log('📋 合并后的设置:', {
+        summary_style: parsed.summary_style,
+        summarize_interval: parsed.summarize_interval,
+        auto_summarize_enabled: parsed.auto_summarize_enabled,
+      });
+      return ref(parsed);
+    }
+
+    // 如果没有 SillyTavern 配置，使用本地存储
+    console.log('⚠️ 未找到 SillyTavern API 配置，使用本地存储');
+    const parsed = Settings.parse(localSettings);
+    console.log('📋 使用本地设置:', {
+      summary_style: parsed.summary_style,
+      summarize_interval: parsed.summarize_interval,
+    });
+    return ref(parsed);
   };
 
   const settings = initSettings();
@@ -551,7 +562,16 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     saveTimeout = setTimeout(() => {
       saveImmediately(new_settings);
+      saveTimeout = null;
     }, 300); // 300ms 防抖（缩短延迟以提高响应性）
+  };
+
+  // 🔧 取消待执行的防抖保存
+  const cancelPendingSave = () => {
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+      saveTimeout = null;
+    }
   };
 
   watch(settings, debouncedSave, { immediate: false, deep: true });
@@ -567,9 +587,37 @@ export const useSettingsStore = defineStore('settings', () => {
   // 手动保存设置函数（插件环境 - localStorage）
   const saveSettings = () => {
     try {
-      console.log('💾 插件环境：手动保存设置到 localStorage:', klona(settings.value));
-      localStorage.setItem('tavern_helper_settings', JSON.stringify(klona(settings.value)));
-      window.toastr?.success('设置已保存（localStorage）');
+      // 🔧 取消待执行的防抖保存，避免冲突
+      cancelPendingSave();
+
+      const settingsToSave = klona(settings.value);
+      console.log('💾 手动保存设置到 localStorage:', {
+        summary_style: settingsToSave.summary_style,
+        summarize_interval: settingsToSave.summarize_interval,
+        auto_summarize_enabled: settingsToSave.auto_summarize_enabled,
+      });
+
+      localStorage.setItem('tavern_helper_settings', JSON.stringify(settingsToSave));
+
+      // 🔧 验证保存是否成功
+      const verification = localStorage.getItem('tavern_helper_settings');
+      if (verification) {
+        const parsed = JSON.parse(verification);
+        if (
+          parsed.summary_style === settingsToSave.summary_style &&
+          parsed.summarize_interval === settingsToSave.summarize_interval
+        ) {
+          console.log('✅ 设置保存验证成功');
+          window.toastr?.success('设置已保存');
+          return true;
+        } else {
+          console.error('❌ 设置保存验证失败：数据不一致');
+          window.toastr?.error('设置保存失败：数据不一致');
+          return false;
+        }
+      }
+
+      window.toastr?.success('设置已保存');
       return true;
     } catch (e) {
       console.error('❌ 保存到 localStorage 失败:', e);

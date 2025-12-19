@@ -5,10 +5,11 @@
   "optional": [],
   "js": "dist/index.js?v=202412182022",
   "author": "猫猫 (mzrodyu)",
-  "version": "2.0.57",
+  "version": "2.0.58",
   "homePage": "https://github.com/mzrodyu/maomaomz",
   "auto_update": true,
   "changelog": {
+    "2.0.58": "增强设置保存验证和调试日志",
     "2.0.57": "修复XML状态栏字段顺序不匹配导致格式丢失",
     "2.0.56": "修复更新弹窗不显示直接刷新的问题",
     "2.0.55": "移动端更新功能兼容性改进",
