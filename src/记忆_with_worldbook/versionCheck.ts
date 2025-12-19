@@ -502,40 +502,65 @@ export function showUpdateDialog(
         (window as any).toastr?.success('✅ 更新成功！3秒后强制刷新页面...', '完成', { timeOut: 3000 });
         // 3秒后强制刷新页面（清除缓存）
         setTimeout(async () => {
-          // 🔥 清除 Service Worker 缓存
-          if ('caches' in window) {
-            try {
+          // 🔥 清除更新尝试记录，避免循环刷新问题（优先执行，确保不影响后续操作）
+          try {
+            localStorage.removeItem('maomaomz_last_update_attempt');
+            localStorage.removeItem('maomaomz_force_refresh_count');
+          } catch (e) {
+            console.warn('清除 localStorage 失败:', e);
+          }
+
+          // 🔥 清除 Service Worker 缓存（移动端可能不支持，用 try-catch 包裹）
+          try {
+            if ('caches' in window && typeof caches.keys === 'function') {
               const cacheNames = await caches.keys();
               await Promise.all(cacheNames.map(name => caches.delete(name)));
               console.log('✅ 已清除所有缓存');
-            } catch (e) {
-              console.warn('清除缓存失败:', e);
             }
+          } catch (e) {
+            console.warn('清除缓存失败（移动端可能不支持）:', e);
           }
 
-          // 🔥 尝试注销 Service Worker
-          if ('serviceWorker' in navigator) {
-            try {
+          // 🔥 尝试注销 Service Worker（移动端可能受限）
+          try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
               const registrations = await navigator.serviceWorker.getRegistrations();
               for (const registration of registrations) {
                 await registration.unregister();
               }
               console.log('✅ 已注销所有 Service Worker');
-            } catch (e) {
-              console.warn('注销 Service Worker 失败:', e);
             }
+          } catch (e) {
+            console.warn('注销 Service Worker 失败（移动端可能不支持）:', e);
           }
 
-          // 🔥 清除更新尝试记录，避免循环刷新问题
-          localStorage.removeItem('maomaomz_last_update_attempt');
-          localStorage.removeItem('maomaomz_force_refresh_count');
+          // 🔥 移动端兼容：多种刷新策略
+          const forceRefresh = () => {
+            try {
+              // 策略1：使用时间戳强制刷新 URL
+              const url = new URL(window.location.href);
+              url.searchParams.set('_t', Date.now().toString());
+              url.searchParams.set('_nocache', Math.random().toString(36).substring(7));
 
-          // 🔥 使用 location.reload(true) 强制从服务器重新加载
-          // 注：现代浏览器可能忽略此参数，所以也添加时间戳
-          const url = new URL(window.location.href);
-          url.searchParams.set('_t', Date.now().toString());
-          url.searchParams.set('_nocache', Math.random().toString(36).substring(7));
-          window.location.href = url.toString();
+              // 策略2：尝试 location.replace（某些移动端浏览器可能更可靠）
+              if (typeof window.location.replace === 'function') {
+                window.location.replace(url.toString());
+              } else {
+                window.location.href = url.toString();
+              }
+            } catch (e) {
+              console.warn('URL 刷新失败，尝试 reload:', e);
+              // 策略3：降级到简单 reload
+              try {
+                window.location.reload();
+              } catch (e2) {
+                console.error('所有刷新方法都失败:', e2);
+                (window as any).toastr?.warning('⚠️ 自动刷新失败，请手动刷新页面', '', { timeOut: 5000 });
+              }
+            }
+          };
+
+          forceRefresh();
         }, 3000);
       } else {
         throw new Error('所有更新方法都失败了');
@@ -559,9 +584,29 @@ export function showUpdateDialog(
     }
   });
 
-  // 仅刷新页面按钮
+  // 仅刷新页面按钮（移动端兼容）
   document.getElementById('maomaomz-refresh-only')?.addEventListener('click', () => {
-    window.location.reload();
+    // 清除更新相关的 localStorage 记录
+    try {
+      localStorage.removeItem('maomaomz_last_update_attempt');
+      localStorage.removeItem('maomaomz_force_refresh_count');
+    } catch (e) {
+      console.warn('清除 localStorage 失败:', e);
+    }
+
+    // 🔥 移动端兼容：多种刷新方式
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('_t', Date.now().toString());
+      if (typeof window.location.replace === 'function') {
+        window.location.replace(url.toString());
+      } else {
+        window.location.href = url.toString();
+      }
+    } catch (e) {
+      console.warn('URL 刷新失败，尝试 reload:', e);
+      window.location.reload();
+    }
   });
 
   // 稍后提醒按钮（只有非强制模式才有）
