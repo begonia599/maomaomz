@@ -1234,12 +1234,15 @@ interface Field {
   name: string;
   label: string;
   icon: string;
+  xmlTag?: string; // XML标签名（如 location, time 等）
 }
 
 interface Config {
   name: string;
   findRegex: string;
   fields: Field[];
+  useXmlFormat?: boolean; // 是否使用XML格式
+  xmlWrapper?: string; // XML包裹标签（如 state_bar）
 }
 
 interface CodeFile {
@@ -1476,7 +1479,56 @@ const worldbookContent = computed(() => {
     })
     .join('\n');
 
-  // 智能解析正则，生成正确的分段格式
+  // 🆕 如果使用XML格式，生成XML格式的示例
+  if (config.value.useXmlFormat) {
+    const wrapper = config.value.xmlWrapper || 'state_bar';
+    const xmlFormatExample = config.value.fields
+      .map(f => `<${f.xmlTag || f.name}>{{${f.label || f.name}}}</${f.xmlTag || f.name}>`)
+      .join('\n');
+    const xmlExampleOutput = config.value.fields
+      .map(f => `<${f.xmlTag || f.name}>${f.label || f.name}示例值</${f.xmlTag || f.name}>`)
+      .join('\n');
+
+    return `<status_rule>
+#每一次回复都必须在末尾加上完整的状态栏，实时更新{{char}}的状态。
+
+##状态栏格式：
+<${wrapper}>
+${xmlFormatExample}
+</${wrapper}>
+
+##字段说明
+${fieldDefinitions || '  - 暂无字段，请先在生成器中添加字段'}
+
+##输出示例
+此处仅为格式示例，具体内容需根据剧情填写
+<${wrapper}>
+${xmlExampleOutput}
+</${wrapper}>
+
+##格式要求（必读）：
+1. **必须包含 <${wrapper}> 标签**：
+   - ✅ 开头：<${wrapper}>
+   - ✅ 结尾：</${wrapper}>
+   - ❌ 缺少标签将无法正确渲染
+
+2. **严格按照XML格式输出**：
+   - 每个字段使用对应的XML标签包裹
+   - 标签名必须与示例完全一致
+   - 不要改变标签顺序
+
+3. **字段值格式**：
+   - 直接在标签内填写值，不要加额外前缀
+   - 例如：<location>客厅</location>
+
+4. **其他要求**：
+   - 状态栏紧贴正文最后一句
+   - {{字段名}} 仅为占位符，输出时替换为实际内容
+   - 这是 {{char}} 的状态，不是 {{user}} 的状态
+</status_rule>`;
+  }
+
+  // 智能解析正则，生成正确的分段格式（管道分隔格式）
   const parseRegexStructure = (regex: string, fields: Field[]): { formatExample: string; exampleOutput: string } => {
     // 提取所有标记（如 <-ENVIRONMENT_DATA->）
     const triggerMatches = regex.match(/<-[^>]+->/g) || [];
@@ -1736,38 +1788,39 @@ async function parseXmlWithAI() {
 
 你是一个专业的 XML 解析助手。用户会给你一个 XML 格式的状态栏代码，你需要：
 
-1. **识别所有标签**：提取所有的 XML 标签名（如 <i>、<2i>、<日期>、<角色生理状态> 等）
+1. **识别所有标签**：提取所有的 XML 标签名（如 <i>、<2i>、<日期>、<角色生理状态>、<location>、<time> 等）
 2. **分析标签含义**：
    - 如果标签名是 <i>、<2i>、<3i> 等，这表示缩进层级，标签内容才是实际字段名
-   - 如果标签名是中文或英文名称（如 <日期>、<角色生理状态>），这本身就是字段名
-3. **生成字段配置**：为每个字段生成 name、label、icon（可选）
+   - 如果标签名是中文或英文名称（如 <日期>、<location>），这本身就是字段名
+3. **生成字段配置**：为每个字段生成 name、label、xmlTag、icon
 
 请**严格按照以下 JSON 格式**输出，不要添加任何其他文字：
 
 [
-  { "name": "字段名1", "label": "字段说明1", "icon": "fa-solid fa-xxx" },
-  { "name": "字段名2", "label": "字段说明2", "icon": "" }
+  { "name": "字段名1", "label": "字段说明1", "xmlTag": "原始XML标签名", "icon": "fa-solid fa-xxx" },
+  { "name": "字段名2", "label": "字段说明2", "xmlTag": "原始XML标签名", "icon": "" }
 ]
 
 **重要规则**：
 - name 应该是简洁的英文或拼音（如 date, location, status）
 - label 应该是中文描述（如 日期、地点、角色生理状态）
+- **xmlTag 必须是原始XML中的标签名**（如 location, time, 日期, 角色生理状态），用于生成正则表达式
 - icon 可以留空，或者根据字段含义选择合适的 Font Awesome 图标
 - 输出**必须**是有效的 JSON 数组格式
 - **禁止**输出任何解释性文字，只输出 JSON
 
 示例输入：
 <state_bar>
-<i>【内容】</i>
-<日期>【当前日期】</日期>
-<角色生理状态>【描述角色当前生理状态】</角色生理状态>
+<location>【地点】</location>
+<time>【当前时间】</time>
+<mood>【心情】</mood>
 </state_bar>
 
 示例输出：
 [
-  { "name": "content", "label": "内容", "icon": "" },
-  { "name": "date", "label": "日期", "icon": "fa-solid fa-calendar" },
-  { "name": "physical_status", "label": "角色生理状态", "icon": "fa-solid fa-heart-pulse" }
+  { "name": "location", "label": "地点", "xmlTag": "location", "icon": "fa-solid fa-location-dot" },
+  { "name": "time", "label": "时间", "xmlTag": "time", "icon": "fa-solid fa-clock" },
+  { "name": "mood", "label": "心情", "xmlTag": "mood", "icon": "fa-solid fa-face-smile" }
 ]`;
 
     const userPrompt = `请解析以下 XML 状态栏代码，生成字段配置：
@@ -1881,16 +1934,24 @@ ${xmlInput.value.trim()}
       throw new Error('未能从 AI 返回中解析出有效的字段');
     }
 
-    // 清空现有字段并添加新字段
+    // 提取XML包裹标签（如 state_bar）
+    const wrapperMatch = xmlInput.value.match(/<([a-zA-Z_][a-zA-Z0-9_]*)>[\s\S]*<\/\1>/i);
+    const xmlWrapper = wrapperMatch ? wrapperMatch[1] : 'state_bar';
+
+    // 清空现有字段并添加新字段（保存xmlTag）
     config.value.fields = validFields.map((field: any) => ({
       name: field.name || '',
       label: field.label || '',
       icon: field.icon || '',
+      xmlTag: field.xmlTag || field.name || '', // 保存原始XML标签名
     }));
 
-    // 🔧 修复：重置 name 和 findRegex，避免保留之前模板的设置
+    // 设置XML格式标志和包裹标签
     config.value.name = '角色状态栏';
-    config.value.findRegex = '<-CHARACTER_STATUS->';
+    config.value.useXmlFormat = true;
+    config.value.xmlWrapper = xmlWrapper;
+    // findRegex 将在 generateFromFields 中根据 useXmlFormat 自动生成
+    config.value.findRegex = '';
 
     taskStore.completeTask(taskId, { fieldCount: validFields.length });
 
@@ -2409,7 +2470,19 @@ function generateFromFields() {
     return;
   }
 
-  if (totalFields <= 4) {
+  // 🆕 如果使用XML格式，生成XML正则
+  if (config.value.useXmlFormat) {
+    const wrapper = config.value.xmlWrapper || 'state_bar';
+    // 生成匹配XML标签的正则：<wrapper><tag1>(.+?)</tag1>...<tagN>(.+?)</tagN></wrapper>
+    const tagPatterns = fields.map(f => {
+      const tag = f.xmlTag || f.name;
+      return `<${tag}>([\\s\\S]*?)</${tag}>`;
+    });
+    config.value.findRegex = `<${wrapper}>[\\s\\S]*?${tagPatterns.join('[\\s\\S]*?')}[\\s\\S]*?</${wrapper}>`;
+    console.log('✅ 自动生成的 findRegex (XML格式):', config.value.findRegex);
+    console.log('📊 XML包裹标签:', wrapper);
+    console.log('📊 字段数量:', totalFields);
+  } else if (totalFields <= 4) {
     // 字段少于等于4个，使用单标记
     // 使用更宽松的匹配模式，支持复杂内容（包括省略号、特殊标点等）
     config.value.findRegex = `<-CHARACTER_STATUS->[\\s\\S]*?\\|${fields.map(() => '([^|]+?)').join('\\|')}\\|`;
