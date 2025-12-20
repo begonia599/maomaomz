@@ -566,107 +566,119 @@
             />
           </div>
 
+          <!-- 高级参数（折叠） -->
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
-              Temperature (温度) <span style="color: #888; font-size: 11px">(0-2，推荐 0.7)</span>
-            </label>
-            <input
-              v-model.number="settings.temperature"
-              type="number"
-              min="0"
-              max="2"
-              step="0.1"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                background: #2a2a2a;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 13px;
-                transition: border-color 0.2s;
-              "
-            />
-            <div style="margin-top: 4px; color: #888; font-size: 11px">
-              较高值（如 0.8）使输出更随机，较低值（如 0.2）使其更确定
+            <div
+              style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 0"
+              @click="showAdvancedApiParams = !showAdvancedApiParams"
+            >
+              <i
+                :class="showAdvancedApiParams ? 'fa-chevron-down' : 'fa-chevron-right'"
+                class="fa-solid"
+                style="color: #888; font-size: 10px; width: 12px"
+              ></i>
+              <span style="color: #888; font-size: 12px">高级参数调整</span>
             </div>
-          </div>
+            <div v-if="showAdvancedApiParams" style="margin-top: 12px">
+              <div class="form-group" style="margin-bottom: 14px !important">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                  Temperature (温度) <span style="color: #888; font-size: 11px">(0-2，推荐 0.7)</span>
+                </label>
+                <input
+                  v-model.number="settings.temperature"
+                  type="number"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  style="
+                    width: 100%;
+                    padding: 10px 12px;
+                    background: #2a2a2a;
+                    border: 1px solid #3a3a3a;
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 13px;
+                  "
+                />
+                <div style="margin-top: 4px; color: #888; font-size: 11px">
+                  较高值（如 0.8）使输出更随机，较低值（如 0.2）使其更确定
+                </div>
+              </div>
 
-          <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
-              Top P (核采样) <span style="color: #888; font-size: 11px">(0-1，推荐 1.0)</span>
-            </label>
-            <input
-              v-model.number="settings.top_p"
-              type="number"
-              min="0"
-              max="1"
-              step="0.01"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                background: #2a2a2a;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 13px;
-                transition: border-color 0.2s;
-              "
-            />
-            <div style="margin-top: 4px; color: #888; font-size: 11px">
-              ⚠️ 一般建议只改 Temperature 或 Top P，不要同时修改
-            </div>
-          </div>
+              <div class="form-group" style="margin-bottom: 14px !important">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                  Top P (核采样) <span style="color: #888; font-size: 11px">(0-1，推荐 1.0)</span>
+                </label>
+                <input
+                  v-model.number="settings.top_p"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  style="
+                    width: 100%;
+                    padding: 10px 12px;
+                    background: #2a2a2a;
+                    border: 1px solid #3a3a3a;
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 13px;
+                  "
+                />
+                <div style="margin-top: 4px; color: #888; font-size: 11px">
+                  ⚠️ 一般建议只改 Temperature 或 Top P，不要同时修改
+                </div>
+              </div>
 
-          <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
-              Presence Penalty (存在惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
-            </label>
-            <input
-              v-model.number="settings.presence_penalty"
-              type="number"
-              min="-2"
-              max="2"
-              step="0.1"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                background: #2a2a2a;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 13px;
-                transition: border-color 0.2s;
-              "
-            />
-            <div style="margin-top: 4px; color: #888; font-size: 11px">
-              正值根据标记是否出现过来惩罚，增加讨论新主题的可能性
-            </div>
-          </div>
+              <div class="form-group" style="margin-bottom: 14px !important">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                  Presence Penalty (存在惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
+                </label>
+                <input
+                  v-model.number="settings.presence_penalty"
+                  type="number"
+                  min="-2"
+                  max="2"
+                  step="0.1"
+                  style="
+                    width: 100%;
+                    padding: 10px 12px;
+                    background: #2a2a2a;
+                    border: 1px solid #3a3a3a;
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 13px;
+                  "
+                />
+                <div style="margin-top: 4px; color: #888; font-size: 11px">
+                  正值根据标记是否出现过来惩罚，增加讨论新主题的可能性
+                </div>
+              </div>
 
-          <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
-              Frequency Penalty (频率惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
-            </label>
-            <input
-              v-model.number="settings.frequency_penalty"
-              type="number"
-              min="-2"
-              max="2"
-              step="0.1"
-              style="
-                width: 100%;
-                padding: 10px 12px;
-                background: #2a2a2a;
-                border: 1px solid #3a3a3a;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 13px;
-                transition: border-color 0.2s;
-              "
-            />
-            <div style="margin-top: 4px; color: #888; font-size: 11px">
-              正值根据标记频率来惩罚，降低逐字重复同一行的可能性
+              <div class="form-group" style="margin-bottom: 0 !important">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                  Frequency Penalty (频率惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
+                </label>
+                <input
+                  v-model.number="settings.frequency_penalty"
+                  type="number"
+                  min="-2"
+                  max="2"
+                  step="0.1"
+                  style="
+                    width: 100%;
+                    padding: 10px 12px;
+                    background: #2a2a2a;
+                    border: 1px solid #3a3a3a;
+                    border-radius: 6px;
+                    color: #e0e0e0;
+                    font-size: 13px;
+                  "
+                />
+                <div style="margin-top: 4px; color: #888; font-size: 11px">
+                  正值根据标记频率来惩罚，降低逐字重复同一行的可能性
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1739,6 +1751,8 @@ const tavernPresets = ref<Array<{ name: string; value: string }>>([]);
 const selectedTavernPreset = ref<string>('');
 // 是否显示自定义提示词编辑器
 const showCustomPromptEditor = ref(false);
+// 是否显示高级 API 参数
+const showAdvancedApiParams = ref(false);
 
 // 刷新酒馆信息（预设列表和当前配置）
 const refreshTavernInfo = () => {
