@@ -1,0 +1,37 @@
+{
+  "entries": {
+    "0": {
+      "uid": 0,
+      "key": [],
+      "keysecondary": [],
+      "comment": "状态栏规则",
+      "content": "<status_rule>\n#每一次回复都必须在末尾加上完整的状态栏，实时更新{{char}}的状态。\n\n##状态栏格式：\n<status>\n<-CHARACTER_STATUS->\n|{{时间}}|{{世界}}|{{地点}}|{{核心剧情}}|{{进度}}|{{战斗日志}}|{{境界}}|{{年龄}}|{{身份}}|{{功法}}|{{服装}}|{{护甲}}|{{能力}}|{{内心想法}}|{{货币}}|{{物品}}|{{配角姓名}}|{{配角性别}}|{{配角身份}}|{{配角情绪}}|{{配角想法}}|{{配角外表}}|{{配角境界}}|{{配角功法}}|{{配角衣物}}|{{配角性格}}|{{配角种族}}|{{关系网络}}|{{剧情选项}}|\n</status>\n\n##字段说明\n  - 时间：当前日期和时间\n  - 世界：世界名称\n  - 地点：当前场所\n  - 核心剧情：主线情节\n  - 进度：当前进展\n  - 战斗日志：战斗状态或吐槽\n  - 境界：主角修为境界\n  - 年龄：主角年龄\n  - 身份：主角身份\n  - 功法：主角功法技能\n  - 服装：主角服装衣着\n  - 护甲：主角装甲护具\n  - 能力：主角特殊能力\n  - 内心想法：主角当前想法\n  - 货币：主角持有货币\n  - 物品：主角携带物品\n  - 配角姓名：当前互动的NPC姓名\n  - 配角性别：NPC性别\n  - 配角身份：NPC身份职业\n  - 配角情绪：NPC当前情绪\n  - 配角想法：NPC内心想法\n  - 配角外表：NPC外貌描述\n  - 配角境界：NPC修为境界\n  - 配角功法：NPC功法技能\n  - 配角衣物：NPC衣着\n  - 配角性格：NPC性格特点\n  - 配角种族：NPC种族\n  - 关系网络：与主角的关系\n  - 剧情选项：可选的剧情分支\n\n##输出示例\n此处仅为格式示例，具体内容需根据剧情填写\n<status>\n<-CHARACTER_STATUS->\n|天启历1024年|苍穹界|青云宗后山|寻找九转金丹|潜入禁地核心|傀儡防御力太强了！|筑基期大圆满|19岁|外门弟子|青莲剑诀|青色劲装|玄铁护心镜|破妄神瞳|得找机会突刺关节|300灵石|回气丹*5|林仙儿|女|守护者之女|惊讶好奇|此人有宗门秘钥？|白衣胜雪|金丹初期|寒冰掌|丝绸长裙|清冷果断|人族|中立(好感10)|A.交流 B.突破 C.观察|\n</status>\n\n##格式要求（必读）：\n1. **必须包含 <status> 标签**：\n   - ✅ 开头：<status>\n   - ✅ 结尾：</status>\n   - ❌ 缺少标签将无法正确渲染\n\n2. **必须包含 <-CHARACTER_STATUS-> 标记**\n\n3. **严格使用竖线 | 分隔字段**：\n   - 共29个字段，用 | 分隔\n   - 字段顺序必须完全一致\n   - 不要改变顺序、不要合并、不要拆分\n\n4. **字段值格式**：\n   - ❌ 错误：|姓名: 林仙儿|\n   - ✅ 正确：|林仙儿|\n   - 只输出实际值，不要加字段名前缀\n\n5. **其他要求**：\n   - 状态栏紧贴正文最后一句\n   - 这是 {{char}} 的状态，不是 {{user}} 的状态\n</status_rule>",
+      "constant": true,
+      "vectorized": false,
+      "selective": true,
+      "selectiveLogic": 0,
+      "addMemo": true,
+      "order": 100,
+      "position": 4,
+      "disable": false,
+      "excludeRecursion": false,
+      "preventRecursion": false,
+      "delayUntilRecursion": false,
+      "probability": 100,
+      "useProbability": true,
+      "depth": 0,
+      "group": "",
+      "groupOverride": false,
+      "groupWeight": 100,
+      "scanDepth": null,
+      "caseSensitive": null,
+      "matchWholeWords": null,
+      "useGroupScoring": null,
+      "automationId": "",
+      "role": 0,
+      "sticky": 0,
+      "cooldown": 0,
+      "delay": 0
+    }
+  }
+}

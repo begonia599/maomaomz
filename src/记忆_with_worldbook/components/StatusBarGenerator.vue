@@ -3584,56 +3584,36 @@ function getSafeMaxTokens(requested: number): number {
 }
 
 .toolbar-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
+  padding: 10px 16px;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
   position: relative;
-  overflow: hidden;
-}
-
-.toolbar-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
+  white-space: nowrap;
 }
 
 .toolbar-btn:hover {
-  transform: translateY(-3px);
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.toolbar-btn:hover::before {
-  left: 100%;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
 }
 
 .toolbar-btn:active {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .toolbar-btn i {
-  font-size: 15px;
-  margin-right: 4px;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+  font-size: 14px;
 }
 
 /* PC端显示完整文字，隐藏短文字 */
