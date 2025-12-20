@@ -1287,32 +1287,61 @@ const exportRegex = () => {
     }
   });
 
-  // 2. 生成简短前缀（tp0, tp1, tp2...）替换原 id，并添加 -$1 后缀
+  // 2. 生成唯一标识符：用前3个字段值组合，避免单字段重复导致冲突
+  // 例如：$1$2$3 = 姓名+年龄+性别，比单独用姓名更不容易重复
+  const numFieldsForId = Math.min(3, uniqueFields.length);
+  const uniqueIdPattern = Array.from({ length: numFieldsForId }, (_, i) => `$${i + 1}`).join('');
+  // uniqueIdPattern 例如: "$1$2$3"
+
+  // 3. 生成简短前缀（tp0, tp1, tp2...）替换原 id，并添加唯一标识后缀
   const idMapping: Record<string, string> = {}; // 旧id -> 新前缀
   radioInfos.forEach((info, index) => {
     const newPrefix = `tp${index}`;
     idMapping[info.id] = newPrefix;
 
-    // 替换 radio input：id="tp0-$1" name="tabs-$1"
+    // 替换 radio input：id="tp0-$1$2$3" name="tabs-$1$2$3"
     const newTag = info.original
-      .replace(/id="[^"]+"/, `id="${newPrefix}-$1"`)
-      .replace(/name="[^"]+"/, `name="tabs-$1"`);
+      .replace(/id="[^"]+"/, `id="${newPrefix}-${uniqueIdPattern}"`)
+      .replace(/name="[^"]+"/, `name="tabs-${uniqueIdPattern}"`);
     replaceString = replaceString.replace(info.original, newTag);
   });
 
-  // 3. 替换 label 的 for 属性
+  // 4. 替换 label 的 for 属性
   Object.entries(idMapping).forEach(([oldId, newPrefix]) => {
     const escapedOldId = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    replaceString = replaceString.replace(new RegExp(`for="${escapedOldId}"`, 'g'), `for="${newPrefix}-$1"`);
+    replaceString = replaceString.replace(
+      new RegExp(`for="${escapedOldId}"`, 'g'),
+      `for="${newPrefix}-${uniqueIdPattern}"`,
+    );
   });
 
-  // 4. 替换 CSS 选择器：#oldId:checked -> input[id^="tp0-"]:checked
+  // 4. 替换 CSS 选择器：各种格式都要处理
   Object.entries(idMapping).forEach(([oldId, newPrefix]) => {
     const escapedOldId = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // #oldId:checked
     replaceString = replaceString.replace(
       new RegExp(`#${escapedOldId}:checked`, 'g'),
       `input[id^="${newPrefix}-"]:checked`,
     );
+    // input#oldId:checked
+    replaceString = replaceString.replace(
+      new RegExp(`input#${escapedOldId}:checked`, 'g'),
+      `input[id^="${newPrefix}-"]:checked`,
+    );
+    // input[id="oldId"]:checked
+    replaceString = replaceString.replace(
+      new RegExp(`input\\[id="${escapedOldId}"\\]:checked`, 'g'),
+      `input[id^="${newPrefix}-"]:checked`,
+    );
+  });
+
+  // 4.5 替换 name 相关的 CSS 选择器
+  // 收集所有原始 name 值
+  const originalNames = [...new Set(radioInfos.map(info => info.name))];
+  originalNames.forEach(oldName => {
+    const escapedOldName = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // input[name="oldName"]:checked 这种格式无法直接用，需要用 id 选择器
+    // 但我们已经把所有 radio 的选择都改成 id 了，所以这里不需要额外处理
   });
 
   // 5. 替换 CSS 中的 label[for="oldId"] -> label:nth-of-type(n)
