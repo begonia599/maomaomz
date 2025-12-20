@@ -59,7 +59,10 @@
           <button
             class="toolbar-btn"
             style="background: rgba(30, 41, 59, 0.5); border: 1px solid #4a4a4a; border-radius: 6px; color: #e0e0e0"
-            @click="showTemplateMenu = !showTemplateMenu"
+            @click="
+              showTemplateMenu = !showTemplateMenu;
+              showAiFieldMenu = false;
+            "
           >
             <i class="fa-solid fa-layer-group"></i>
             <span class="btn-text-full">预设模板</span>
@@ -325,7 +328,10 @@
                 font-weight: 500;
                 cursor: pointer;
               "
-              @click="showAiFieldMenu = !showAiFieldMenu"
+              @click="
+                showAiFieldMenu = !showAiFieldMenu;
+                showTemplateMenu = false;
+              "
             >
               <i class="fa-solid fa-wand-magic-sparkles"></i> AI生成
               <i class="fa-solid fa-caret-down" style="margin-left: 2px; font-size: 9px"></i>
