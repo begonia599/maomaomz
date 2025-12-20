@@ -276,19 +276,23 @@
 
         <button
           style="
-            padding: 10px 18px;
-            background: #3b82f6;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             color: white;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            transition: all 0.2s ease;
           "
           @click="generateStructure"
+          @mouseenter="$event.target.style.transform = 'translateY(-2px)'"
+          @mouseleave="$event.target.style.transform = 'translateY(0)'"
         >
           <i class="fa-solid fa-magic"></i>
           <span>生成 [InitVar] 结构</span>

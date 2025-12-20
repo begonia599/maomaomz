@@ -302,15 +302,19 @@
             style="
               flex: 1;
               padding: 8px;
-              background: #3b82f6;
+              background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
               border: none;
-              border-radius: 6px;
+              border-radius: 8px;
               color: white;
               font-size: 12px;
-              font-weight: 500;
+              font-weight: 600;
               cursor: pointer;
+              box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+              transition: all 0.2s ease;
             "
             @click="addField"
+            @mouseenter="$event.target.style.transform = 'translateY(-1px)'"
+            @mouseleave="$event.target.style.transform = 'translateY(0)'"
           >
             <i class="fa-solid fa-plus"></i> 添加
           </button>
@@ -318,15 +322,19 @@
             style="
               flex: 1;
               padding: 8px;
-              background: rgba(16, 185, 129, 0.2);
-              border: 1px solid #10b981;
-              border-radius: 6px;
-              color: #10b981;
+              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+              border: none;
+              border-radius: 8px;
+              color: white;
               font-size: 12px;
-              font-weight: 500;
+              font-weight: 600;
               cursor: pointer;
+              box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+              transition: all 0.2s ease;
             "
             @click="showAiFieldGeneratorDialog()"
+            @mouseenter="$event.target.style.transform = 'translateY(-1px)'"
+            @mouseleave="$event.target.style.transform = 'translateY(0)'"
           >
             <i class="fa-solid fa-wand-magic-sparkles"></i> 描述生成
           </button>
@@ -334,15 +342,19 @@
             style="
               flex: 1;
               padding: 8px;
-              background: rgba(245, 158, 11, 0.2);
-              border: 1px solid #f59e0b;
-              border-radius: 6px;
-              color: #f59e0b;
+              background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+              border: none;
+              border-radius: 8px;
+              color: white;
               font-size: 12px;
-              font-weight: 500;
+              font-weight: 600;
               cursor: pointer;
+              box-shadow: 0 2px 6px rgba(245, 158, 11, 0.4);
+              transition: all 0.2s ease;
             "
             @click="showXmlParseDialog()"
+            @mouseenter="$event.target.style.transform = 'translateY(-1px)'"
+            @mouseleave="$event.target.style.transform = 'translateY(0)'"
           >
             <i class="fa-solid fa-code"></i> 解析XML
           </button>
@@ -351,17 +363,21 @@
         <button
           style="
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-top: 12px;
-            background: #3b82f6;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             color: white;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            transition: all 0.2s ease;
           "
           @click="generateFromFields"
+          @mouseenter="$event.target.style.transform = 'translateY(-2px)'"
+          @mouseleave="$event.target.style.transform = 'translateY(0)'"
         >
           <i class="fa-solid fa-sparkles" style="margin-right: 6px"></i>
           根据字段生成模板
@@ -387,14 +403,19 @@
             v-for="file in files"
             :key="file.path"
             :style="{
-              padding: '6px 14px',
-              background: currentFile?.path === file.path ? '#4a9eff' : '#1e1e1e',
-              color: currentFile?.path === file.path ? '#fff' : '#c0c0c0',
-              borderRadius: '6px',
+              padding: '8px 16px',
+              background:
+                currentFile?.path === file.path
+                  ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                  : 'rgba(30, 30, 30, 0.8)',
+              color: currentFile?.path === file.path ? '#fff' : '#a0a0a0',
+              borderRadius: '8px',
               fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
+              boxShadow: currentFile?.path === file.path ? '0 2px 8px rgba(59, 130, 246, 0.4)' : 'none',
+              border: currentFile?.path === file.path ? 'none' : '1px solid #3a3a3a',
             }"
             @click="currentFile = file"
           >
