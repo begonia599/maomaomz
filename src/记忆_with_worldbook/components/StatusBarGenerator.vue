@@ -474,7 +474,7 @@
               @mouseleave="$event.target.style.transform = 'scale(1)'"
             >
               <i class="fa-solid fa-copy" style="margin-right: 6px"></i>
-              📋 复制世界书
+              复制世界书
             </button>
           </div>
           <div
