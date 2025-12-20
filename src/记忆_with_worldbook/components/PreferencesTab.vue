@@ -400,6 +400,62 @@
       </div>
     </div>
 
+    <!-- 教程设置 -->
+    <div
+      style="
+        background: linear-gradient(135deg, #2a3a4a 0%, #3a4a5a 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(84, 107, 131, 0.3);
+      "
+    >
+      <h4 style="color: #fff; margin: 0 0 15px 0; font-size: 16px; display: flex; align-items: center; gap: 8px">
+        <i class="fa-solid fa-graduation-cap" style="color: #fbbf24"></i>
+        教程设置
+      </h4>
+
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px;
+          background: #1e1e1e;
+          border-radius: 8px;
+          margin-bottom: 12px;
+        "
+      >
+        <div style="flex: 1">
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">重新显示所有教程</div>
+          <div style="color: #888; font-size: 12px">点击后各页面的快速上手教程将重新显示</div>
+        </div>
+        <button
+          style="
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          "
+          @click="resetAllGuides"
+        >
+          <i class="fa-solid fa-eye"></i>
+          重新显示
+        </button>
+      </div>
+
+      <div style="color: #666; font-size: 11px; padding: 0 5px">
+        💡 提示：每个页面顶部的教程可以单独关闭，关闭后不会再显示。如果想重新查看，点击上方按钮即可。
+      </div>
+    </div>
+
     <!-- 重置按钮 -->
     <div style="display: flex; justify-content: flex-end; gap: 10px">
       <button
@@ -617,6 +673,23 @@ const resetPreferences = () => {
     savePreferences();
     (window as any).toastr?.success('已恢复默认设置');
   }
+};
+
+// 重置所有教程显示状态
+const resetAllGuides = () => {
+  const guideKeys = [
+    'maomaomz_settings_guide_hidden',
+    'maomaomz_summary_guide_hidden',
+    'maomaomz_statusbar_guide_hidden',
+    'maomaomz_uigenerator_guide_hidden',
+    'maomaomz_tools_guide_hidden',
+    'maomaomz_greetings_guide_hidden',
+    'maomaomz_mvu_guide_hidden',
+  ];
+
+  guideKeys.forEach(key => localStorage.removeItem(key));
+  (window as any).toastr?.success('所有教程已重置，切换页面后即可看到');
+  console.log('✅ 已重置所有教程显示状态');
 };
 
 // 处理背景图片上传
