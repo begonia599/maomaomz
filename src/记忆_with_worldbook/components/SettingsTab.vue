@@ -854,7 +854,51 @@
             </span>
           </div>
           <div v-if="showCustomPromptEditor" style="margin-top: 8px">
-            <div style="display: flex; justify-content: flex-end; margin-bottom: 6px">
+            <!-- 示例模板按钮 -->
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px">
+              <span style="color: #888; font-size: 11px; line-height: 24px">示例模板：</span>
+              <button
+                style="
+                  padding: 4px 10px;
+                  background: rgba(59, 130, 246, 0.2);
+                  border: 1px solid rgba(59, 130, 246, 0.4);
+                  border-radius: 4px;
+                  color: #60a5fa;
+                  font-size: 11px;
+                  cursor: pointer;
+                "
+                @click="applyPromptTemplate('simple')"
+              >
+                简洁版
+              </button>
+              <button
+                style="
+                  padding: 4px 10px;
+                  background: rgba(16, 185, 129, 0.2);
+                  border: 1px solid rgba(16, 185, 129, 0.4);
+                  border-radius: 4px;
+                  color: #10b981;
+                  font-size: 11px;
+                  cursor: pointer;
+                "
+                @click="applyPromptTemplate('detailed')"
+              >
+                详细版
+              </button>
+              <button
+                style="
+                  padding: 4px 10px;
+                  background: rgba(139, 92, 246, 0.2);
+                  border: 1px solid rgba(139, 92, 246, 0.4);
+                  border-radius: 4px;
+                  color: #a78bfa;
+                  font-size: 11px;
+                  cursor: pointer;
+                "
+                @click="applyPromptTemplate('narrative')"
+              >
+                叙事版
+              </button>
               <button
                 v-if="settings.custom_summary_prompt"
                 style="
@@ -865,6 +909,7 @@
                   color: #ef4444;
                   font-size: 11px;
                   cursor: pointer;
+                  margin-left: auto;
                 "
                 @click="settings.custom_summary_prompt = ''"
               >
@@ -873,10 +918,10 @@
             </div>
             <textarea
               v-model="settings.custom_summary_prompt"
-              placeholder="在此输入自定义提示词模板..."
+              placeholder="点击上方示例模板快速填充，或手动输入..."
               style="
                 width: 100%;
-                min-height: 120px;
+                min-height: 100px;
                 padding: 12px;
                 background: #2a2a2a;
                 border: 1px solid #3a3a3a;
@@ -888,13 +933,14 @@
                 resize: vertical;
               "
             ></textarea>
-            <small style="color: #888; font-size: 11px; margin-top: 6px; display: block; line-height: 1.8">
-              可用变量：<code style="background: #333; padding: 1px 4px; border-radius: 3px">{{ messages }}</code>
-              对话内容、
-              <code style="background: #333; padding: 1px 4px; border-radius: 3px">{{ userName }}</code> 用户名、
-              <code style="background: #333; padding: 1px 4px; border-radius: 3px">{{ charName }}</code> 角色名、
-              <code style="background: #333; padding: 1px 4px; border-radius: 3px">{{ maxTokens }}</code> 最大字数
-            </small>
+            <div style="color: #666; font-size: 10px; margin-top: 6px">
+              可用变量：<code style="background: #333; padding: 1px 3px; border-radius: 2px"
+                >{<!-- -->{messages}<!-- -->}</code
+              >
+              <code style="background: #333; padding: 1px 3px; border-radius: 2px">{<!-- -->{userName}<!-- -->}</code>
+              <code style="background: #333; padding: 1px 3px; border-radius: 2px">{<!-- -->{charName}<!-- -->}</code>
+              <code style="background: #333; padding: 1px 3px; border-radius: 2px">{<!-- -->{maxTokens}<!-- -->}</code>
+            </div>
           </div>
         </div>
 
@@ -3058,6 +3104,37 @@ const fillTableAllMessages = () => {
   settings.value.table_start_message_id = 0;
   settings.value.table_end_message_id = chat.length - 1;
   window.toastr.info(`已设置范围: 第 0 层 ~ 第 ${chat.length - 1} 层 (共 ${chat.length} 条)`);
+};
+
+// 应用提示词模板
+const applyPromptTemplate = (type: string) => {
+  const templates: Record<string, string> = {
+    simple: `请总结以下对话的关键内容，控制在{{maxTokens}}字以内：
+
+{{messages}}
+
+要求：提取核心事件和重要信息，语言简洁。`,
+    detailed: `请详细总结以下{{userName}}与{{charName}}的对话内容：
+
+{{messages}}
+
+要求：
+1. 保留重要的情节发展和角色互动
+2. 记录关键的情感变化和决定
+3. 控制在{{maxTokens}}字以内`,
+    narrative: `请以叙事的方式总结以下{{userName}}与{{charName}}的故事：
+
+{{messages}}
+
+要求：
+1. 用第三人称讲述故事发展
+2. 保持情节连贯性和戏剧性
+3. 控制在{{maxTokens}}字以内`,
+  };
+  if (templates[type]) {
+    settings.value.custom_summary_prompt = templates[type];
+    window.toastr.success('已应用模板');
+  }
 };
 
 const handle_summarize = async () => {
