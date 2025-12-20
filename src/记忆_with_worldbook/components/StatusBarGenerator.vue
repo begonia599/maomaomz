@@ -1740,6 +1740,9 @@ function addField() {
 
 // 删除字段
 function removeField(index: number) {
+  const field = config.value.fields[index];
+  const fieldName = field.name || field.label || `字段 #${index + 1}`;
+  if (!confirm(`确定要删除「${fieldName}」吗？`)) return;
   config.value.fields.splice(index, 1);
 }
 
