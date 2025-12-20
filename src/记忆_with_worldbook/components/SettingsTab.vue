@@ -1045,41 +1045,108 @@
       </div>
 
       <div v-show="expandedSections['manualSummary']">
-        <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">开始楼层</label>
-          <input
-            v-model.number="settings.start_message_id"
-            type="number"
-            min="0"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              background: #2a2a2a;
-              border: 1px solid #3a3a3a;
-              border-radius: 6px;
-              color: #e0e0e0;
-              font-size: 13px;
-              transition: border-color 0.2s;
-            "
-          />
+        <!-- 新手提示 -->
+        <div
+          style="
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+          "
+        >
+          <div style="color: #60a5fa; font-size: 12px; margin-bottom: 8px; font-weight: 500">
+            <i class="fa-solid fa-lightbulb" style="margin-right: 6px"></i>使用说明
+          </div>
+          <div style="color: #94a3b8; font-size: 11px; line-height: 1.6">
+            「楼层」= 对话消息的编号。第 1 条消息是第 0 层，第 2 条是第 1 层，以此类推。<br />
+            点击下方「填充最近 50 条」可快速设置范围，或手动输入楼层编号。
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">结束楼层</label>
-          <input
-            v-model.number="settings.end_message_id"
-            type="number"
-            min="0"
+
+        <!-- 快捷填充按钮 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap">
+          <button
             style="
-              width: 100%;
-              padding: 10px 12px;
-              background: #2a2a2a;
-              border: 1px solid #3a3a3a;
+              padding: 6px 12px;
+              background: rgba(16, 185, 129, 0.2);
+              border: 1px solid rgba(16, 185, 129, 0.4);
               border-radius: 6px;
-              color: #e0e0e0;
-              font-size: 13px;
-              transition: border-color 0.2s;
+              color: #10b981;
+              font-size: 11px;
+              cursor: pointer;
             "
-          />
+            @click="fillRecentMessages(50)"
+          >
+            填充最近 50 条
+          </button>
+          <button
+            style="
+              padding: 6px 12px;
+              background: rgba(59, 130, 246, 0.2);
+              border: 1px solid rgba(59, 130, 246, 0.4);
+              border-radius: 6px;
+              color: #60a5fa;
+              font-size: 11px;
+              cursor: pointer;
+            "
+            @click="fillRecentMessages(100)"
+          >
+            填充最近 100 条
+          </button>
+          <button
+            style="
+              padding: 6px 12px;
+              background: rgba(139, 92, 246, 0.2);
+              border: 1px solid rgba(139, 92, 246, 0.4);
+              border-radius: 6px;
+              color: #a78bfa;
+              font-size: 11px;
+              cursor: pointer;
+            "
+            @click="fillAllMessages"
+          >
+            填充全部对话
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 18px">
+          <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">开始楼层</label>
+            <input
+              v-model.number="settings.start_message_id"
+              type="number"
+              min="0"
+              placeholder="如: 0"
+              style="
+                width: 100%;
+                padding: 10px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 13px;
+              "
+            />
+          </div>
+          <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">结束楼层</label>
+            <input
+              v-model.number="settings.end_message_id"
+              type="number"
+              min="0"
+              placeholder="如: 50"
+              style="
+                width: 100%;
+                padding: 10px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 13px;
+              "
+            />
+          </div>
         </div>
         <div class="button-group" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px">
           <button
@@ -1187,41 +1254,108 @@
       </div>
 
       <div v-show="expandedSections['tableGeneration']">
-        <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">开始楼层</label>
-          <input
-            v-model.number="settings.table_start_message_id"
-            type="number"
-            min="0"
-            style="
-              width: 100%;
-              padding: 10px 12px;
-              background: #2a2a2a;
-              border: 1px solid #3a3a3a;
-              border-radius: 6px;
-              color: #e0e0e0;
-              font-size: 13px;
-              transition: border-color 0.2s;
-            "
-          />
+        <!-- 新手提示 -->
+        <div
+          style="
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+          "
+        >
+          <div style="color: #22d3ee; font-size: 12px; margin-bottom: 8px; font-weight: 500">
+            <i class="fa-solid fa-lightbulb" style="margin-right: 6px"></i>使用说明
+          </div>
+          <div style="color: #94a3b8; font-size: 11px; line-height: 1.6">
+            从对话中提取信息生成表格（如人物属性、物品列表等）。<br />
+            选择或创建模板定义表格列，AI 会自动从对话中提取对应信息。
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">结束楼层</label>
-          <input
-            v-model.number="settings.table_end_message_id"
-            type="number"
-            min="0"
+
+        <!-- 快捷填充按钮 -->
+        <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap">
+          <button
             style="
-              width: 100%;
-              padding: 10px 12px;
-              background: #2a2a2a;
-              border: 1px solid #3a3a3a;
+              padding: 6px 12px;
+              background: rgba(16, 185, 129, 0.2);
+              border: 1px solid rgba(16, 185, 129, 0.4);
               border-radius: 6px;
-              color: #e0e0e0;
-              font-size: 13px;
-              transition: border-color 0.2s;
+              color: #10b981;
+              font-size: 11px;
+              cursor: pointer;
             "
-          />
+            @click="fillTableRecentMessages(50)"
+          >
+            填充最近 50 条
+          </button>
+          <button
+            style="
+              padding: 6px 12px;
+              background: rgba(59, 130, 246, 0.2);
+              border: 1px solid rgba(59, 130, 246, 0.4);
+              border-radius: 6px;
+              color: #60a5fa;
+              font-size: 11px;
+              cursor: pointer;
+            "
+            @click="fillTableRecentMessages(100)"
+          >
+            填充最近 100 条
+          </button>
+          <button
+            style="
+              padding: 6px 12px;
+              background: rgba(139, 92, 246, 0.2);
+              border: 1px solid rgba(139, 92, 246, 0.4);
+              border-radius: 6px;
+              color: #a78bfa;
+              font-size: 11px;
+              cursor: pointer;
+            "
+            @click="fillTableAllMessages"
+          >
+            填充全部对话
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 18px">
+          <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">开始楼层</label>
+            <input
+              v-model.number="settings.table_start_message_id"
+              type="number"
+              min="0"
+              placeholder="如: 0"
+              style="
+                width: 100%;
+                padding: 10px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 13px;
+              "
+            />
+          </div>
+          <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">结束楼层</label>
+            <input
+              v-model.number="settings.table_end_message_id"
+              type="number"
+              min="0"
+              placeholder="如: 50"
+              style="
+                width: 100%;
+                padding: 10px 12px;
+                background: #2a2a2a;
+                border: 1px solid #3a3a3a;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 13px;
+              "
+            />
+          </div>
         </div>
         <div class="form-group" style="margin-bottom: 18px !important">
           <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">表格列头模板</label>
@@ -2852,6 +2986,56 @@ const handle_test_connection = async () => {
       window.toastr.error('连接测试失败: ' + errorMsg);
     }
   }
+};
+
+// 快捷填充消息范围（手动总结）
+const fillRecentMessages = (count: number) => {
+  const chat = (window as any).SillyTavern?.getContext?.()?.chat;
+  if (!chat || chat.length === 0) {
+    window.toastr.warning('当前没有对话记录');
+    return;
+  }
+  const total = chat.length;
+  const start = Math.max(0, total - count);
+  settings.value.start_message_id = start;
+  settings.value.end_message_id = total - 1;
+  window.toastr.info(`已设置范围: 第 ${start} 层 ~ 第 ${total - 1} 层 (共 ${Math.min(count, total)} 条)`);
+};
+
+const fillAllMessages = () => {
+  const chat = (window as any).SillyTavern?.getContext?.()?.chat;
+  if (!chat || chat.length === 0) {
+    window.toastr.warning('当前没有对话记录');
+    return;
+  }
+  settings.value.start_message_id = 0;
+  settings.value.end_message_id = chat.length - 1;
+  window.toastr.info(`已设置范围: 第 0 层 ~ 第 ${chat.length - 1} 层 (共 ${chat.length} 条)`);
+};
+
+// 快捷填充消息范围（表格生成）
+const fillTableRecentMessages = (count: number) => {
+  const chat = (window as any).SillyTavern?.getContext?.()?.chat;
+  if (!chat || chat.length === 0) {
+    window.toastr.warning('当前没有对话记录');
+    return;
+  }
+  const total = chat.length;
+  const start = Math.max(0, total - count);
+  settings.value.table_start_message_id = start;
+  settings.value.table_end_message_id = total - 1;
+  window.toastr.info(`已设置范围: 第 ${start} 层 ~ 第 ${total - 1} 层 (共 ${Math.min(count, total)} 条)`);
+};
+
+const fillTableAllMessages = () => {
+  const chat = (window as any).SillyTavern?.getContext?.()?.chat;
+  if (!chat || chat.length === 0) {
+    window.toastr.warning('当前没有对话记录');
+    return;
+  }
+  settings.value.table_start_message_id = 0;
+  settings.value.table_end_message_id = chat.length - 1;
+  window.toastr.info(`已设置范围: 第 0 层 ~ 第 ${chat.length - 1} 层 (共 ${chat.length} 条)`);
 };
 
 const handle_summarize = async () => {
