@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports, import-x/no-nodejs-modules */
 
 /**
  * 自动发布脚本 - 一键创建 Git Tag 和 GitHub Release
@@ -54,10 +55,11 @@ async function main() {
       case '3':
         newVersion = `${major + 1}.0.0`;
         break;
-      case '4':
+      case '4': {
         const customVersion = await question('请输入自定义版本号 (例如 1.6.0): ');
         newVersion = customVersion.trim();
         break;
+      }
       default:
         console.log('❌ 无效选项，取消发布');
         rl.close();

@@ -75,6 +75,9 @@ $(() => {
       setGlobalScriptId(script_id);
 
       console.log('🐱 猫猫的记忆管理工具开始初始化，插件ID:', script_id);
+      // 🔒 并发锁：防止自动总结重复触发
+      let isSummarizing = false;
+
       // 监听消息变化，实现自动总结
       const checkAutoSummarize = () => {
         try {
@@ -270,9 +273,18 @@ $(() => {
           });
 
           if (last_message_id >= auto_summary_start_id && should_trigger) {
+            // 🔒 检查是否正在总结中，防止重复触发
+            if (isSummarizing) {
+              console.log('⏳ 正在总结中，跳过本次触发');
+              return;
+            }
+
             // 计算总结范围：固定总结interval层（例如间隔5就总结5层）
             const start_id = auto_summary_start_id;
             const end_id = auto_summary_start_id + settings.summarize_interval - 1;
+
+            // 🔒 设置锁
+            isSummarizing = true;
 
             // 异步执行总结
             console.log(`🎯 触发自动总结: 楼层 ${start_id}-${end_id}`);
@@ -470,6 +482,11 @@ $(() => {
               .catch(error => {
                 console.error('❌ 自动总结失败：', error);
                 window.toastr.error('❌ 自动总结失败：' + error.message);
+              })
+              .finally(() => {
+                // 🔒 释放锁
+                isSummarizing = false;
+                console.log('🔓 总结锁已释放');
               });
           }
         } catch (error) {
