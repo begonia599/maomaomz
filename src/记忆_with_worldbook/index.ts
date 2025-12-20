@@ -453,7 +453,14 @@ $(() => {
                 }
 
                 // 自动隐藏已总结的楼层
-                if (currentSettings.auto_hide_after_summary) {
+                console.log('🔍 自动隐藏检查:', {
+                  auto_hide_after_summary: currentSettings.auto_hide_after_summary,
+                  setting_type: typeof currentSettings.auto_hide_after_summary,
+                  will_hide: currentSettings.auto_hide_after_summary === true,
+                });
+
+                if (currentSettings.auto_hide_after_summary === true) {
+                  console.log('⚠️ 自动隐藏功能已启用，准备执行隐藏...');
                   try {
                     // 🔧 保留最近几层作为上文，让AI知道之前的对话内容
                     const keepRecent = currentSettings.keep_recent_messages || 5;
