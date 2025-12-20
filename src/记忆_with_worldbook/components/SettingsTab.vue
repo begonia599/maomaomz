@@ -71,7 +71,7 @@
             margin-bottom: 18px;
           "
         >
-          <div style="color: #10b981; font-size: 13px; font-weight: 600; margin-bottom: 8px">
+          <div style="color: #10b981; font-size: 14px; font-weight: 600; margin-bottom: 8px">
             <i class="fa-solid fa-circle-info" style="margin-right: 6px"></i>这是什么？怎么配？
           </div>
           <div style="color: #94a3b8; font-size: 12px; line-height: 1.7">
@@ -97,7 +97,7 @@
             "
           >
             <div>
-              <div style="color: #ffc107; font-size: 13px; font-weight: 600; margin-bottom: 4px">
+              <div style="color: #ffc107; font-size: 14px; font-weight: 600; margin-bottom: 4px">
                 <i class="fa-solid fa-beer-mug-empty" style="margin-right: 6px"></i>使用酒馆 API
               </div>
               <div style="color: #999; font-size: 11px; line-height: 1.4">
@@ -137,7 +137,7 @@
                   border: 1px solid #3a3a3a;
                   border-radius: 6px;
                   color: #e0e0e0;
-                  font-size: 13px;
+                  font-size: 14px;
                   cursor: pointer;
                 "
                 @change="onPresetChange"
@@ -184,7 +184,7 @@
 
         <div v-show="!settings.use_tavern_api">
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">API 提供商</label>
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">API 提供商</label>
             <select
               v-model="settings.api_provider"
               style="
@@ -194,7 +194,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 transition: border-color 0.2s;
                 cursor: pointer;
               "
@@ -208,7 +208,7 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
               API 端点
               <span style="color: #888; font-size: 11px; margin-left: 8px"> (兼容酒馆格式，填写 base URL 即可) </span>
             </label>
@@ -223,7 +223,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 transition: border-color 0.2s;
               "
             />
@@ -252,7 +252,7 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
               API Key
               <span style="color: #888; font-size: 11px; margin-left: 8px"> (本地反代可留空) </span>
             </label>
@@ -267,7 +267,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 transition: border-color 0.2s;
               "
             />
@@ -275,7 +275,7 @@
 
           <div class="form-group">
             <div class="model-controls" style="display: flex; flex-direction: column; gap: 10px">
-              <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+              <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
                 模型名称
                 <span v-if="available_models.length === 0" style="color: #888; font-size: 11px; margin-left: 8px">
                   (手动输入模型名称，如 gpt-4o-mini)
@@ -293,7 +293,7 @@
                     border-radius: 12px;
                     cursor: pointer;
                     font-weight: 500;
-                    font-size: 13px;
+                    font-size: 14px;
                     transition: all 0.2s;
                     display: flex;
                     align-items: center;
@@ -325,7 +325,7 @@
                     border-radius: 12px;
                     cursor: pointer;
                     font-weight: 500;
-                    font-size: 13px;
+                    font-size: 14px;
                     transition: all 0.2s;
                     display: flex;
                     align-items: center;
@@ -358,7 +358,7 @@
                     border-radius: 12px;
                     cursor: pointer;
                     font-weight: 500;
-                    font-size: 13px;
+                    font-size: 14px;
                     transition: all 0.2s;
                     display: flex;
                     align-items: center;
@@ -394,7 +394,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 transition: border-color 0.2s;
               "
             />
@@ -409,7 +409,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 transition: border-color 0.2s;
               "
             >
@@ -498,7 +498,7 @@
                 "
               >
                 <div style="flex: 1; min-width: 0">
-                  <div style="color: #e0e0e0; font-size: 13px; font-weight: 500; margin-bottom: 4px">
+                  <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">
                     {{ template.name }}
                   </div>
                   <div
@@ -567,7 +567,7 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px"
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px"
               >最大 Token 数（建议4000以上获得更详细的总结）</label
             >
             <input
@@ -582,7 +582,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 transition: border-color 0.2s;
               "
             />
@@ -603,7 +603,7 @@
             </div>
             <div v-if="showAdvancedApiParams" style="margin-top: 12px">
               <div class="form-group" style="margin-bottom: 14px !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
                   Temperature (温度) <span style="color: #888; font-size: 11px">(0-2，推荐 0.7)</span>
                 </label>
                 <input
@@ -619,7 +619,7 @@
                     border: 1px solid #3a3a3a;
                     border-radius: 6px;
                     color: #e0e0e0;
-                    font-size: 13px;
+                    font-size: 14px;
                   "
                 />
                 <div style="margin-top: 4px; color: #888; font-size: 11px">
@@ -628,7 +628,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom: 14px !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
                   Top P (核采样) <span style="color: #888; font-size: 11px">(0-1，推荐 1.0)</span>
                 </label>
                 <input
@@ -644,7 +644,7 @@
                     border: 1px solid #3a3a3a;
                     border-radius: 6px;
                     color: #e0e0e0;
-                    font-size: 13px;
+                    font-size: 14px;
                   "
                 />
                 <div style="margin-top: 4px; color: #888; font-size: 11px">
@@ -653,7 +653,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom: 14px !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
                   Presence Penalty (存在惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
                 </label>
                 <input
@@ -669,7 +669,7 @@
                     border: 1px solid #3a3a3a;
                     border-radius: 6px;
                     color: #e0e0e0;
-                    font-size: 13px;
+                    font-size: 14px;
                   "
                 />
                 <div style="margin-top: 4px; color: #888; font-size: 11px">
@@ -678,7 +678,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom: 0 !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">
+                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
                   Frequency Penalty (频率惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
                 </label>
                 <input
@@ -694,7 +694,7 @@
                     border: 1px solid #3a3a3a;
                     border-radius: 6px;
                     color: #e0e0e0;
-                    font-size: 13px;
+                    font-size: 14px;
                   "
                 />
                 <div style="margin-top: 4px; color: #888; font-size: 11px">
@@ -775,7 +775,7 @@
                 fontSize: '16px',
               }"
             ></i>
-            <span style="color: #fbbf24; font-size: 13px; font-weight: 600">
+            <span style="color: #fbbf24; font-size: 14px; font-weight: 600">
               {{ currentSummaryTask.status === 'running' ? '正在总结...' : '总结完成' }}
             </span>
           </div>
@@ -810,7 +810,7 @@
             "
           >
             <div>
-              <div style="color: #60a5fa; font-size: 13px; font-weight: 600">启用自动总结</div>
+              <div style="color: #60a5fa; font-size: 14px; font-weight: 600">启用自动总结</div>
               <div style="color: #888; font-size: 11px; margin-top: 2px">对话达到指定楼层时自动生成总结</div>
             </div>
             <label class="switch" style="flex-shrink: 0; margin-left: 16px">
@@ -820,7 +820,7 @@
           </div>
         </div>
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">总结风格</label>
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">总结风格</label>
           <select
             v-model="settings.summary_style"
             style="
@@ -830,7 +830,7 @@
               border: 1px solid #3a3a3a;
               border-radius: 6px;
               color: #e0e0e0;
-              font-size: 13px;
+              font-size: 14px;
               cursor: pointer;
             "
           >
@@ -954,7 +954,7 @@
         </div>
 
         <div v-if="settings.auto_summarize_enabled" class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">每多少楼层总结一次</label>
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">每多少楼层总结一次</label>
           <input
             v-model.number="settings.summarize_interval"
             type="number"
@@ -966,7 +966,7 @@
               border: 1px solid #3a3a3a;
               border-radius: 6px;
               color: #e0e0e0;
-              font-size: 13px;
+              font-size: 14px;
               transition: border-color 0.2s;
             "
           />
@@ -982,7 +982,7 @@
           >
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0">
               <div>
-                <div style="color: #e0e0e0; font-size: 13px">总结后自动绑定到世界书</div>
+                <div style="color: #e0e0e0; font-size: 14px">总结后自动绑定到世界书</div>
                 <div style="color: #666; font-size: 11px; margin-top: 2px">自动创建世界书并绑定总结内容</div>
               </div>
               <label class="switch" style="flex-shrink: 0">
@@ -993,7 +993,7 @@
             <div style="border-top: 1px solid #3a3a3a; margin: 8px 0"></div>
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0">
               <div>
-                <div style="color: #e0e0e0; font-size: 13px">总结后自动隐藏已总结楼层</div>
+                <div style="color: #e0e0e0; font-size: 14px">总结后自动隐藏已总结楼层</div>
                 <div style="color: #666; font-size: 11px; margin-top: 2px">自动隐藏已总结的楼层</div>
               </div>
               <label class="switch" style="flex-shrink: 0">
@@ -1012,7 +1012,7 @@
                 border: none;
                 border-radius: 6px;
                 color: white;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
                 display: flex;
@@ -1030,7 +1030,7 @@
                 border: 1px solid #4a4a4a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
                 display: flex;
@@ -1048,7 +1048,7 @@
                 border: 1px solid #4a4a4a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 500;
                 cursor: pointer;
                 display: flex;
@@ -1179,7 +1179,7 @@
 
         <div style="display: flex; gap: 12px; margin-bottom: 18px">
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">开始楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">开始楼层</label>
             <input
               v-model.number="settings.start_message_id"
               type="number"
@@ -1192,12 +1192,12 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
             />
           </div>
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">结束楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">结束楼层</label>
             <input
               v-model.number="settings.end_message_id"
               type="number"
@@ -1210,7 +1210,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
             />
           </div>
@@ -1227,7 +1227,7 @@
               border-radius: 6px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1251,7 +1251,7 @@
               border-radius: 6px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1388,7 +1388,7 @@
 
         <div style="display: flex; gap: 12px; margin-bottom: 18px">
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">开始楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">开始楼层</label>
             <input
               v-model.number="settings.table_start_message_id"
               type="number"
@@ -1401,12 +1401,12 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
             />
           </div>
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">结束楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">结束楼层</label>
             <input
               v-model.number="settings.table_end_message_id"
               type="number"
@@ -1419,13 +1419,13 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
             />
           </div>
         </div>
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">表格列头模板</label>
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">表格列头模板</label>
           <div style="display: flex; gap: 8px; margin-bottom: 8px">
             <select
               v-model="selectedTemplate"
@@ -1436,7 +1436,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
               @change="loadTemplate"
             >
@@ -1473,7 +1473,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
             />
             <input
@@ -1487,7 +1487,7 @@
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 color: #e0e0e0;
-                font-size: 13px;
+                font-size: 14px;
               "
             />
             <button
@@ -1525,7 +1525,7 @@
 
         <!-- 生成状态显示 -->
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">生成状态</label>
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">生成状态</label>
           <div style="display: flex; gap: 12px; align-items: center">
             <div style="display: flex; align-items: center; gap: 6px">
               <div
@@ -1582,7 +1582,7 @@
               border-radius: 12px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1608,7 +1608,7 @@
               border-radius: 12px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1675,7 +1675,7 @@
 
       <div v-show="expandedSections['messageManagement']">
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px"
+          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px"
             >隐藏楼层范围（如：1-10 或单个楼层如：5）</label
           >
           <input
@@ -1689,7 +1689,7 @@
               border: 1px solid #3a3a3a;
               border-radius: 6px;
               color: #e0e0e0;
-              font-size: 13px;
+              font-size: 14px;
               transition: border-color 0.2s;
             "
           />
@@ -1705,7 +1705,7 @@
               border-radius: 12px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1729,7 +1729,7 @@
               border-radius: 12px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1754,7 +1754,7 @@
               border-radius: 12px;
               cursor: pointer;
               font-weight: 500;
-              font-size: 13px;
+              font-size: 14px;
               transition: all 0.2s;
               display: flex;
               align-items: center;
@@ -1868,7 +1868,7 @@
         保存 API 模板
       </h3>
       <div class="form-group" style="margin-bottom: 18px">
-        <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">模板名称</label>
+        <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">模板名称</label>
         <input
           v-model="newTemplateName"
           type="text"
@@ -1880,7 +1880,7 @@
             border: 1px solid #3a3a3a;
             border-radius: 6px;
             color: #e0e0e0;
-            font-size: 13px;
+            font-size: 14px;
           "
           @keyup.enter="saveApiTemplate"
         />
@@ -1893,7 +1893,7 @@
             border: none;
             border-radius: 8px;
             color: #ccc;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
           "
           @click="showSaveTemplateDialog = false"
@@ -1907,7 +1907,7 @@
             border: none;
             border-radius: 8px;
             color: white;
-            font-size: 13px;
+            font-size: 14px;
             cursor: pointer;
             font-weight: 500;
           "
@@ -4288,7 +4288,7 @@ const handle_unhide_single = async (messageId: number) => {
   display: block;
   margin-bottom: 6px;
   color: #ccc;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .checkbox-label {
@@ -4313,7 +4313,7 @@ const handle_unhide_single = async (messageId: number) => {
   border: 1px solid #3a3a3a;
   border-radius: 6px;
   color: #e0e0e0;
-  font-size: 13px;
+  font-size: 14px;
   transition: border-color 0.2s;
 }
 
@@ -4344,7 +4344,7 @@ const handle_unhide_single = async (messageId: number) => {
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 14px;
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -4496,7 +4496,7 @@ const handle_unhide_single = async (messageId: number) => {
 .message-id {
   font-weight: bold;
   color: #4a9eff;
-  font-size: 13px;
+  font-size: 14px;
   min-width: 50px;
 }
 
