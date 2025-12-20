@@ -463,18 +463,15 @@
               <button
                 style="
                   padding: 6px 12px;
-                  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                  background: #3b82f6;
                   border: none;
                   border-radius: 6px;
                   color: white;
                   font-size: 12px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.2s ease;
                 "
                 @click="saveCode"
-                @mouseenter="(e: any) => (e.currentTarget.style.transform = 'translateY(-1px)')"
-                @mouseleave="(e: any) => (e.currentTarget.style.transform = 'translateY(0)')"
               >
                 <i class="fa-solid fa-floppy-disk" style="margin-right: 4px"></i>
                 手动保存
@@ -762,15 +759,17 @@
           <button
             :disabled="aiGenerating || !aiPrompt.trim()"
             style="
-              padding: 8px 16px;
-              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+              padding: 10px 18px;
+              background: #3b82f6;
               border: none;
               border-radius: 6px;
               color: white;
-              font-size: 13px;
-              font-weight: 600;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.2s ease;
+              display: flex;
+              align-items: center;
+              gap: 6px;
             "
             :style="{
               opacity: aiGenerating || !aiPrompt.trim() ? 0.5 : 1,
@@ -778,8 +777,8 @@
             }"
             @click="generateWithAI"
           >
-            <i v-if="!aiGenerating" class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px"></i>
-            <i v-else class="fa-solid fa-spinner fa-spin" style="margin-right: 6px"></i>
+            <i v-if="!aiGenerating" class="fa-solid fa-wand-magic-sparkles"></i>
+            <i v-else class="fa-solid fa-spinner fa-spin"></i>
             {{ aiGenerating ? '生成中...' : '开始生成' }}
           </button>
         </div>
@@ -944,15 +943,17 @@
           <button
             :disabled="aiGenerating || !bugDescription.trim()"
             style="
-              padding: 8px 16px;
-              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+              padding: 10px 18px;
+              background: #3b82f6;
               border: none;
               border-radius: 6px;
               color: white;
-              font-size: 13px;
-              font-weight: 600;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.2s ease;
+              display: flex;
+              align-items: center;
+              gap: 6px;
             "
             :style="{
               opacity: aiGenerating || !bugDescription.trim() ? 0.5 : 1,
@@ -960,8 +961,8 @@
             }"
             @click="fixBugWithAI"
           >
-            <i v-if="!aiGenerating" class="fa-solid fa-wrench" style="margin-right: 6px"></i>
-            <i v-else class="fa-solid fa-spinner fa-spin" style="margin-right: 6px"></i>
+            <i v-if="!aiGenerating" class="fa-solid fa-wrench"></i>
+            <i v-else class="fa-solid fa-spinner fa-spin"></i>
             {{ aiGenerating ? '修复中...' : '开始修复' }}
           </button>
         </div>

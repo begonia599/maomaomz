@@ -151,98 +151,50 @@
           </div>
 
           <button
-            class="ai-generate-btn"
             :disabled="isGeneratingAI || !aiStructurePrompt.trim()"
             style="
-              padding: 12px 24px;
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              padding: 10px 18px;
+              background: #3b82f6;
               border: none;
-              border-radius: 8px;
+              border-radius: 6px;
               color: white;
-              font-size: 13px;
-              font-weight: 600;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
-              position: relative;
-              overflow: hidden;
+              display: flex;
+              align-items: center;
+              gap: 6px;
             "
             :style="{
               opacity: isGeneratingAI || !aiStructurePrompt.trim() ? 0.6 : 1,
               cursor: isGeneratingAI || !aiStructurePrompt.trim() ? 'not-allowed' : 'pointer',
             }"
             @click="handleAIGenerateStructure"
-            @mouseenter="
-              (e: any) => {
-                if (!isGeneratingAI && aiStructurePrompt.trim()) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-                }
-              }
-            "
-            @mouseleave="
-              (e: any) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 3px 12px rgba(102, 126, 234, 0.3)';
-              }
-            "
           >
-            <div
-              style="
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                transition: left 0.5s;
-              "
-              class="shimmer-effect"
-            ></div>
-            <i
-              class="fa-solid fa-wand-magic-sparkles"
-              style="font-size: 14px; margin-right: 6px; position: relative; z-index: 1"
-            ></i>
-            <span style="position: relative; z-index: 1">{{ isGeneratingAI ? 'AI 生成中...' : 'AI 智能生成' }}</span>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>{{ isGeneratingAI ? 'AI 生成中...' : 'AI 智能生成' }}</span>
           </button>
 
           <!-- AI 修改按钮 -->
           <button
             v-if="generatedStructure && originalStructurePrompt"
             style="
-              margin-left: 12px;
-              padding: 10px 20px;
-              background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3));
-              border: 1px solid rgba(251, 191, 36, 0.4);
-              border-radius: 8px;
-              color: #fbbf24;
-              font-size: 13px;
-              font-weight: 600;
+              margin-left: 10px;
+              padding: 10px 18px;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+              display: flex;
+              align-items: center;
+              gap: 6px;
             "
             @click="showStructureModifyDialog = true"
-            @mouseenter="
-              (e: any) => {
-                e.currentTarget.style.background =
-                  'linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.45))';
-                e.currentTarget.style.borderColor = 'rgba(251, 191, 36, 0.6)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(251, 191, 36, 0.35)';
-              }
-            "
-            @mouseleave="
-              (e: any) => {
-                e.currentTarget.style.background =
-                  'linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3))';
-                e.currentTarget.style.borderColor = 'rgba(251, 191, 36, 0.4)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(251, 191, 36, 0.2)';
-              }
-            "
           >
-            <i class="fa-solid fa-edit" style="margin-right: 6px"></i>
+            <i class="fa-solid fa-edit"></i>
             AI 修改
           </button>
 
@@ -323,49 +275,23 @@
         </div>
 
         <button
-          class="generate-btn"
           style="
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 18px;
+            background: #3b82f6;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             color: white;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 6px;
           "
           @click="generateStructure"
-          @mouseenter="
-            (e: any) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-            }
-          "
-          @mouseleave="
-            (e: any) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 3px 12px rgba(102, 126, 234, 0.3)';
-            }
-          "
         >
-          <div
-            style="
-              position: absolute;
-              top: 0;
-              left: -100%;
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-              transition: left 0.5s;
-            "
-            class="shimmer-effect"
-          ></div>
-          <i class="fa-solid fa-magic" style="font-size: 14px; margin-right: 6px; position: relative; z-index: 1"></i>
-          <span style="position: relative; z-index: 1">生成 [InitVar] 结构</span>
+          <i class="fa-solid fa-magic"></i>
+          <span>生成 [InitVar] 结构</span>
         </button>
 
         <div v-if="generatedStructure" class="output-section">
@@ -374,13 +300,12 @@
             <button
               style="
                 padding: 6px 12px;
-                background: linear-gradient(135deg, rgba(74, 158, 255, 0.2), rgba(59, 130, 246, 0.3));
-                border: 1px solid rgba(74, 158, 255, 0.4);
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: #4a9eff;
+                color: #e0e0e0;
                 font-size: 12px;
                 cursor: pointer;
-                transition: all 0.2s;
               "
               @click="validateJson"
             >
@@ -414,27 +339,15 @@
                   flex: 1;
                   min-width: 140px;
                   padding: 8px 16px;
-                  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3));
-                  color: #10b981;
-                  border: 1px solid rgba(16, 185, 129, 0.4);
+                  background: #3b82f6;
+                  border: none;
                   border-radius: 6px;
+                  color: white;
                   font-size: 12px;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.2s;
                 "
                 @click="autoGeneratePrompt"
-                @mouseenter="
-                  (e: any) => {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
-                  }
-                "
-                @mouseleave="
-                  (e: any) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                "
               >
                 <i class="fa-solid fa-file-alt"></i> 生成 COT 提示词
               </button>
@@ -443,27 +356,15 @@
                   flex: 1;
                   min-width: 140px;
                   padding: 8px 16px;
-                  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3));
-                  color: #f59e0b;
-                  border: 1px solid rgba(245, 158, 11, 0.4);
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
                   border-radius: 6px;
+                  color: #e0e0e0;
                   font-size: 12px;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.2s;
                 "
                 @click="exportWorldbook"
-                @mouseenter="
-                  (e: any) => {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.3)';
-                  }
-                "
-                @mouseleave="
-                  (e: any) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                "
               >
                 <i class="fa-solid fa-book"></i> 导出世界书 JSON
               </button>
@@ -568,100 +469,50 @@
           </div>
 
           <button
-            class="ai-generate-btn"
             :disabled="isGeneratingPrompt || !aiPromptDescription.trim()"
             style="
-              padding: 12px 24px;
-              background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+              padding: 10px 18px;
+              background: #3b82f6;
               border: none;
-              border-radius: 8px;
+              border-radius: 6px;
               color: white;
-              font-size: 13px;
-              font-weight: 600;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 3px 12px rgba(251, 191, 36, 0.3);
-              position: relative;
-              overflow: hidden;
+              display: flex;
+              align-items: center;
+              gap: 6px;
             "
             :style="{
               opacity: isGeneratingPrompt || !aiPromptDescription.trim() ? 0.6 : 1,
               cursor: isGeneratingPrompt || !aiPromptDescription.trim() ? 'not-allowed' : 'pointer',
             }"
             @click="handleAIGeneratePrompt"
-            @mouseenter="
-              (e: any) => {
-                if (!isGeneratingPrompt && aiPromptDescription.trim()) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(251, 191, 36, 0.4)';
-                }
-              }
-            "
-            @mouseleave="
-              (e: any) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 3px 12px rgba(251, 191, 36, 0.3)';
-              }
-            "
           >
-            <div
-              style="
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                transition: left 0.5s;
-              "
-              class="shimmer-effect"
-            ></div>
-            <i
-              class="fa-solid fa-wand-magic-sparkles"
-              style="font-size: 14px; margin-right: 6px; position: relative; z-index: 1"
-            ></i>
-            <span style="position: relative; z-index: 1">{{
-              isGeneratingPrompt ? 'AI 生成中...' : 'AI 智能生成'
-            }}</span>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>{{ isGeneratingPrompt ? 'AI 生成中...' : 'AI 智能生成' }}</span>
           </button>
 
           <!-- AI 修改按钮 -->
           <button
             v-if="generatedPrompt && originalPromptDescription"
             style="
-              margin-left: 12px;
-              padding: 10px 20px;
-              background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3));
-              border: 1px solid rgba(251, 191, 36, 0.4);
-              border-radius: 8px;
-              color: #fbbf24;
-              font-size: 13px;
-              font-weight: 600;
+              margin-left: 10px;
+              padding: 10px 18px;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 14px;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+              display: flex;
+              align-items: center;
+              gap: 6px;
             "
             @click="showPromptModifyDialog = true"
-            @mouseenter="
-              (e: any) => {
-                e.currentTarget.style.background =
-                  'linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(245, 158, 11, 0.45))';
-                e.currentTarget.style.borderColor = 'rgba(251, 191, 36, 0.6)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(251, 191, 36, 0.35)';
-              }
-            "
-            @mouseleave="
-              (e: any) => {
-                e.currentTarget.style.background =
-                  'linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.3))';
-                e.currentTarget.style.borderColor = 'rgba(251, 191, 36, 0.4)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(251, 191, 36, 0.2)';
-              }
-            "
           >
-            <i class="fa-solid fa-edit" style="margin-right: 6px"></i>
+            <i class="fa-solid fa-edit"></i>
             AI 修改
           </button>
 
@@ -718,50 +569,24 @@
         </div>
 
         <button
-          class="generate-btn"
           style="
             margin-top: 10px;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 18px;
+            background: #3b82f6;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             color: white;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.3);
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 6px;
           "
           @click="generatePrompt"
-          @mouseenter="
-            (e: any) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-            }
-          "
-          @mouseleave="
-            (e: any) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 3px 12px rgba(102, 126, 234, 0.3)';
-            }
-          "
         >
-          <div
-            style="
-              position: absolute;
-              top: 0;
-              left: -100%;
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-              transition: left 0.5s;
-            "
-            class="shimmer-effect"
-          ></div>
-          <i class="fa-solid fa-magic" style="font-size: 14px; margin-right: 6px; position: relative; z-index: 1"></i>
-          <span style="position: relative; z-index: 1">生成 COT 提示词</span>
+          <i class="fa-solid fa-magic"></i>
+          <span>生成 COT 提示词</span>
         </button>
 
         <div v-if="generatedPrompt" class="output-section">
