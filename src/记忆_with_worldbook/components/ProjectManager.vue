@@ -136,18 +136,18 @@
         <button
           style="
             padding: 8px 16px;
-            background: #444;
+            background: #8b5cf6;
             border: none;
             border-radius: 8px;
-            color: #e0e0e0;
+            color: white;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
           "
           @click="showProjectTemplateDialog"
-          @mouseenter="(e: any) => (e.currentTarget.style.background = '#555')"
-          @mouseleave="(e: any) => (e.currentTarget.style.background = '#444')"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = '#7c3aed')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = '#8b5cf6')"
         >
           <i class="fa-solid fa-file-lines" style="margin-right: 6px"></i>
           使用模板
@@ -155,18 +155,18 @@
         <button
           style="
             padding: 8px 16px;
-            background: #444;
+            background: #f59e0b;
             border: none;
             border-radius: 8px;
-            color: #e0e0e0;
+            color: white;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
           "
           @click="triggerFolderImport"
-          @mouseenter="(e: any) => (e.currentTarget.style.background = '#555')"
-          @mouseleave="(e: any) => (e.currentTarget.style.background = '#444')"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = '#d97706')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = '#f59e0b')"
         >
           <i class="fa-solid fa-folder-open" style="margin-right: 6px"></i>
           导入文件夹
