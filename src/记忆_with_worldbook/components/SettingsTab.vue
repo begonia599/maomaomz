@@ -4081,11 +4081,11 @@ const handle_refresh_hidden = async (showToast: boolean = false) => {
     // 保存更新后的数据到酒馆变量
     saveHiddenMessages();
 
-    // 🔥 重新应用隐藏状态到酒馆（修复刷新后隐藏失效的问题）
-    if (validHiddenMessages.length > 0) {
-      try {
-        const setChatMessagesFn = (window as any).TavernHelper?.setChatMessages;
-        if (setChatMessagesFn) {
+    // 🔥 强制刷新 SillyTavern UI（修复显示异常）
+    try {
+      const setChatMessagesFn = (window as any).TavernHelper?.setChatMessages;
+      if (setChatMessagesFn) {
+        if (validHiddenMessages.length > 0) {
           const messageIds = validHiddenMessages.map(msg => msg.message_id);
           console.log(`🔄 重新应用 ${messageIds.length} 个楼层的隐藏状态...`);
 
@@ -4100,10 +4100,15 @@ const handle_refresh_hidden = async (showToast: boolean = false) => {
             console.log(`✅ 已处理第 ${Math.floor(i / BATCH_SIZE) + 1} 批 (${batch.length} 个)`);
           }
           console.log('✅ 所有隐藏状态已重新应用');
+        } else {
+          // 🔧 即使没有隐藏列表，也强制刷新 UI（修复 SillyTavern 显示 bug）
+          console.log('🔄 没有隐藏列表，强制刷新 SillyTavern UI...');
+          await setChatMessagesFn([], { refresh: 'all' });
+          console.log('✅ UI 已刷新');
         }
-      } catch (e) {
-        console.error('重新应用隐藏状态失败:', e);
       }
+    } catch (e) {
+      console.error('刷新操作失败:', e);
     }
 
     if (showToast) {
