@@ -2265,10 +2265,10 @@
           <button
             :style="{
               padding: '8px 16px',
-              background: viewerSortBy === 'original' ? '#20c997' : '#444',
-              border: 'none',
+              background: viewerSortBy === 'original' ? 'rgba(40, 51, 69, 0.8)' : 'rgba(30, 41, 59, 0.5)',
+              border: viewerSortBy === 'original' ? '1px solid #6a6a6a' : '1px solid #4a4a4a',
               borderRadius: '6px',
-              color: 'white',
+              color: '#e0e0e0',
               fontSize: '12px',
               cursor: 'pointer',
               transition: 'all 0.2s',
@@ -2280,32 +2280,32 @@
           <button
             :style="{
               padding: '8px 16px',
-              background: viewerSortBy === 'enabled' ? '#28a745' : '#444',
-              border: 'none',
+              background: viewerSortBy === 'enabled' ? 'rgba(40, 51, 69, 0.8)' : 'rgba(30, 41, 59, 0.5)',
+              border: viewerSortBy === 'enabled' ? '1px solid #6a6a6a' : '1px solid #4a4a4a',
               borderRadius: '6px',
-              color: 'white',
+              color: '#e0e0e0',
               fontSize: '12px',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }"
             @click="viewerSortBy = 'enabled'"
           >
-            ✓ 全选
+            <i class="fa-solid fa-check" style="margin-right: 4px"></i>全选
           </button>
           <button
             :style="{
               padding: '8px 16px',
-              background: viewerSortBy === 'disabled' ? '#dc3545' : '#444',
-              border: 'none',
+              background: viewerSortBy === 'disabled' ? 'rgba(40, 51, 69, 0.8)' : 'rgba(30, 41, 59, 0.5)',
+              border: viewerSortBy === 'disabled' ? '1px solid #6a6a6a' : '1px solid #4a4a4a',
               borderRadius: '6px',
-              color: 'white',
+              color: '#e0e0e0',
               fontSize: '12px',
               cursor: 'pointer',
               transition: 'all 0.2s',
             }"
             @click="viewerSortBy = 'disabled'"
           >
-            ✕ 取消全选
+            <i class="fa-solid fa-xmark" style="margin-right: 4px"></i>取消全选
           </button>
         </div>
 
@@ -3220,35 +3220,22 @@
               class="copy-button"
               style="
                 padding: 10px 20px;
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
+                color: #e0e0e0;
                 font-size: 13px;
-                font-weight: 600;
+                font-weight: 500;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                box-shadow: 0 3px 12px rgba(40, 167, 69, 0.3);
-                position: relative;
-                overflow: hidden;
               "
               @click="copyCharacterCard"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
-              <div
-                style="
-                  position: absolute;
-                  top: 0;
-                  left: -100%;
-                  width: 100%;
-                  height: 100%;
-                  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                  transition: left 0.5s;
-                "
-                class="shimmer-effect"
-              ></div>
               <i class="fa-solid fa-copy" style="font-size: 14px"></i> 复制角色卡
             </button>
           </div>
