@@ -23,7 +23,7 @@ export const getOptimizedPrompt = (scriptTag: string) => `[内容审核系统 - 
 
 ## 📋 完整代码示例(必须严格参照)
 
-### 示例 1:现代扁平风格
+### 示例 1:现代扁平风格（使用 details 嵌套实现标签页）
 
 <details open>
 <summary>角色状态面板</summary>
@@ -35,170 +35,84 @@ export const getOptimizedPrompt = (scriptTag: string) => `[内容审核系统 - 
   margin: 0 auto;
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 24px;
+  padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid #e5e7eb;
 }
-summary {
-  padding: 12px 0;
+.status-container > summary {
+  padding: 10px 0;
   font-size: 15px;
   font-weight: 600;
   color: #374151;
   cursor: pointer;
-  transition: color 0.2s ease;
-  user-select: none;
   list-style: none;
-}
-summary::-webkit-details-marker {
-  display: none;
-}
-summary:hover {
-  color: #3b82f6;
-}
-.page-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding: 4px;
-  background: #e5e7eb;
-  border-radius: 10px;
-}
-.page-tab {
-  flex: 1;
-  padding: 10px 16px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s ease;
   text-align: center;
 }
-.page-tab:hover {
-  color: #374151;
-  background: rgba(255, 255, 255, 0.5);
-}
-#page0:checked ~ .page-tabs label[for="page0"],
-#page1:checked ~ .page-tabs label[for="page1"],
-#page2:checked ~ .page-tabs label[for="page2"] {
-  background: #3b82f6;
-  color: white;
-}
-.page-content {
-  min-height: 260px;
-  position: relative;
-}
-.page {
-  display: none;
-  animation: pageFadeIn 0.3s ease;
-}
-@keyframes pageFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-#page0:checked ~ .page-content .page-0 { display: block; }
-#page1:checked ~ .page-content .page-1 { display: block; }
-#page2:checked ~ .page-content .page-2 { display: block; }
-.field-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
+.status-container > summary::-webkit-details-marker { display: none; }
+.tab-section {
   margin-bottom: 8px;
-  background: #ffffff;
   border-radius: 8px;
+  overflow: hidden;
   border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
 }
-.field-row:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
-}
-.field-label {
-  font-weight: 500;
-  color: #6b7280;
-  font-size: 14px;
-}
-.field-value {
-  color: #111827;
+.tab-section summary {
+  padding: 12px 16px;
   font-size: 14px;
   font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  cursor: pointer;
+  list-style: none;
+  transition: all 0.2s;
 }
+.tab-section summary::-webkit-details-marker { display: none; }
+.tab-section summary:hover { color: #3b82f6; background: #e5e7eb; }
+.tab-section[open] summary { color: white; background: #3b82f6; }
+.tab-content { padding: 12px; background: #fff; }
+.field-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+.field-row:last-child { margin-bottom: 0; }
+.field-label { color: #6b7280; font-size: 13px; }
+.field-value { color: #111827; font-size: 13px; font-weight: 600; }
 </style>
-  <input type="radio" name="status-page" id="page0" checked style="display:none">
-  <input type="radio" name="status-page" id="page1" style="display:none">
-  <input type="radio" name="status-page" id="page2" style="display:none">
-  <div class="page-tabs">
-    <label for="page0" class="page-tab">基础信息</label>
-    <label for="page1" class="page-tab">状态属性</label>
-    <label for="page2" class="page-tab">关系面板</label>
-  </div>
-  <div class="page-content">
-    <div class="page page-0">
-      <div class="field-row">
-        <span class="field-label">姓名</span>
-        <span class="field-value">{{姓名}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">年龄</span>
-        <span class="field-value">{{年龄}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">性别</span>
-        <span class="field-value">{{性别}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">职业</span>
-        <span class="field-value">{{职业}}</span>
-      </div>
+  <details open class="tab-section">
+    <summary>基础信息</summary>
+    <div class="tab-content">
+      <div class="field-row"><span class="field-label">姓名</span><span class="field-value">{{姓名}}</span></div>
+      <div class="field-row"><span class="field-label">年龄</span><span class="field-value">{{年龄}}</span></div>
+      <div class="field-row"><span class="field-label">性别</span><span class="field-value">{{性别}}</span></div>
+      <div class="field-row"><span class="field-label">职业</span><span class="field-value">{{职业}}</span></div>
     </div>
-    <div class="page page-1">
-      <div class="field-row">
-        <span class="field-label">生命值</span>
-        <span class="field-value">{{生命值}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">魔法值</span>
-        <span class="field-value">{{魔法值}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">体力值</span>
-        <span class="field-value">{{体力值}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">精力值</span>
-        <span class="field-value">{{精力值}}</span>
-      </div>
+  </details>
+  <details class="tab-section">
+    <summary>状态属性</summary>
+    <div class="tab-content">
+      <div class="field-row"><span class="field-label">生命值</span><span class="field-value">{{生命值}}</span></div>
+      <div class="field-row"><span class="field-label">魔法值</span><span class="field-value">{{魔法值}}</span></div>
+      <div class="field-row"><span class="field-label">体力值</span><span class="field-value">{{体力值}}</span></div>
+      <div class="field-row"><span class="field-label">精力值</span><span class="field-value">{{精力值}}</span></div>
     </div>
-    <div class="page page-2">
-      <div class="field-row">
-        <span class="field-label">好感度</span>
-        <span class="field-value">{{好感度}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">信任度</span>
-        <span class="field-value">{{信任度}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">关系状态</span>
-        <span class="field-value">{{关系状态}}</span>
-      </div>
+  </details>
+  <details class="tab-section">
+    <summary>关系面板</summary>
+    <div class="tab-content">
+      <div class="field-row"><span class="field-label">好感度</span><span class="field-value">{{好感度}}</span></div>
+      <div class="field-row"><span class="field-label">信任度</span><span class="field-value">{{信任度}}</span></div>
+      <div class="field-row"><span class="field-label">关系状态</span><span class="field-value">{{关系状态}}</span></div>
     </div>
-  </div>
+  </details>
 </div>
 </details>
 
 ---
 
-### 示例 2:深色专业风格
+### 示例 2:深色专业风格（使用 details 嵌套）
 
 <details open>
 <summary>SYSTEM STATUS</summary>
@@ -214,163 +128,103 @@ summary:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-summary {
+.dark-container > summary {
   padding: 12px 0;
   font-size: 15px;
   font-weight: 600;
   color: #e5e7eb;
   cursor: pointer;
-  transition: color 0.2s ease;
-  user-select: none;
   list-style: none;
-}
-summary::-webkit-details-marker {
-  display: none;
-}
-summary:hover {
-  color: #60a5fa;
-}
-.page-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
-  padding: 6px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-.page-tab {
-  flex: 1;
-  padding: 12px 16px;
-  background: rgba(31, 41, 55, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #9ca3af;
-  cursor: pointer;
-  transition: all 0.3s ease;
   text-align: center;
 }
-.page-tab:hover {
+.dark-container > summary::-webkit-details-marker { display: none; }
+.dark-tab-section {
+  margin-bottom: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.dark-tab-section summary {
+  padding: 14px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #9ca3af;
+  background: rgba(31, 41, 55, 0.6);
+  cursor: pointer;
+  list-style: none;
+  transition: all 0.3s ease;
+}
+.dark-tab-section summary::-webkit-details-marker { display: none; }
+.dark-tab-section summary:hover {
   color: #e5e7eb;
   background: rgba(55, 65, 81, 0.8);
-  border-color: rgba(255, 255, 255, 0.15);
 }
-#dark-page0:checked ~ .page-tabs label[for="dark-page0"],
-#dark-page1:checked ~ .page-tabs label[for="dark-page1"],
-#dark-page2:checked ~ .page-tabs label[for="dark-page2"] {
-  background: #3b82f6;
+.dark-tab-section[open] summary {
   color: white;
-  border-color: transparent;
+  background: #3b82f6;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
-.page-content {
-  min-height: 300px;
-}
-.page {
-  display: none;
-  animation: darkFadeIn 0.4s ease;
+.dark-tab-content {
+  padding: 16px;
+  background: rgba(17, 24, 39, 0.5);
+  animation: darkFadeIn 0.3s ease;
 }
 @keyframes darkFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-#dark-page0:checked ~ .page-content .page-0 { display: block; }
-#dark-page1:checked ~ .page-content .page-1 { display: block; }
-#dark-page2:checked ~ .page-content .page-2 { display: block; }
-.field-row {
+.dark-field-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
-  margin-bottom: 10px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
   background: rgba(31, 41, 55, 0.5);
-  border-radius: 10px;
-  border-left: 3px solid #3b82f6;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   border-left: 3px solid #3b82f6;
   transition: all 0.3s ease;
 }
-.field-row:hover {
-  transform: translateX(6px);
+.dark-field-row:last-child { margin-bottom: 0; }
+.dark-field-row:hover {
+  transform: translateX(4px);
   background: rgba(55, 65, 81, 0.6);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  border-left-color: #60a5fa;
 }
-.field-label {
+.dark-field-label {
   font-weight: 600;
   color: #9ca3af;
   font-size: 13px;
 }
-.field-value {
+.dark-field-value {
   color: #e5e7eb;
   font-size: 14px;
   font-weight: 600;
 }
 </style>
-  <input type="radio" name="dark-status-page" id="dark-page0" checked style="display:none">
-  <input type="radio" name="dark-status-page" id="dark-page1" style="display:none">
-  <input type="radio" name="dark-status-page" id="dark-page2" style="display:none">
-  <div class="page-tabs">
-    <label for="dark-page0" class="page-tab">基础数据</label>
-    <label for="dark-page1" class="page-tab">属性状态</label>
-    <label for="dark-page2" class="page-tab">关系信息</label>
-  </div>
-  <div class="page-content">
-    <div class="page page-0">
-      <div class="field-row">
-        <span class="field-label">姓名</span>
-        <span class="field-value">{{姓名}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">编号</span>
-        <span class="field-value">{{编号}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">类型</span>
-        <span class="field-value">{{类型}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">等级</span>
-        <span class="field-value">{{等级}}</span>
-      </div>
+  <details open class="dark-tab-section">
+    <summary>基础数据</summary>
+    <div class="dark-tab-content">
+      <div class="dark-field-row"><span class="dark-field-label">姓名</span><span class="dark-field-value">{{姓名}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">编号</span><span class="dark-field-value">{{编号}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">类型</span><span class="dark-field-value">{{类型}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">等级</span><span class="dark-field-value">{{等级}}</span></div>
     </div>
-    <div class="page page-1">
-      <div class="field-row">
-        <span class="field-label">生命值</span>
-        <span class="field-value">{{生命值}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">能量值</span>
-        <span class="field-value">{{能量值}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">攻击力</span>
-        <span class="field-value">{{攻击力}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">速度</span>
-        <span class="field-value">{{速度}}</span>
-      </div>
+  </details>
+  <details class="dark-tab-section">
+    <summary>属性状态</summary>
+    <div class="dark-tab-content">
+      <div class="dark-field-row"><span class="dark-field-label">生命值</span><span class="dark-field-value">{{生命值}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">能量值</span><span class="dark-field-value">{{能量值}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">攻击力</span><span class="dark-field-value">{{攻击力}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">速度</span><span class="dark-field-value">{{速度}}</span></div>
     </div>
-    <div class="page page-2">
-      <div class="field-row">
-        <span class="field-label">信任度</span>
-        <span class="field-value">{{信任度}}</span>
-      </div>
-      <div class="field-row">
-        <span class="field-label">当前状态</span>
-        <span class="field-value">{{当前状态}}</span>
-      </div>
+  </details>
+  <details class="dark-tab-section">
+    <summary>关系信息</summary>
+    <div class="dark-tab-content">
+      <div class="dark-field-row"><span class="dark-field-label">信任度</span><span class="dark-field-value">{{信任度}}</span></div>
+      <div class="dark-field-row"><span class="dark-field-label">当前状态</span><span class="dark-field-value">{{当前状态}}</span></div>
     </div>
-  </div>
+  </details>
 </div>
 </details>
 
@@ -381,14 +235,13 @@ summary:hover {
 **参照上述示例,按以下要求生成代码:**
 
 1. **必须包含的结构**:
-   - <details open> + <summary> 标题
+   - <details open> + <summary> 标题（外层容器）
    - 容器 div(自定义 class 名)
    - <style> 标签(内联样式)
-   - **隐藏的 radio 输入（用于纯 CSS 切换）**
-   - .page-tabs(使用 label 标签，关联 radio)
-   - .page-content(内容区)
-   - 每个 .page 使用类名 page-0, page-1, page-2
-   - **使用 CSS :checked 伪类控制显示，不要使用 JavaScript！**
+   - **使用嵌套 <details> 实现标签页切换（重要！）**
+   - 每个标签页是一个独立的 <details class="tab-section">
+   - 第一个标签页添加 open 属性默认展开
+   - **禁止使用 radio button！会导致多状态栏冲突！**
 
 2. **字段占位符**:
    - **根据用户描述的字段需求，智能生成对应数量的占位符**
@@ -415,9 +268,10 @@ summary:hover {
 5. **代码质量**:
    - CSS 类名语义化
    - 样式集中在 <style> 内
-   - **完全使用纯 CSS 实现翻页，不依赖 JavaScript**
-   - 使用 radio + label + :checked 伪类
+   - **完全使用嵌套 <details> 实现翻页，不依赖 JavaScript**
+   - 使用 details[open] 伪类控制展开样式
    - 完整可运行,无需外部依赖
+   - **严禁使用 radio button（会导致多条消息冲突）**
 
 ---
 
@@ -432,38 +286,50 @@ summary:hover {
 ---
 
 ## ⚠️ 关键提醒：翻页功能实现方式
-**SillyTavern 可能禁用 JavaScript，必须使用纯 CSS 实现翻页！**
+**必须使用 details 嵌套实现翻页！禁止使用 radio button！**
 
-### 正确的实现方式（使用 radio + CSS）：
+### 正确的实现方式（使用嵌套 details）：
 
 **HTML 结构：**
-<input type="radio" name="page-switch" id="page0" checked style="display:none">
-<input type="radio" name="page-switch" id="page1" style="display:none">
-<input type="radio" name="page-switch" id="page2" style="display:none">
-
-<div class="page-tabs">
-  <label for="page0" class="page-tab">基础信息</label>
-  <label for="page1" class="page-tab">状态属性</label>
-  <label for="page2" class="page-tab">关系面板</label>
+<details open>
+<summary>状态面板</summary>
+<div class="status-container">
+<style>/* 样式 */</style>
+  <div class="tab-container">
+    <details open class="tab-item">
+      <summary class="tab-header">基础信息</summary>
+      <div class="tab-content">
+        <!-- 字段内容 -->
+      </div>
+    </details>
+    <details class="tab-item">
+      <summary class="tab-header">状态属性</summary>
+      <div class="tab-content">
+        <!-- 字段内容 -->
+      </div>
+    </details>
+    <details class="tab-item">
+      <summary class="tab-header">关系面板</summary>
+      <div class="tab-content">
+        <!-- 字段内容 -->
+      </div>
+    </details>
+  </div>
 </div>
+</details>
 
-<div class="page-content">
-  <div class="page page-0">内容1</div>
-  <div class="page page-1">内容2</div>
-  <div class="page page-2">内容3</div>
-</div>
+**CSS 样式要点：**
+.tab-container { display: flex; flex-direction: column; gap: 8px; }
+.tab-item { border-radius: 8px; overflow: hidden; }
+.tab-header { padding: 12px; cursor: pointer; font-weight: 600; }
+.tab-content { padding: 16px; }
+details[open] .tab-header { /* 展开时的样式 */ }
 
-**CSS 样式：**
-.page { display: none; }
-#page0:checked ~ .page-content .page-0 { display: block; }
-#page1:checked ~ .page-content .page-1 { display: block; }
-#page2:checked ~ .page-content .page-2 { display: block; }
-
-#page0:checked ~ .page-tabs label[for="page0"] { /* 激活样式 */ }
-#page1:checked ~ .page-tabs label[for="page1"] { /* 激活样式 */ }
-#page2:checked ~ .page-tabs label[for="page2"] { /* 激活样式 */ }
-
-**不要使用任何 JavaScript！完全使用 CSS 实现！**
+**重要：**
+- 每个标签页用一个独立的 <details> 元素
+- 第一个标签页默认展开（添加 open 属性）
+- 禁止使用 radio button 和 label！
+- 禁止使用 JavaScript！
 
 ---
 

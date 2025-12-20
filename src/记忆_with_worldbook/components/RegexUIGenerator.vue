@@ -1256,13 +1256,7 @@ const exportRegex = () => {
 
   const uniqueFields = [...new Set(matches.map(m => m.slice(2, -2)))] as string[];
 
-  // 构建 findRegex - 使用更灵活的正则格式（参考精英版）
-  // 格式：<-PAGEABLE_STATUSBAR->[\s\S]*?{{字段名}}\s*([^\n\r]+)[\s\S]*?...[\s\S]*?</status>
-  // 关键改进：
-  // 1. 使用 [\s\S]*? 代替 \n，支持任意字符（包括换行）
-  // 2. 使用 \s* 允许字段名和值之间有空白
-  // 3. 使用 [^\n\r]+ 排除回车和换行
-  // 4. 以 </status> 结尾确保完整匹配
+  // 构建 findRegex
   const triggerEscaped = triggerRegex.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const captureGroups = uniqueFields.map(field => `\\{\\{${field}\\}\\}\\s*([^\\n\\r]+)`).join('[\\s\\S]*?');
   const findRegex = `${triggerEscaped}[\\s\\S]*?${captureGroups}[\\s\\S]*?</status>`;
@@ -1276,87 +1270,59 @@ const exportRegex = () => {
     );
   });
 
-  // 解决多状态栏冲突：使用 $1 作为 radio name/id 的唯一后缀
-  // 参考 OMEGA 状态栏方案：每条消息的 $1 值不同，确保唯一性
+  // ============ OMEGA 方案：解决多状态栏冲突 ============
+  // 核心思路：用 $1（第一个字段值）作为唯一后缀，CSS 用属性选择器
+  // 这样每条消息的 $1 不同，radio 就不会冲突
 
-  // 先提取所有 radio 的 id，用于后续匹配
-  const radioIdMatches = replaceString.match(/<input[^>]+type="radio"[^>]+id="([^"]+)"/g) || [];
-  const radioIds: string[] = [];
-  radioIdMatches.forEach(match => {
-    const idMatch = match.match(/id="([^"]+)"/);
-    if (idMatch) radioIds.push(idMatch[1]);
+  // 1. 提取所有 radio 的原始 id 和 name
+  const radioMatches = [...replaceString.matchAll(/<input[^>]*type="radio"[^>]*>/g)];
+  const radioInfos: { original: string; id: string; name: string }[] = [];
+
+  radioMatches.forEach(match => {
+    const tag = match[0];
+    const idMatch = tag.match(/id="([^"]+)"/);
+    const nameMatch = tag.match(/name="([^"]+)"/);
+    if (idMatch && nameMatch) {
+      radioInfos.push({ original: tag, id: idMatch[1], name: nameMatch[1] });
+    }
   });
 
-  // 1. 替换 radio input 的 name 和 id，添加 -$1 后缀
-  replaceString = replaceString.replace(
-    /<input([^>]*)type="radio"([^>]*)name="([^"]+)"([^>]*)id="([^"]+)"([^>]*)>/g,
-    '<input$1type="radio"$2name="$3-$$1"$4id="$5-$$1"$6>',
-  );
-  // 也处理 id 在 name 前面的情况
-  replaceString = replaceString.replace(
-    /<input([^>]*)type="radio"([^>]*)id="([^"]+)"([^>]*)name="([^"]+)"([^>]*)>/g,
-    '<input$1type="radio"$2id="$3-$$1"$4name="$5-$$1"$6>',
-  );
+  // 2. 生成简短前缀（tp0, tp1, tp2...）替换原 id，并添加 -$1 后缀
+  const idMapping: Record<string, string> = {}; // 旧id -> 新前缀
+  radioInfos.forEach((info, index) => {
+    const newPrefix = `tp${index}`;
+    idMapping[info.id] = newPrefix;
 
-  // 2. 替换 label 的 for 属性，添加 -$1 后缀（基于提取的 radio id）
-  radioIds.forEach(id => {
-    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    replaceString = replaceString.replace(new RegExp(`for="${escapedId}"`, 'g'), `for="${id}-$1"`);
+    // 替换 radio input：id="tp0-$1" name="tabs-$1"
+    const newTag = info.original
+      .replace(/id="[^"]+"/, `id="${newPrefix}-$1"`)
+      .replace(/name="[^"]+"/, `name="tabs-$1"`);
+    replaceString = replaceString.replace(info.original, newTag);
   });
 
-  // 3. 将 CSS 中的 #id:checked 选择器改为 input[id^="id-"]:checked
-  radioIds.forEach(id => {
-    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    replaceString = replaceString.replace(new RegExp(`#${escapedId}:checked`, 'g'), `input[id^="${id}-"]:checked`);
+  // 3. 替换 label 的 for 属性
+  Object.entries(idMapping).forEach(([oldId, newPrefix]) => {
+    const escapedOldId = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    replaceString = replaceString.replace(new RegExp(`for="${escapedOldId}"`, 'g'), `for="${newPrefix}-$1"`);
   });
 
-  // 4. 将 CSS 中的 label[for="id"] 改为 label:nth-of-type(n)
-  radioIds.forEach((id, index) => {
-    const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // 4. 替换 CSS 选择器：#oldId:checked -> input[id^="tp0-"]:checked
+  Object.entries(idMapping).forEach(([oldId, newPrefix]) => {
+    const escapedOldId = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     replaceString = replaceString.replace(
-      new RegExp(`label\\[for="${escapedId}"\\]`, 'g'),
-      `label:nth-of-type(${index + 1})`,
+      new RegExp(`#${escapedOldId}:checked`, 'g'),
+      `input[id^="${newPrefix}-"]:checked`,
     );
   });
 
-  // 5. 注入唯一化脚本，确保每个状态栏有真正唯一的 radio ID
-  // 因为 $1 的值可能在多条消息中重复（如同一角色的名字）
-  const uniqueScript = `<script>
-(function(){
-  var c = document.currentScript.parentElement;
-  var uid = Math.random().toString(36).substr(2,9);
-  var radios = c.querySelectorAll('input[type="radio"]');
-  var labels = c.querySelectorAll('label[for]');
-  var style = c.querySelector('style');
-  var idMap = {};
-  radios.forEach(function(r){
-    var oldId = r.id, oldName = r.getAttribute('name');
-    var newId = oldId + '_' + uid;
-    var newName = oldName + '_' + uid;
-    idMap[oldId] = newId;
-    r.id = newId;
-    r.setAttribute('name', newName);
+  // 5. 替换 CSS 中的 label[for="oldId"] -> label:nth-of-type(n)
+  Object.entries(idMapping).forEach(([oldId, newPrefix], index) => {
+    const escapedOldId = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    replaceString = replaceString.replace(
+      new RegExp(`label\\[for="${escapedOldId}"\\]`, 'g'),
+      `label:nth-of-type(${index + 1})`,
+    );
   });
-  labels.forEach(function(l){
-    var f = l.getAttribute('for');
-    if(idMap[f]) l.setAttribute('for', idMap[f]);
-  });
-  if(style){
-    var css = style.textContent;
-    for(var old in idMap){
-      css = css.split(old).join(idMap[old]);
-    }
-    style.textContent = css;
-  }
-})();
-<\\/script>`;
-
-  // 在 </details> 或 </div> 前插入脚本
-  if (replaceString.includes('</details>')) {
-    replaceString = replaceString.replace(/<\/details>\s*$/, uniqueScript + '</details>');
-  } else {
-    replaceString = replaceString + uniqueScript;
-  }
 
   const uuid = `regex-pageable-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
