@@ -3631,22 +3631,22 @@ function getSafeMaxTokens(requested: number): number {
 
 /* PC端显示完整文字，隐藏短文字 */
 .btn-text-short {
-  display: none;
+  display: none !important;
 }
 
 .btn-text-full {
-  display: inline;
+  display: inline !important;
 }
 
 /* 移动端工具栏 */
 @media (max-width: 768px) {
   /* 移动端显示短文字，隐藏完整文字 */
   .btn-text-full {
-    display: none;
+    display: none !important;
   }
 
   .btn-text-short {
-    display: inline;
+    display: inline !important;
   }
   .toolbar-buttons {
     display: grid;
