@@ -1570,27 +1570,21 @@
           </div>
         </div>
 
-        <div class="button-group" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px">
+        <div class="button-group" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px">
           <button
-            class="action-button summarize-button"
             :disabled="is_generating_table || !settings.api_key"
             style="
-              flex: 1;
-              min-width: 120px;
-              padding: 12px 16px;
+              padding: 10px 18px;
+              background: #3b82f6;
               border: none;
-              border-radius: 12px;
-              cursor: pointer;
-              font-weight: 500;
+              border-radius: 6px;
+              color: white;
               font-size: 14px;
-              transition: all 0.2s;
+              font-weight: 500;
+              cursor: pointer;
               display: flex;
               align-items: center;
-              justify-content: center;
               gap: 6px;
-              background: #4a9eff;
-              box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
-              color: white;
             "
             @click="handle_generate_table"
           >
@@ -1599,24 +1593,18 @@
             {{ is_generating_table ? 'AI填充中...' : 'AI填充表格' }}
           </button>
           <button
-            class="action-button create-button"
             style="
-              flex: 1;
-              min-width: 120px;
-              padding: 12px 16px;
-              border: none;
-              border-radius: 12px;
-              cursor: pointer;
-              font-weight: 500;
+              padding: 10px 18px;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 14px;
-              transition: all 0.2s;
+              font-weight: 500;
+              cursor: pointer;
               display: flex;
               align-items: center;
-              justify-content: center;
               gap: 6px;
-              background: #51cf66;
-              box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
-              color: white;
             "
             @click="handle_create_table"
           >
@@ -1694,50 +1682,38 @@
             "
           />
         </div>
-        <div class="button-group" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px">
+        <div class="button-group" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px">
           <button
-            class="action-button"
             style="
-              flex: 1;
-              min-width: 120px;
-              padding: 12px 16px;
+              padding: 10px 18px;
+              background: #3b82f6;
               border: none;
-              border-radius: 12px;
-              cursor: pointer;
-              font-weight: 500;
+              border-radius: 6px;
+              color: white;
               font-size: 14px;
-              transition: all 0.2s;
+              font-weight: 500;
+              cursor: pointer;
               display: flex;
               align-items: center;
-              justify-content: center;
               gap: 6px;
-              background: #ff6b6b;
-              box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-              color: white;
             "
             @click="handle_hide_messages"
           >
             <i class="fa-solid fa-eye-slash"></i> 隐藏楼层
           </button>
           <button
-            class="action-button"
             style="
-              flex: 1;
-              min-width: 120px;
-              padding: 12px 16px;
-              border: none;
-              border-radius: 12px;
-              cursor: pointer;
-              font-weight: 500;
+              padding: 10px 18px;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 14px;
-              transition: all 0.2s;
+              font-weight: 500;
+              cursor: pointer;
               display: flex;
               align-items: center;
-              justify-content: center;
               gap: 6px;
-              background: #51cf66;
-              box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
-              color: white;
             "
             :disabled="!hide_range.trim()"
             @click="handle_show_messages"
@@ -1745,24 +1721,18 @@
             <i class="fa-solid fa-eye"></i> 显示楼层
           </button>
           <button
-            class="action-button"
             style="
-              flex: 1;
-              min-width: 120px;
-              padding: 12px 16px;
-              border: none;
-              border-radius: 12px;
-              cursor: pointer;
-              font-weight: 500;
+              padding: 10px 18px;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 14px;
-              transition: all 0.2s;
+              font-weight: 500;
+              cursor: pointer;
               display: flex;
               align-items: center;
-              justify-content: center;
               gap: 6px;
-              background: #ffd43b;
-              box-shadow: 0 2px 8px rgba(255, 212, 59, 0.3);
-              color: #333;
             "
             @click="() => handle_refresh_hidden(true)"
           >
