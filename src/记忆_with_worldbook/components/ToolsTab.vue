@@ -338,35 +338,22 @@
               class="copy-button"
               style="
                 padding: 10px 20px;
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
+                color: #e0e0e0;
                 font-size: 13px;
-                font-weight: 600;
+                font-weight: 500;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                box-shadow: 0 3px 12px rgba(40, 167, 69, 0.3);
-                position: relative;
-                overflow: hidden;
               "
               @click="copyAntiClicheResult"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
-              <div
-                style="
-                  position: absolute;
-                  top: 0;
-                  left: -100%;
-                  width: 100%;
-                  height: 100%;
-                  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                  transition: left 0.5s;
-                "
-                class="shimmer-effect"
-              ></div>
               <i class="fa-solid fa-copy" style="font-size: 14px"></i> 复制结果
             </button>
           </div>
@@ -402,22 +389,22 @@
                 style="
                   flex: 1;
                   padding: 10px 20px;
-                  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-                  border: none;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
                   border-radius: 6px;
-                  color: #1a1a1a;
+                  color: #e0e0e0;
                   font-size: 13px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
-                  box-shadow: 0 3px 12px rgba(255, 193, 7, 0.3);
-                  opacity: 1;
+                  transition: all 0.2s ease;
                 "
                 :style="{
                   opacity: isModifyingAntiCliche || !antiClicheModifyRequest.trim() ? 0.5 : 1,
                   cursor: isModifyingAntiCliche || !antiClicheModifyRequest.trim() ? 'not-allowed' : 'pointer',
                 }"
                 @click="handleModifyAntiCliche"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
                 <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 6px"></i>
                 {{ isModifyingAntiCliche ? '修改中...' : 'AI 修改' }}
@@ -426,20 +413,22 @@
                 :disabled="!antiClicheModifyRequest.trim()"
                 style="
                   padding: 10px 20px;
-                  background: #dc3545;
-                  border: none;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
                   border-radius: 6px;
-                  color: white;
+                  color: #e0e0e0;
                   font-size: 13px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
+                  transition: all 0.2s ease;
                 "
                 :style="{
                   opacity: !antiClicheModifyRequest.trim() ? 0.5 : 1,
                   cursor: !antiClicheModifyRequest.trim() ? 'not-allowed' : 'pointer',
                 }"
                 @click="clearAntiClicheModifyRequest"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
                 <i class="fa-solid fa-eraser" style="margin-right: 6px"></i>
                 清空修改需求
@@ -619,15 +608,18 @@
             :disabled="isGeneratingNpc || !npcDescription.trim()"
             style="
               padding: 10px 20px;
-              background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-              border: none;
-              border-radius: 8px;
-              color: #1a1a1a;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
-              font-weight: 600;
+              font-weight: 500;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="handleGenerateNpc"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-magic" style="margin-right: 6px"></i>
             {{ isGeneratingNpc ? '生成中...' : '生成 NPC' }}
@@ -635,17 +627,21 @@
           <button
             style="
               padding: 10px 20px;
-              background: #3a3a3a;
-              border: none;
-              border-radius: 8px;
-              color: #ccc;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
+              font-weight: 500;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="
               npcDescription = '';
               npcOutput = '';
             "
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
             清空
@@ -679,14 +675,17 @@
             <button
               style="
                 padding: 8px 16px;
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
+                color: #e0e0e0;
                 font-size: 12px;
                 cursor: pointer;
+                transition: all 0.2s ease;
               "
               @click="copyToClipboard(npcOutput, 'NPC 已复制')"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
               <i class="fa-solid fa-copy" style="margin-right: 6px"></i>
               复制
@@ -709,14 +708,17 @@
               v-if="npcInsertWorldbook"
               style="
                 padding: 8px 16px;
-                background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: #1a1a1a;
+                color: #e0e0e0;
                 font-size: 12px;
                 cursor: pointer;
+                transition: all 0.2s ease;
               "
               @click="insertNpcToWorldbook"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
               <i class="fa-solid fa-download" style="margin-right: 6px"></i>
               插入
@@ -915,15 +917,18 @@
             :disabled="isCompressingToken || !tokenCompressInput.trim()"
             style="
               padding: 10px 20px;
-              background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-              border: none;
-              border-radius: 8px;
-              color: white;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
-              font-weight: 600;
+              font-weight: 500;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="handleTokenCompress"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-compress" style="margin-right: 6px"></i>
             {{ isCompressingToken ? '压缩中...' : '压缩' }}
@@ -931,17 +936,21 @@
           <button
             style="
               padding: 10px 20px;
-              background: #3a3a3a;
-              border: none;
-              border-radius: 8px;
-              color: #ccc;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
+              font-weight: 500;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="
               tokenCompressInput = '';
               tokenCompressOutput = '';
             "
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
             清空
@@ -994,14 +1003,17 @@
             <button
               style="
                 padding: 8px 16px;
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
+                color: #e0e0e0;
                 font-size: 12px;
                 cursor: pointer;
+                transition: all 0.2s ease;
               "
               @click="copyToClipboard(tokenCompressOutput, '压缩结果已复制')"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
               <i class="fa-solid fa-copy" style="margin-right: 6px"></i>
               复制
@@ -1117,15 +1129,18 @@
             :disabled="isAnalyzingRelation || (!relationIncludeChar && !relationWorldbook)"
             style="
               padding: 10px 20px;
-              background: linear-gradient(135deg, #e91e63 0%, #c2185b 100%);
-              border: none;
-              border-radius: 8px;
-              color: white;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
-              font-weight: 600;
+              font-weight: 500;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="handleAnalyzeRelation"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-heart" style="margin-right: 6px"></i>
             {{ isAnalyzingRelation ? '分析中...' : '分析关系' }}
@@ -1133,14 +1148,18 @@
           <button
             style="
               padding: 10px 20px;
-              background: #3a3a3a;
-              border: none;
-              border-radius: 8px;
-              color: #ccc;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
+              font-weight: 500;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="relationOutput = ''"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-trash" style="margin-right: 6px"></i>清空
           </button>
@@ -1170,14 +1189,17 @@
             <button
               style="
                 padding: 8px 16px;
-                background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
+                color: #e0e0e0;
                 font-size: 12px;
                 cursor: pointer;
+                transition: all 0.2s ease;
               "
               @click="copyToClipboard(relationOutput, '关系图谱已复制')"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
               <i class="fa-solid fa-copy" style="margin-right: 6px"></i>复制
             </button>
@@ -1200,14 +1222,17 @@
               :disabled="isInsertingRelation"
               style="
                 padding: 8px 16px;
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
+                color: #e0e0e0;
                 font-size: 12px;
                 cursor: pointer;
+                transition: all 0.2s ease;
               "
               @click="insertRelationToWorldbook"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
               <i class="fa-solid fa-download" style="margin-right: 6px"></i
               >{{ isInsertingRelation ? '插入中...' : '插入' }}
@@ -1470,14 +1495,14 @@
             style="
               flex: 1;
               padding: 12px 20px;
-              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-              border: none;
-              border-radius: 8px;
-              color: white;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 14px;
-              font-weight: 600;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s;
+              transition: all 0.2s ease;
               display: flex;
               align-items: center;
               justify-content: center;
@@ -1485,6 +1510,8 @@
             "
             :disabled="isGeneratingGreeting"
             @click="handleGenerateGreeting"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i :class="isGeneratingGreeting ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-wand-magic-sparkles'"></i>
             {{ isGeneratingGreeting ? '生成中...' : '生成开场白' }}
@@ -1492,14 +1519,17 @@
           <button
             style="
               padding: 12px 20px;
-              background: #dc2626;
-              border: none;
-              border-radius: 8px;
-              color: white;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 14px;
               cursor: pointer;
+              transition: all 0.2s ease;
             "
             @click="clearGreetingForm"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
             <i class="fa-solid fa-eraser"></i>
           </button>

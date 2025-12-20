@@ -23,18 +23,21 @@
         <button
           style="
             padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.2s ease;
           "
           @click="loadExample"
+          @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+          @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
         >
           <i class="fa-solid fa-lightbulb"></i>
           加载示例
@@ -42,19 +45,22 @@
         <button
           style="
             padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            transition: all 0.2s ease;
           "
           :disabled="isGenerating"
           @click="generateWithAI"
+          @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+          @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
         >
           <i :class="isGenerating ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-wand-magic-sparkles'"></i>
           {{ isGenerating ? '生成中...' : 'AI 生成' }}
@@ -62,19 +68,22 @@
         <button
           style="
             padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            transition: all 0.2s ease;
           "
           :disabled="!generatedCode"
           @click="modifyWithAI"
+          @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+          @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
         >
           <i class="fa-solid fa-pen-to-square"></i>
           AI 修改
@@ -82,19 +91,22 @@
         <button
           style="
             padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.2s ease;
           "
           :disabled="!generatedCode"
           @click="exportRegex"
+          @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+          @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
         >
           <i class="fa-solid fa-download"></i>
           导出正则
@@ -102,18 +114,21 @@
         <button
           style="
             padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            transition: all 0.2s ease;
           "
           @click="restoreFromBackup"
+          @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+          @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
         >
           <i class="fa-solid fa-clock-rotate-left"></i>
           恢复备份
@@ -121,18 +136,21 @@
         <button
           style="
             padding: 8px 16px;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            transition: all 0.2s ease;
           "
           @click="clearAll"
+          @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+          @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
         >
           <i class="fa-solid fa-trash"></i>
           清空
