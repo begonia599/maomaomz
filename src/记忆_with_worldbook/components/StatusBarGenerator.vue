@@ -335,13 +335,13 @@
               style="
                 position: absolute;
                 top: 100%;
-                right: 0;
+                left: 0;
                 margin-top: 4px;
                 background: #2a2a2a;
                 border: 1px solid #3a3a3a;
                 border-radius: 6px;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                z-index: 100;
+                z-index: 9999;
                 overflow: hidden;
                 min-width: 120px;
                 white-space: nowrap;
@@ -3593,7 +3593,7 @@ function getSafeMaxTokens(requested: number): number {
 /* 工具栏按钮 */
 .toolbar-buttons {
   display: flex;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
