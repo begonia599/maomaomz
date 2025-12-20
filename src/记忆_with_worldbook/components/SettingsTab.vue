@@ -798,17 +798,26 @@
         </div>
 
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label
-            class="checkbox-label"
-            style="display: flex; align-items: center; gap: 10px; color: #ccc; font-size: 13px; cursor: pointer"
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 12px 16px;
+              background: linear-gradient(135deg, rgba(74, 158, 255, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+              border: 1px solid rgba(74, 158, 255, 0.3);
+              border-radius: 8px;
+            "
           >
-            <input
-              v-model="settings.auto_summarize_enabled"
-              type="checkbox"
-              style="width: 18px; height: 18px; cursor: pointer; accent-color: #4a9eff; border-radius: 4px"
-            />
-            启用自动总结
-          </label>
+            <div>
+              <div style="color: #60a5fa; font-size: 13px; font-weight: 600">启用自动总结</div>
+              <div style="color: #888; font-size: 11px; margin-top: 2px">对话达到指定楼层时自动生成总结</div>
+            </div>
+            <label class="switch" style="flex-shrink: 0; margin-left: 16px">
+              <input v-model="settings.auto_summarize_enabled" type="checkbox" />
+              <span class="slider round"></span>
+            </label>
+          </div>
         </div>
         <div class="form-group" style="margin-bottom: 18px !important">
           <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 13px">总结风格</label>
@@ -961,104 +970,94 @@
               transition: border-color 0.2s;
             "
           />
-          <div style="margin-top: 12px">
-            <label style="display: flex; align-items: center; gap: 10px; color: #ccc; font-size: 13px; cursor: pointer">
-              <input
-                v-model="settings.auto_bind_to_worldbook"
-                type="checkbox"
-                style="width: 18px; height: 18px; cursor: pointer; accent-color: #4a9eff; border-radius: 4px"
-              />
-              总结后自动绑定到世界书
-            </label>
-            <small style="color: #888; font-size: 11px; margin-left: 28px">
-              开启后，总结完成会自动创建世界书并绑定总结内容
-            </small>
+          <!-- 选项开关组 -->
+          <div
+            style="
+              background: rgba(30, 30, 30, 0.6);
+              border: 1px solid #3a3a3a;
+              border-radius: 8px;
+              padding: 12px;
+              margin-top: 12px;
+            "
+          >
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0">
+              <div>
+                <div style="color: #e0e0e0; font-size: 13px">总结后自动绑定到世界书</div>
+                <div style="color: #666; font-size: 11px; margin-top: 2px">自动创建世界书并绑定总结内容</div>
+              </div>
+              <label class="switch" style="flex-shrink: 0">
+                <input v-model="settings.auto_bind_to_worldbook" type="checkbox" />
+                <span class="slider round"></span>
+              </label>
+            </div>
+            <div style="border-top: 1px solid #3a3a3a; margin: 8px 0"></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0">
+              <div>
+                <div style="color: #e0e0e0; font-size: 13px">总结后自动隐藏已总结楼层</div>
+                <div style="color: #666; font-size: 11px; margin-top: 2px">自动隐藏已总结的楼层</div>
+              </div>
+              <label class="switch" style="flex-shrink: 0">
+                <input v-model="settings.auto_hide_after_summary" type="checkbox" />
+                <span class="slider round"></span>
+              </label>
+            </div>
           </div>
-          <div style="margin-top: 12px">
-            <label style="display: flex; align-items: center; gap: 10px; color: #ccc; font-size: 13px; cursor: pointer">
-              <input
-                v-model="settings.auto_hide_after_summary"
-                type="checkbox"
-                style="width: 18px; height: 18px; cursor: pointer; accent-color: #4a9eff; border-radius: 4px"
-              />
-              总结后自动隐藏已总结楼层
-            </label>
-            <small style="color: #888; font-size: 11px; margin-left: 28px">
-              开启后，总结完成会自动隐藏已总结的楼层（在绑定世界书之后）
-            </small>
-          </div>
-          <div style="margin-top: 10px; display: flex; gap: 10px">
+
+          <!-- 操作按钮组 -->
+          <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap">
             <button
               style="
-                padding: 8px 16px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 10px 18px;
+                background: #3b82f6;
                 border: none;
                 border-radius: 6px;
                 color: white;
-                font-size: 12px;
+                font-size: 13px;
+                font-weight: 500;
                 cursor: pointer;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-              "
-              onmouseover="
-                this.style.transform = 'translateY(-1px)';
-                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-              "
-              onmouseout="
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                display: flex;
+                align-items: center;
+                gap: 6px;
               "
               @click="handleSaveSettings"
             >
-              💾 保存设置
+              <i class="fa-solid fa-floppy-disk"></i> 保存设置
             </button>
             <button
               style="
-                padding: 8px 16px;
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-                border: none;
+                padding: 10px 18px;
+                background: #2a2a2a;
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
-                font-size: 12px;
+                color: #e0e0e0;
+                font-size: 13px;
+                font-weight: 500;
                 cursor: pointer;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-              "
-              onmouseover="
-                this.style.transform = 'translateY(-1px)';
-                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-              "
-              onmouseout="
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                display: flex;
+                align-items: center;
+                gap: 6px;
               "
               @click="handleReloadSettings"
             >
-              🔄 重新加载
+              <i class="fa-solid fa-rotate"></i> 重新加载
             </button>
             <button
               style="
-                padding: 8px 16px;
-                background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-                border: none;
+                padding: 10px 18px;
+                background: #2a2a2a;
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
-                font-size: 12px;
+                color: #e0e0e0;
+                font-size: 13px;
+                font-weight: 500;
                 cursor: pointer;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-              "
-              onmouseover="
-                this.style.transform = 'translateY(-1px)';
-                this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-              "
-              onmouseout="
-                this.style.transform = 'translateY(0)';
-                this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                display: flex;
+                align-items: center;
+                gap: 6px;
               "
               @click="handleResetAutoSummaryStart"
             >
-              🔄 重置起始楼层
+              <i class="fa-solid fa-arrow-rotate-left"></i> 重置起始楼层
             </button>
           </div>
         </div>
