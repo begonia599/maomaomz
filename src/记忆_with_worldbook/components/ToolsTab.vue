@@ -2075,35 +2075,22 @@
                 :disabled="!selectedWorldbook || isInsertingEntry"
                 style="
                   padding: 10px 20px;
-                  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-                  border: none;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
                   border-radius: 6px;
-                  color: white;
+                  color: #e0e0e0;
                   font-size: 13px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
+                  transition: all 0.2s ease;
                   display: flex;
                   align-items: center;
                   gap: 8px;
-                  box-shadow: 0 3px 12px rgba(40, 167, 69, 0.3);
-                  position: relative;
-                  overflow: hidden;
                 "
                 @click="handleInsertEntry"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
-                <div
-                  style="
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                    transition: left 0.5s;
-                  "
-                  class="shimmer-effect"
-                ></div>
                 <i class="fa-solid fa-plus-circle" style="font-size: 14px"></i>
                 {{ isInsertingEntry ? '插入中...' : '插入条目' }}
               </button>
@@ -2112,35 +2099,22 @@
                 class="copy-button"
                 style="
                   padding: 10px 20px;
-                  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-                  border: none;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
                   border-radius: 6px;
-                  color: white;
+                  color: #e0e0e0;
                   font-size: 13px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
+                  transition: all 0.2s ease;
                   display: flex;
                   align-items: center;
                   gap: 8px;
-                  box-shadow: 0 3px 12px rgba(23, 162, 184, 0.3);
-                  position: relative;
-                  overflow: hidden;
                 "
                 @click="copyWorldbookEntry"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
-                <div
-                  style="
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                    transition: left 0.5s;
-                  "
-                  class="shimmer-effect"
-                ></div>
                 <i class="fa-solid fa-copy" style="font-size: 14px"></i> 复制 JSON
               </button>
             </div>
@@ -3177,32 +3151,19 @@
             :disabled="isGeneratingCharacter || !characterDescription.trim()"
             style="
               padding: 12px 24px;
-              background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-              border: none;
-              border-radius: 12px;
-              color: white;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
-              font-weight: 600;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 3px 12px rgba(23, 162, 184, 0.3);
-              position: relative;
-              overflow: hidden;
+              transition: all 0.2s ease;
             "
             @click="handleGenerateCharacterCard"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
-            <div
-              style="
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                transition: left 0.5s;
-              "
-              class="shimmer-effect"
-            ></div>
             <i class="fa-solid fa-magic" style="font-size: 14px; margin-right: 6px"></i>
             {{ isGeneratingCharacter ? '生成中...' : '生成角色卡' }}
           </button>
@@ -3211,32 +3172,19 @@
             class="clear-button"
             style="
               padding: 12px 24px;
-              background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-              border: none;
-              border-radius: 12px;
-              color: white;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #4a4a4a;
+              border-radius: 6px;
+              color: #e0e0e0;
               font-size: 13px;
-              font-weight: 600;
+              font-weight: 500;
               cursor: pointer;
-              transition: all 0.3s ease;
-              box-shadow: 0 3px 12px rgba(255, 107, 107, 0.3);
-              position: relative;
-              overflow: hidden;
+              transition: all 0.2s ease;
             "
             @click="clearCharacterForm"
+            @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
           >
-            <div
-              style="
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                transition: left 0.5s;
-              "
-              class="shimmer-effect"
-            ></div>
             <i class="fa-solid fa-trash" style="font-size: 14px; margin-right: 6px"></i>
             清空
           </button>
@@ -3344,17 +3292,19 @@
                 "
                 style="
                   padding: 8px 16px;
-                  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-                  border: none;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
                   border-radius: 6px;
-                  color: white;
+                  color: #e0e0e0;
                   font-size: 12px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
+                  transition: all 0.2s ease;
                   white-space: nowrap;
                 "
                 @click="insertCharacterCard"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
                 <i class="fa-solid fa-download" style="margin-right: 6px"></i>
                 {{ isInsertingCharacter ? '插入中...' : '插入' }}
@@ -3547,32 +3497,19 @@
                 :disabled="isModifyingCharacter || !modifyRequest.trim()"
                 style="
                   padding: 12px 24px;
-                  background: linear-gradient(135deg, #ffa500 0%, #ff8c00 100%);
-                  border: none;
-                  border-radius: 12px;
-                  color: white;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
+                  border-radius: 6px;
+                  color: #e0e0e0;
                   font-size: 13px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
-                  box-shadow: 0 3px 12px rgba(255, 165, 0, 0.3);
-                  position: relative;
-                  overflow: hidden;
+                  transition: all 0.2s ease;
                 "
                 @click="handleModifyCharacterCard"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
-                <div
-                  style="
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                    transition: left 0.5s;
-                  "
-                  class="shimmer-effect"
-                ></div>
                 <i class="fa-solid fa-wand-magic-sparkles" style="font-size: 14px; margin-right: 6px"></i>
                 {{ isModifyingCharacter ? '修改中...' : 'AI修改' }}
               </button>
@@ -3581,32 +3518,19 @@
                 class="clear-modify-button"
                 style="
                   padding: 12px 24px;
-                  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-                  border: none;
-                  border-radius: 12px;
-                  color: white;
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid #4a4a4a;
+                  border-radius: 6px;
+                  color: #e0e0e0;
                   font-size: 13px;
-                  font-weight: 600;
+                  font-weight: 500;
                   cursor: pointer;
-                  transition: all 0.3s ease;
-                  box-shadow: 0 3px 12px rgba(108, 117, 125, 0.3);
-                  position: relative;
-                  overflow: hidden;
+                  transition: all 0.2s ease;
                 "
                 @click="clearModifyRequest"
+                @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+                @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
               >
-                <div
-                  style="
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                    transition: left 0.5s;
-                  "
-                  class="shimmer-effect"
-                ></div>
                 <i class="fa-solid fa-eraser" style="font-size: 14px; margin-right: 6px"></i>
                 清空修改需求
               </button>

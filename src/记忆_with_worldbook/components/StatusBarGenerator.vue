@@ -459,19 +459,18 @@
             <button
               style="
                 padding: 8px 16px;
-                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                border: none;
-                border-radius: 8px;
-                color: white;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
+                border-radius: 6px;
+                color: #e0e0e0;
                 font-size: 13px;
-                font-weight: 700;
+                font-weight: 500;
                 cursor: pointer;
-                box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
                 transition: all 0.2s ease;
               "
               @click="copyWorldbook"
-              @mouseenter="$event.target.style.transform = 'scale(1.05)'"
-              @mouseleave="$event.target.style.transform = 'scale(1)'"
+              @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
+              @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
             >
               <i class="fa-solid fa-copy" style="margin-right: 6px"></i>
               复制世界书

@@ -136,18 +136,18 @@
         <button
           style="
             padding: 8px 16px;
-            background: #8b5cf6;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
           "
           @click="showProjectTemplateDialog"
-          @mouseenter="(e: any) => (e.currentTarget.style.background = '#7c3aed')"
-          @mouseleave="(e: any) => (e.currentTarget.style.background = '#8b5cf6')"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = 'rgba(40, 51, 69, 0.7)')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = 'rgba(30, 41, 59, 0.5)')"
         >
           <i class="fa-solid fa-file-lines" style="margin-right: 6px"></i>
           使用模板
@@ -155,36 +155,38 @@
         <button
           style="
             padding: 8px 16px;
-            background: #f59e0b;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
           "
           @click="triggerFolderImport"
-          @mouseenter="(e: any) => (e.currentTarget.style.background = '#d97706')"
-          @mouseleave="(e: any) => (e.currentTarget.style.background = '#f59e0b')"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = 'rgba(40, 51, 69, 0.7)')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = 'rgba(30, 41, 59, 0.5)')"
         >
           <i class="fa-solid fa-folder-open" style="margin-right: 6px"></i>
           导入文件夹
         </button>
         <button
-          :style="{
-            padding: '8px 16px',
-            background: useGlobalStorage ? '#10b981' : '#f59e0b',
-            border: 'none',
-            borderRadius: '8px',
-            color: 'white',
-            fontSize: '13px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }"
+          style="
+            padding: 8px 16px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+          "
           :title="useGlobalStorage ? '当前：全局模式（所有聊天共享）' : '当前：分聊天模式（每个聊天独立）'"
           @click="toggleStorageMode"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = 'rgba(40, 51, 69, 0.7)')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = 'rgba(30, 41, 59, 0.5)')"
         >
           <i :class="useGlobalStorage ? 'fa-solid fa-globe' : 'fa-solid fa-comments'" style="margin-right: 6px"></i>
           {{ useGlobalStorage ? '全局存储' : '分聊天存储' }}
@@ -192,18 +194,18 @@
         <button
           style="
             padding: 8px 16px;
-            background: #6366f1;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
           "
           @click="restoreFromBackup"
-          @mouseenter="(e: any) => (e.currentTarget.style.background = '#4f46e5')"
-          @mouseleave="(e: any) => (e.currentTarget.style.background = '#6366f1')"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = 'rgba(40, 51, 69, 0.7)')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = 'rgba(30, 41, 59, 0.5)')"
         >
           <i class="fa-solid fa-clock-rotate-left" style="margin-right: 6px"></i>
           恢复备份
@@ -211,18 +213,18 @@
         <button
           style="
             padding: 8px 16px;
-            background: #10b981;
-            border: none;
-            border-radius: 8px;
-            color: white;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #4a4a4a;
+            border-radius: 6px;
+            color: #e0e0e0;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
           "
           @click="createProject"
-          @mouseenter="(e: any) => (e.currentTarget.style.background = '#059669')"
-          @mouseleave="(e: any) => (e.currentTarget.style.background = '#10b981')"
+          @mouseenter="(e: any) => (e.currentTarget.style.background = 'rgba(40, 51, 69, 0.7)')"
+          @mouseleave="(e: any) => (e.currentTarget.style.background = 'rgba(30, 41, 59, 0.5)')"
         >
           <i class="fa-solid fa-plus" style="margin-right: 6px"></i>
           新建项目
