@@ -184,7 +184,7 @@
 
         <div v-show="!settings.use_tavern_api">
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">API 提供商</label>
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">API 提供商</label>
             <select
               v-model="settings.api_provider"
               style="
@@ -208,7 +208,7 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
               API 端点
               <span style="color: #888; font-size: 11px; margin-left: 8px"> (兼容酒馆格式，填写 base URL 即可) </span>
             </label>
@@ -252,7 +252,7 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
               API Key
               <span style="color: #888; font-size: 11px; margin-left: 8px"> (本地反代可留空) </span>
             </label>
@@ -275,7 +275,7 @@
 
           <div class="form-group">
             <div class="model-controls" style="display: flex; flex-direction: column; gap: 10px">
-              <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+              <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
                 模型名称
                 <span v-if="available_models.length === 0" style="color: #888; font-size: 11px; margin-left: 8px">
                   (手动输入模型名称，如 gpt-4o-mini)
@@ -567,7 +567,7 @@
           </div>
 
           <div class="form-group" style="margin-bottom: 18px !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px"
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px"
               >最大 Token 数（建议4000以上获得更详细的总结）</label
             >
             <input
@@ -603,7 +603,7 @@
             </div>
             <div v-if="showAdvancedApiParams" style="margin-top: 12px">
               <div class="form-group" style="margin-bottom: 14px !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+                <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
                   Temperature (温度) <span style="color: #888; font-size: 11px">(0-2，推荐 0.7)</span>
                 </label>
                 <input
@@ -628,7 +628,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom: 14px !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+                <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
                   Top P (核采样) <span style="color: #888; font-size: 11px">(0-1，推荐 1.0)</span>
                 </label>
                 <input
@@ -653,7 +653,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom: 14px !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+                <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
                   Presence Penalty (存在惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
                 </label>
                 <input
@@ -678,7 +678,7 @@
               </div>
 
               <div class="form-group" style="margin-bottom: 0 !important">
-                <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">
+                <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">
                   Frequency Penalty (频率惩罚) <span style="color: #888; font-size: 11px">(-2.0 to 2.0，推荐 0)</span>
                 </label>
                 <input
@@ -820,7 +820,7 @@
           </div>
         </div>
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">总结风格</label>
+          <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">总结风格</label>
           <select
             v-model="settings.summary_style"
             style="
@@ -954,7 +954,7 @@
         </div>
 
         <div v-if="settings.auto_summarize_enabled" class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">每多少楼层总结一次</label>
+          <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">每多少楼层总结一次</label>
           <input
             v-model.number="settings.summarize_interval"
             type="number"
@@ -1179,7 +1179,7 @@
 
         <div style="display: flex; gap: 12px; margin-bottom: 18px">
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">开始楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">开始楼层</label>
             <input
               v-model.number="settings.start_message_id"
               type="number"
@@ -1197,7 +1197,7 @@
             />
           </div>
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">结束楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">结束楼层</label>
             <input
               v-model.number="settings.end_message_id"
               type="number"
@@ -1388,7 +1388,7 @@
 
         <div style="display: flex; gap: 12px; margin-bottom: 18px">
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">开始楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">开始楼层</label>
             <input
               v-model.number="settings.table_start_message_id"
               type="number"
@@ -1406,7 +1406,7 @@
             />
           </div>
           <div class="form-group" style="flex: 1; margin-bottom: 0 !important">
-            <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">结束楼层</label>
+            <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">结束楼层</label>
             <input
               v-model.number="settings.table_end_message_id"
               type="number"
@@ -1425,7 +1425,7 @@
           </div>
         </div>
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">表格列头模板</label>
+          <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">表格列头模板</label>
           <div style="display: flex; gap: 8px; margin-bottom: 8px">
             <select
               v-model="selectedTemplate"
@@ -1525,7 +1525,7 @@
 
         <!-- 生成状态显示 -->
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">生成状态</label>
+          <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">生成状态</label>
           <div style="display: flex; gap: 12px; align-items: center">
             <div style="display: flex; align-items: center; gap: 6px">
               <div
@@ -1537,7 +1537,7 @@
                   transition: 'background-color 0.3s',
                 }"
               ></div>
-              <span style="color: #ccc; font-size: 12px">总结生成</span>
+              <span style="color: #e8e8e8; font-size: 12px">总结生成</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px">
               <div
@@ -1549,7 +1549,7 @@
                   transition: 'background-color 0.3s',
                 }"
               ></div>
-              <span style="color: #ccc; font-size: 12px">表格生成</span>
+              <span style="color: #e8e8e8; font-size: 12px">表格生成</span>
             </div>
             <div v-if="is_summarizing || is_generating_table" style="margin-left: auto">
               <button
@@ -1675,7 +1675,7 @@
 
       <div v-show="expandedSections['messageManagement']">
         <div class="form-group" style="margin-bottom: 18px !important">
-          <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px"
+          <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px"
             >隐藏楼层范围（如：1-10 或单个楼层如：5）</label
           >
           <input
@@ -1828,7 +1828,21 @@
             </div>
           </div>
         </div>
-        <div v-else class="empty-state">暂无隐藏的楼层</div>
+        <div
+          v-else
+          style="
+            margin-top: 16px;
+            padding: 24px;
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px dashed rgba(100, 116, 139, 0.4);
+            border-radius: 8px;
+            text-align: center;
+          "
+        >
+          <i class="fa-solid fa-eye" style="font-size: 24px; color: #64748b; margin-bottom: 8px; display: block"></i>
+          <div style="color: #94a3b8; font-size: 14px">暂无隐藏的楼层</div>
+          <div style="color: #64748b; font-size: 12px; margin-top: 4px">在上方输入楼层范围后点击"隐藏楼层"</div>
+        </div>
       </div>
     </div>
 
@@ -1868,7 +1882,7 @@
         保存 API 模板
       </h3>
       <div class="form-group" style="margin-bottom: 18px">
-        <label style="display: block; margin-bottom: 6px; color: #ccc; font-size: 14px">模板名称</label>
+        <label style="display: block; margin-bottom: 6px; color: #e8e8e8; font-size: 14px">模板名称</label>
         <input
           v-model="newTemplateName"
           type="text"
@@ -1892,7 +1906,7 @@
             background: #3a3a3a;
             border: none;
             border-radius: 8px;
-            color: #ccc;
+            color: #e8e8e8;
             font-size: 14px;
             cursor: pointer;
           "
@@ -4287,7 +4301,7 @@ const handle_unhide_single = async (messageId: number) => {
 .form-group label {
   display: block;
   margin-bottom: 6px;
-  color: #ccc;
+  color: #e8e8e8;
   font-size: 14px;
 }
 
