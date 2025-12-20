@@ -58,7 +58,7 @@
         <div style="position: relative" class="dropdown-container">
           <button
             class="toolbar-btn"
-            style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; border-radius: 8px"
+            style="background: rgba(30, 41, 59, 0.5); border: 1px solid #4a4a4a; border-radius: 6px; color: #e0e0e0"
             @click="showTemplateMenu = !showTemplateMenu"
           >
             <i class="fa-solid fa-layer-group"></i>
@@ -110,7 +110,7 @@
         </div>
         <button
           class="toolbar-btn"
-          style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border: none; border-radius: 8px"
+          style="background: rgba(30, 41, 59, 0.5); border: 1px solid #4a4a4a; border-radius: 6px; color: #e0e0e0"
           @click="showAIDialog"
         >
           <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -119,7 +119,7 @@
         </button>
         <button
           class="toolbar-btn"
-          style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; border-radius: 8px"
+          style="background: rgba(30, 41, 59, 0.5); border: 1px solid #4a4a4a; border-radius: 6px; color: #e0e0e0"
           @click="exportRegex"
         >
           <i class="fa-solid fa-download"></i>
@@ -128,7 +128,7 @@
         </button>
         <button
           class="toolbar-btn"
-          style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); border: none; border-radius: 8px"
+          style="background: rgba(30, 41, 59, 0.5); border: 1px solid #4a4a4a; border-radius: 6px; color: #e0e0e0"
           title="清空所有配置和代码"
           @click="clearAll"
         >
@@ -299,12 +299,12 @@
             style="
               flex: 1;
               padding: 8px;
-              background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+              background: #3b82f6;
               border: none;
               border-radius: 6px;
               color: white;
-              font-size: 11px;
-              font-weight: 600;
+              font-size: 12px;
+              font-weight: 500;
               cursor: pointer;
             "
             @click="addField"
@@ -317,12 +317,12 @@
               style="
                 width: 100%;
                 padding: 8px;
-                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                border: none;
+                background: rgba(30, 41, 59, 0.5);
+                border: 1px solid #4a4a4a;
                 border-radius: 6px;
-                color: white;
-                font-size: 11px;
-                font-weight: 600;
+                color: #e0e0e0;
+                font-size: 12px;
+                font-weight: 500;
                 cursor: pointer;
               "
               @click="showAiFieldMenu = !showAiFieldMenu"
@@ -379,14 +379,13 @@
             width: 100%;
             padding: 10px;
             margin-top: 12px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: #3b82f6;
             border: none;
             border-radius: 6px;
             color: white;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
           "
           @click="generateFromFields"
         >
