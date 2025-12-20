@@ -1,5 +1,18 @@
 <template>
   <div class="statusbar-generator">
+    <!-- 快速上手教程 -->
+    <QuickGuide
+      storage-key="maomaomz_statusbar_guide_hidden"
+      title="3 步生成状态栏"
+      icon="fa-solid fa-chart-bar"
+      theme="green"
+      :steps="[
+        { title: '添加字段', desc: '点击添加字段，设置名称和类型' },
+        { title: '预览效果', desc: '实时预览状态栏显示效果' },
+        { title: '复制代码', desc: '复制到世界书或 Regex 使用' },
+      ]"
+    />
+
     <!-- 顶部操作栏 -->
     <div
       class="section-header"
@@ -1246,6 +1259,7 @@ import { callAIWithTavernSupport } from '../utils/api';
 import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import AIModifyDialog from './AIModifyDialog.vue';
 import CodeCompareDialog from './CodeCompareDialog.vue';
+import QuickGuide from './QuickGuide.vue';
 
 interface Field {
   name: string;

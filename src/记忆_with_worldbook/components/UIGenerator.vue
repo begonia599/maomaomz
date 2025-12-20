@@ -1,5 +1,18 @@
 <template>
   <div class="ui-generator">
+    <!-- 快速上手教程 -->
+    <QuickGuide
+      storage-key="maomaomz_uigenerator_guide_hidden"
+      title="前端界面生成器使用指南"
+      icon="fa-solid fa-palette"
+      theme="orange"
+      :steps="[
+        { title: '加载示例', desc: '点击加载示例快速开始' },
+        { title: '编辑代码', desc: '修改 HTML/CSS 实现自定义效果' },
+        { title: '复制使用', desc: '复制到 Regex 或世界书' },
+      ]"
+    />
+
     <!-- 顶部操作栏 -->
     <div class="section-header">
       <h3>
@@ -285,6 +298,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import { preprocessContent } from '../utils/content-filter';
+import QuickGuide from './QuickGuide.vue';
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);

@@ -1,5 +1,18 @@
 <template>
   <div class="summary-tab" style="padding: 25px !important; background: transparent !important">
+    <!-- 快速上手教程 -->
+    <QuickGuide
+      storage-key="maomaomz_summary_guide_hidden"
+      title="历史总结使用指南"
+      icon="fa-solid fa-history"
+      theme="purple"
+      :steps="[
+        { title: '查看历史', desc: '自动总结的记录会显示在这里' },
+        { title: '复制内容', desc: '点击复制按钮复制总结内容' },
+        { title: '绑定世界书', desc: '点击绑定按钮写入世界书' },
+      ]"
+    />
+
     <div
       class="section-header"
       style="
@@ -297,6 +310,7 @@ import { ref } from 'vue';
 import { useSummaryHistoryStore } from '../settings';
 import { getChatIdSafe, getScriptIdSafe } from '../utils';
 import { summarizeText } from '../总结功能';
+import QuickGuide from './QuickGuide.vue';
 
 const historyStore = useSummaryHistoryStore();
 

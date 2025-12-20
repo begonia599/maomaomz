@@ -1,5 +1,18 @@
 <template>
   <div class="tools-tab" style="padding: 25px !important; background: transparent !important">
+    <!-- 快速上手教程 -->
+    <QuickGuide
+      storage-key="maomaomz_tools_guide_hidden"
+      title="AI 工具箱使用指南"
+      icon="fa-solid fa-toolbox"
+      theme="purple"
+      :steps="[
+        { title: '选择工具', desc: '点击展开你需要的工具' },
+        { title: '输入内容', desc: '粘贴或输入要处理的文本' },
+        { title: 'AI 处理', desc: '点击按钮让 AI 帮你处理' },
+      ]"
+    />
+
     <!-- 反八股工具 -->
     <div class="tool-section">
       <div
@@ -3970,6 +3983,7 @@ import { detectApiProvider, filterApiParams, normalizeApiEndpoint, useSettingsSt
 import { copyToClipboard, getScriptIdSafe } from '../utils';
 import { callAIWithTavernSupport } from '../utils/api';
 import { translateError } from '../utils/error-handler';
+import QuickGuide from './QuickGuide.vue';
 import UIGenerator from './UIGenerator.vue';
 
 const settingsStore = useSettingsStore();

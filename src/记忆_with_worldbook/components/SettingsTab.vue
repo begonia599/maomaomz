@@ -1,5 +1,18 @@
 <template>
   <div class="settings-tab" style="padding: 25px !important; background: transparent !important">
+    <!-- 快速上手教程 -->
+    <QuickGuide
+      storage-key="maomaomz_settings_guide_hidden"
+      title="3 步配置自动总结"
+      icon="fa-solid fa-cog"
+      theme="blue"
+      :steps="[
+        { title: '配置 API', desc: '填写 API 端点和密钥' },
+        { title: '开启自动总结', desc: '设置总结间隔（如每 50 层）' },
+        { title: '可选：自动绑定', desc: '开启后总结自动写入世界书' },
+      ]"
+    />
+
     <!-- API 配置 -->
     <div
       class="config-section"
@@ -1569,6 +1582,7 @@ import { useTaskStore } from '../taskStore';
 import { getChatIdSafe, getScriptIdSafe } from '../utils';
 import { isApiConfigValid as checkApiConfig, getApiConfigError } from '../utils/api-config';
 import { preprocessContent } from '../utils/content-filter';
+import QuickGuide from './QuickGuide.vue';
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);

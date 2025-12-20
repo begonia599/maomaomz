@@ -3,6 +3,21 @@
     class="greetings-tab"
     style="display: flex; flex-direction: column; height: 100%; background: transparent !important"
   >
+    <!-- 快速上手教程 -->
+    <div style="padding: 25px 25px 0 25px">
+      <QuickGuide
+        storage-key="maomaomz_greetings_guide_hidden"
+        title="开场白管理器使用指南"
+        icon="fa-solid fa-comments"
+        theme="blue"
+        :steps="[
+          { title: '选择角色', desc: '在下拉框选择要编辑的角色' },
+          { title: '编辑开场白', desc: '添加、修改或删除开场白' },
+          { title: '保存更改', desc: '点击保存按钮应用更改' },
+        ]"
+      />
+    </div>
+
     <!-- 标题区域 -->
     <div
       class="section-header"
@@ -850,6 +865,7 @@ import { callAIWithTavernSupport } from '../utils/api';
 import { getApiConfigError, isApiConfigValid } from '../utils/api-config';
 import AIGenerateDialog from './AIGenerateDialog.vue';
 import AIModifyDialog from './AIModifyDialog.vue';
+import QuickGuide from './QuickGuide.vue';
 
 // 数据结构定义
 const GreetingConfig = z.object({
