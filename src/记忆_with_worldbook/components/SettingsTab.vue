@@ -288,9 +288,10 @@
                   style="
                     flex: 1;
                     min-width: 120px;
-                    padding: 12px 16px;
-                    border: none;
-                    border-radius: 12px;
+                    padding: 10px 16px;
+                    background: rgba(30, 41, 59, 0.5);
+                    border: 1px solid #4a4a4a;
+                    border-radius: 6px;
                     cursor: pointer;
                     font-weight: 500;
                     font-size: 14px;
@@ -299,18 +300,10 @@
                     align-items: center;
                     justify-content: center;
                     gap: 6px;
-                    background: #4a9eff;
-                    box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
-                    color: white;
+                    color: #e0e0e0;
                   "
-                  onmouseover="
-                    this.style.transform = 'translateY(-2px)';
-                    this.style.boxShadow = '0 4px 12px rgba(74, 158, 255, 0.4)';
-                  "
-                  onmouseout="
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '0 2px 8px rgba(74, 158, 255, 0.3)';
-                  "
+                  onmouseover="this.style.background = 'rgba(40, 51, 69, 0.7)'"
+                  onmouseout="this.style.background = 'rgba(30, 41, 59, 0.5)'"
                   @click="handle_fetch_models"
                 >
                   {{ loading_models ? '拉取中...' : '🔍 拉取模型列表' }}
@@ -320,9 +313,10 @@
                   style="
                     flex: 1;
                     min-width: 120px;
-                    padding: 12px 16px;
-                    border: none;
-                    border-radius: 12px;
+                    padding: 10px 16px;
+                    background: rgba(30, 41, 59, 0.5);
+                    border: 1px solid #4a4a4a;
+                    border-radius: 6px;
                     cursor: pointer;
                     font-weight: 500;
                     font-size: 14px;
@@ -331,18 +325,10 @@
                     align-items: center;
                     justify-content: center;
                     gap: 6px;
-                    background: #51cf66;
-                    box-shadow: 0 2px 8px rgba(81, 207, 102, 0.3);
-                    color: white;
+                    color: #e0e0e0;
                   "
-                  onmouseover="
-                    this.style.transform = 'translateY(-2px)';
-                    this.style.boxShadow = '0 4px 12px rgba(81, 207, 102, 0.4)';
-                  "
-                  onmouseout="
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '0 2px 8px rgba(81, 207, 102, 0.3)';
-                  "
+                  onmouseover="this.style.background = 'rgba(40, 51, 69, 0.7)'"
+                  onmouseout="this.style.background = 'rgba(30, 41, 59, 0.5)'"
                   @click="handleSaveApiConfig"
                 >
                   💾 保存配置
@@ -353,9 +339,10 @@
                   style="
                     flex: 1;
                     min-width: 120px;
-                    padding: 12px 16px;
-                    border: none;
-                    border-radius: 12px;
+                    padding: 10px 16px;
+                    background: rgba(30, 41, 59, 0.5);
+                    border: 1px solid #4a4a4a;
+                    border-radius: 6px;
                     cursor: pointer;
                     font-weight: 500;
                     font-size: 14px;
@@ -364,18 +351,10 @@
                     align-items: center;
                     justify-content: center;
                     gap: 6px;
-                    background: #f59e0b;
-                    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-                    color: white;
+                    color: #e0e0e0;
                   "
-                  onmouseover="
-                    this.style.transform = 'translateY(-2px)';
-                    this.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.4)';
-                  "
-                  onmouseout="
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '0 2px 8px rgba(245, 158, 11, 0.3)';
-                  "
+                  onmouseover="this.style.background = 'rgba(40, 51, 69, 0.7)'"
+                  onmouseout="this.style.background = 'rgba(30, 41, 59, 0.5)'"
                   @click="testApiConnection"
                 >
                   {{ testingApi ? '测试中...' : '🔗 测试连接' }}
