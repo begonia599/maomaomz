@@ -659,6 +659,22 @@
               - AI 回复时也可以更新变量值
             </p>
           </div>
+
+          <div
+            style="
+              background: rgba(245, 158, 11, 0.1);
+              padding: 15px;
+              border-radius: 8px;
+              margin-top: 15px;
+              border-left: 4px solid #f59e0b;
+            "
+          >
+            <p style="margin: 0; font-size: 13px">
+              <strong style="color: #f59e0b">⚠️ 思维链注意事项：</strong><br />
+              如果你使用的模型带有思维链（如 Claude 的 thinking），正则可能会在思维过程中被误触发。<br />
+              <strong>解决方案：</strong>在酒馆设置中开启「隐藏思维内容」，或使用更独特的触发词避免误匹配。
+            </p>
+          </div>
         </div>
       </div>
     </div>
