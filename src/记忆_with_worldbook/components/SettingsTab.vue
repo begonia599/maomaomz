@@ -2072,19 +2072,63 @@ const testApiConnection = async () => {
 
     const startTime = Date.now();
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [{ role: 'user', content: '你好，这是一条测试消息，请回复"测试成功"' }],
-        max_tokens: 20,
-        temperature: 0.1,
-      }),
-    });
+    // 🔥 检测是否是本地端点，如果是则尝试通过酒馆代理
+    const isLocalEndpoint = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/i.test(
+      endpoint,
+    );
+
+    let response: Response;
+    const requestBody = {
+      model: model,
+      messages: [{ role: 'user', content: '你好，这是一条测试消息，请回复"测试成功"' }],
+      max_tokens: 20,
+      temperature: 0.1,
+    };
+
+    if (isLocalEndpoint) {
+      // 本地端点：先尝试直接请求，失败后使用酒馆代理
+      try {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          },
+          body: JSON.stringify(requestBody),
+        });
+      } catch (directError) {
+        // 直接请求失败（可能是 CORS），尝试酒馆代理
+        console.log('⚠️ 直接请求失败，尝试酒馆代理...');
+        const tavernOrigin = window.location.origin;
+        const baseUrl = endpoint.replace(/\/chat\/completions\/?$/, '').replace(/\/v1\/?$/, '');
+
+        response = await fetch(`${tavernOrigin}/api/backends/chat-completions/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(typeof SillyTavern !== 'undefined' && SillyTavern.getRequestHeaders
+              ? SillyTavern.getRequestHeaders()
+              : {}),
+          },
+          body: JSON.stringify({
+            ...requestBody,
+            chat_completion_source: 'custom',
+            custom_url: baseUrl,
+            custom_include_headers: apiKey ? `Authorization: Bearer ${apiKey}` : '',
+          }),
+        });
+      }
+    } else {
+      // 非本地端点：直接请求
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        },
+        body: JSON.stringify(requestBody),
+      });
+    }
 
     const elapsed = Date.now() - startTime;
 
