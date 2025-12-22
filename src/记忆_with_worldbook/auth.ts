@@ -659,13 +659,30 @@ async function verifyAuthCode(
     console.log('📥 响应状态:', response.status, response.statusText);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ 请求失败:', errorText);
-      return {
-        valid: false,
-        message: `❌ 网络请求失败 (${response.status}): ${errorText}`,
-        networkError: true,
-      };
+      // 🔥 尝试解析 JSON 响应，区分业务错误和网络错误
+      try {
+        const data = await response.json();
+        console.log('📥 响应数据（非2xx）:', JSON.stringify(data, null, 2));
+        // 如果服务器返回了结构化的错误信息，使用它
+        if (data && typeof data.valid !== 'undefined') {
+          return data;
+        }
+        // 否则返回通用错误
+        return {
+          valid: false,
+          message: data.message || data.error || `❌ 验证失败 (${response.status})`,
+          networkError: false, // 🔥 服务器有响应，不是网络错误
+        };
+      } catch {
+        // JSON 解析失败，可能是真正的网络/服务器错误
+        const errorText = await response.text().catch(() => '');
+        console.error('❌ 请求失败:', errorText);
+        return {
+          valid: false,
+          message: `❌ 服务器错误 (${response.status}): ${errorText || '请稍后重试'}`,
+          networkError: response.status >= 500, // 只有 5xx 才算网络错误
+        };
+      }
     }
 
     const data = await response.json();
