@@ -708,8 +708,9 @@ ${formattedMessages}
   // 导入参数过滤函数
   const { filterApiParams } = await import('./settings');
 
+  // 🔥 防呆：自动去除模型名首尾空格
   const requestParams = {
-    model: settings.model,
+    model: settings.model?.trim() || 'gpt-4o-mini',
     messages: [
       {
         role: 'user',
@@ -733,8 +734,10 @@ ${formattedMessages}
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (settings.api_key && settings.api_key.trim()) {
-      headers['Authorization'] = `Bearer ${settings.api_key}`;
+    // 🔥 防呆：自动去除 API Key 首尾空格
+    const trimmedApiKey = settings.api_key?.trim();
+    if (trimmedApiKey) {
+      headers['Authorization'] = `Bearer ${trimmedApiKey}`;
     }
 
     response = await smartFetch(apiUrl, {
@@ -918,9 +921,13 @@ export async function summarizeText(prompt: string): Promise<string> {
     throw new Error(`API 端点格式不正确: ${baseUrl}`);
   }
 
+  // 🔥 防呆：自动去除模型名和 API Key 首尾空格
+  const trimmedModel = settings.model?.trim() || 'gpt-4o-mini';
+  const trimmedApiKey = settings.api_key?.trim();
+
   // 构造请求体
   const requestBody = {
-    model: settings.model || 'gpt-4o-mini',
+    model: trimmedModel,
     messages: [{ role: 'user', content: prompt }],
     max_tokens: settings.max_tokens || 4000,
     temperature: settings.temperature ?? 0.7,
@@ -928,12 +935,16 @@ export async function summarizeText(prompt: string): Promise<string> {
   };
 
   // 发送请求
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (trimmedApiKey) {
+    headers['Authorization'] = `Bearer ${trimmedApiKey}`;
+  }
+
   const response = await smartFetch(apiUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${settings.api_key}`,
-    },
+    headers,
     body: JSON.stringify(requestBody),
   });
 

@@ -556,8 +556,14 @@ export const useSettingsStore = defineStore('settings', () => {
   // 立即保存函数（内部使用，插件环境 - localStorage）
   const saveImmediately = (new_settings: any) => {
     try {
-      console.log('💾 插件环境：立即保存设置到 localStorage:', klona(new_settings));
-      localStorage.setItem('tavern_helper_settings', JSON.stringify(klona(new_settings)));
+      const settingsToSave = klona(new_settings);
+      // 🔥 防呆：自动去除关键字段的首尾空格
+      if (settingsToSave.api_key) settingsToSave.api_key = settingsToSave.api_key.trim();
+      if (settingsToSave.api_endpoint) settingsToSave.api_endpoint = settingsToSave.api_endpoint.trim();
+      if (settingsToSave.model) settingsToSave.model = settingsToSave.model.trim();
+
+      console.log('💾 插件环境：立即保存设置到 localStorage:', settingsToSave);
+      localStorage.setItem('tavern_helper_settings', JSON.stringify(settingsToSave));
       console.log('✅ 设置已保存到 localStorage');
     } catch (e) {
       console.error('❌ 保存到 localStorage 失败:', e);
