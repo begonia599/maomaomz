@@ -371,9 +371,10 @@ $(() => {
                         console.warn('获取角色信息失败:', e);
                       }
 
-                      // 生成世界书名称
-                      const dateStr = new Date().toISOString().slice(0, 10);
-                      const worldbookName = `总结_${characterName}_${dateStr}`;
+                      // 生成世界书名称（按聊天档隔离，避免不同聊天互相污染）
+                      const chatId = getChatIdSafe() || 'default';
+                      const shortChatId = chatId.length > 8 ? chatId.slice(-8) : chatId;
+                      const worldbookName = `总结_${characterName}_${shortChatId}`;
 
                       // 检查世界书是否存在，不存在则创建
                       let existingWorldbooks: string[] = [];
