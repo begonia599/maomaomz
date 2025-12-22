@@ -553,6 +553,59 @@
           </div>
         </div>
 
+        <!-- 🆕 NPC 模板选择 -->
+        <div class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            输出模板：
+          </label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap">
+            <label
+              v-for="tpl in npcTemplates"
+              :key="tpl.value"
+              style="
+                display: flex;
+                flex-direction: column;
+                padding: 8px 12px;
+                background: #2a2a2a;
+                border-radius: 6px;
+                cursor: pointer;
+                min-width: 120px;
+              "
+              :style="{
+                background: npcTemplateType === tpl.value ? 'rgba(255, 193, 7, 0.15)' : '#2a2a2a',
+                border: npcTemplateType === tpl.value ? '1px solid #ffc107' : '1px solid #3a3a3a',
+              }"
+            >
+              <input v-model="npcTemplateType" type="radio" :value="tpl.value" style="display: none" />
+              <span style="color: #e0e0e0; font-size: 12px; font-weight: 500">{{ tpl.label }}</span>
+              <span style="color: #888; font-size: 10px; margin-top: 2px">{{ tpl.desc }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 🆕 自定义模板输入 -->
+        <div v-if="npcTemplateType === 'custom'" class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            自定义模板格式：
+          </label>
+          <textarea
+            v-model="npcCustomTemplate"
+            placeholder="【姓名】xxx&#10;【外貌】xxx&#10;【性格】xxx&#10;【其他字段】xxx&#10;&#10;💡 AI 会按照你定义的格式输出"
+            style="
+              width: 100%;
+              height: 80px;
+              padding: 12px;
+              background: #2a2a2a;
+              border: 1px solid #ffc107;
+              border-radius: 6px;
+              color: #e0e0e0;
+              font-size: 12px;
+              resize: vertical;
+              font-family: inherit;
+            "
+          ></textarea>
+        </div>
+
         <div class="form-group" style="margin: 15px 0">
           <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
             NPC 描述（简短即可）：
@@ -603,7 +656,7 @@
           </p>
         </div>
 
-        <div class="button-group" style="display: flex; gap: 12px; margin-bottom: 15px">
+        <div class="button-group" style="display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap">
           <button
             :disabled="isGeneratingNpc || !npcDescription.trim()"
             style="
@@ -624,6 +677,27 @@
             <i class="fa-solid fa-magic" style="margin-right: 6px"></i>
             {{ isGeneratingNpc ? '生成中...' : '生成 NPC' }}
           </button>
+          <!-- 🆕 批量生成按钮 -->
+          <button
+            :disabled="isBatchGeneratingNpc || !npcDescription.trim()"
+            style="
+              padding: 10px 20px;
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid #ffc107;
+              border-radius: 6px;
+              color: #ffc107;
+              font-size: 13px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            "
+            @click="showNpcBatchDialog = true"
+            @mouseenter="$event.target.style.background = 'rgba(255, 193, 7, 0.15)'"
+            @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
+          >
+            <i class="fa-solid fa-layer-group" style="margin-right: 6px"></i>
+            批量生成
+          </button>
           <button
             style="
               padding: 10px 20px;
@@ -639,6 +713,7 @@
             @click="
               npcDescription = '';
               npcOutput = '';
+              npcBatchResults = [];
             "
             @mouseenter="$event.target.style.background = 'rgba(40, 51, 69, 0.7)'"
             @mouseleave="$event.target.style.background = 'rgba(30, 41, 59, 0.5)'"
@@ -723,6 +798,196 @@
               <i class="fa-solid fa-download" style="margin-right: 6px"></i>
               插入
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🆕 NPC 批量生成对话框 -->
+    <div
+      v-if="showNpcBatchDialog"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      "
+      @click.self="!isBatchGeneratingNpc && (showNpcBatchDialog = false)"
+    >
+      <div
+        style="
+          width: 90%;
+          max-width: 600px;
+          max-height: 80vh;
+          background: #2a2a2a;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+          overflow: hidden;
+        "
+      >
+        <!-- 对话框头部 -->
+        <div
+          style="
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h3 style="margin: 0; color: #1a1a1a; font-size: 16px; font-weight: 600">
+            <i class="fa-solid fa-layer-group" style="margin-right: 8px"></i>
+            批量生成 NPC
+          </h3>
+          <button
+            v-if="!isBatchGeneratingNpc"
+            style="background: none; border: none; color: #1a1a1a; font-size: 18px; cursor: pointer; padding: 4px"
+            @click="showNpcBatchDialog = false"
+          >
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+
+        <!-- 对话框内容 -->
+        <div style="padding: 20px; max-height: calc(80vh - 140px); overflow-y: auto">
+          <div v-if="!isBatchGeneratingNpc && npcBatchResults.length === 0">
+            <p style="color: #ccc; font-size: 13px; margin-bottom: 12px">
+              <i class="fa-solid fa-info-circle" style="color: #ffc107; margin-right: 6px"></i>
+              根据当前描述批量生成多个不同的 NPC，每个都有独特性。
+            </p>
+            <div style="margin-bottom: 16px">
+              <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px"> 生成数量： </label>
+              <div style="display: flex; align-items: center; gap: 12px">
+                <input v-model.number="npcBatchCount" type="range" min="1" max="10" style="flex: 1; cursor: pointer" />
+                <span style="color: #ffc107; font-size: 16px; font-weight: 600; min-width: 30px">
+                  {{ npcBatchCount }}
+                </span>
+              </div>
+            </div>
+            <button
+              :disabled="!npcDescription.trim()"
+              style="
+                width: 100%;
+                padding: 12px;
+                background: rgba(255, 193, 7, 0.2);
+                border: 1px solid #ffc107;
+                border-radius: 8px;
+                color: #ffc107;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+              "
+              @click="handleBatchGenerateNpc"
+            >
+              <i class="fa-solid fa-magic" style="margin-right: 8px"></i>
+              开始批量生成
+            </button>
+          </div>
+
+          <!-- 生成进度 -->
+          <div v-if="isBatchGeneratingNpc" style="text-align: center; padding: 20px 0">
+            <div style="margin-bottom: 16px">
+              <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px; color: #ffc107"></i>
+            </div>
+            <p style="color: #ccc; font-size: 14px; margin-bottom: 8px">
+              正在生成第 {{ npcBatchProgress.current }} / {{ npcBatchProgress.total }} 个 NPC
+            </p>
+            <p style="color: #888; font-size: 12px">
+              {{ npcBatchProgress.currentName || '准备中...' }}
+            </p>
+            <div style="margin-top: 16px; background: #1a1a1a; height: 8px; border-radius: 4px; overflow: hidden">
+              <div
+                :style="{
+                  width:
+                    (npcBatchProgress.total > 0 ? (npcBatchProgress.current / npcBatchProgress.total) * 100 : 0) + '%',
+                  height: '100%',
+                  background: '#ffc107',
+                  transition: 'width 0.3s ease',
+                }"
+              ></div>
+            </div>
+          </div>
+
+          <!-- 生成结果 -->
+          <div v-if="!isBatchGeneratingNpc && npcBatchResults.length > 0">
+            <p style="color: #51cf66; font-size: 14px; margin-bottom: 16px">
+              <i class="fa-solid fa-check-circle" style="margin-right: 6px"></i>
+              成功生成 {{ npcBatchResults.length }} 个 NPC！
+            </p>
+            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 16px">
+              <div
+                v-for="(npc, idx) in npcBatchResults"
+                :key="idx"
+                style="
+                  background: #1a1a1a;
+                  border: 1px solid #3a3a3a;
+                  border-radius: 8px;
+                  padding: 12px;
+                  margin-bottom: 8px;
+                "
+              >
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+                  <span style="color: #ffc107; font-size: 12px; font-weight: 600">NPC {{ idx + 1 }}</span>
+                  <button
+                    style="
+                      padding: 4px 8px;
+                      background: transparent;
+                      border: 1px solid #4a4a4a;
+                      border-radius: 4px;
+                      color: #ccc;
+                      font-size: 11px;
+                      cursor: pointer;
+                    "
+                    @click="copyToClipboard(npc, `NPC ${idx + 1} 已复制`)"
+                  >
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p style="margin: 0; color: #e0e0e0; font-size: 12px; white-space: pre-wrap; line-height: 1.5">
+                  {{ npc.substring(0, 200) }}{{ npc.length > 200 ? '...' : '' }}
+                </p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px">
+              <select
+                v-model="npcInsertWorldbook"
+                style="
+                  flex: 1;
+                  padding: 10px;
+                  background: #1a1a1a;
+                  border: 1px solid #3a3a3a;
+                  border-radius: 6px;
+                  color: #e0e0e0;
+                  font-size: 13px;
+                "
+              >
+                <option value="">选择世界书...</option>
+                <option v-for="wb in availableWorldbooks" :key="wb" :value="wb">{{ wb }}</option>
+              </select>
+              <button
+                :disabled="!npcInsertWorldbook"
+                style="
+                  padding: 10px 20px;
+                  background: rgba(81, 207, 102, 0.2);
+                  border: 1px solid #51cf66;
+                  border-radius: 6px;
+                  color: #51cf66;
+                  font-size: 13px;
+                  font-weight: 500;
+                  cursor: pointer;
+                "
+                @click="insertBatchNpcToWorldbook"
+              >
+                <i class="fa-solid fa-download" style="margin-right: 6px"></i>
+                全部插入
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -3926,6 +4191,20 @@ const enableNpcStreaming = ref(false);
 const npcInsertWorldbook = ref('');
 const npcContext = ref(''); // NPC 生成的背景参考
 const npcContextWorldbook = ref(''); // 选择的世界书
+// 🆕 NPC 模板和批量生成
+const npcTemplateType = ref<'simple' | 'detailed' | 'dialogue' | 'custom'>('simple');
+const npcCustomTemplate = ref('');
+const npcBatchCount = ref(3); // 批量生成数量
+const isBatchGeneratingNpc = ref(false);
+const npcBatchProgress = ref({ current: 0, total: 0, currentName: '' });
+const npcBatchResults = ref<string[]>([]);
+const showNpcBatchDialog = ref(false);
+const npcTemplates = [
+  { value: 'simple', label: '🎯 简洁版', desc: '姓名+外貌+性格+关系（约150字）' },
+  { value: 'detailed', label: '📖 详细版', desc: '完整设定含背景故事（约300字）' },
+  { value: 'dialogue', label: '💬 对话风格', desc: '含口头禅和说话方式（约200字）' },
+  { value: 'custom', label: '✏️ 自定义', desc: '使用你自己的模板' },
+] as const;
 
 // Token 压缩工具相关
 const tokenCompressInput = ref('');
@@ -4932,10 +5211,70 @@ const loadNpcContext = async (source: 'char' | 'worldbook') => {
   }
 };
 
-// NPC 快速生成函数
+// 🆕 获取 NPC 模板 Prompt
+const getNpcTemplatePrompt = (templateType: string, context: string, customTemplate?: string): string => {
+  const contextBlock = context ? `【背景参考】\n${context}\n\n` : '';
+
+  if (templateType === 'custom' && customTemplate?.trim()) {
+    return `你是一个专业的配角 NPC 设计师。根据用户的描述和提供的模板格式生成 NPC。
+
+${contextBlock}【输出模板】
+${customTemplate}
+
+要求：
+1. 严格按照上面的模板格式输出
+2. 风格自然，避免八股套话
+3. 直接输出内容，不要解释`;
+  }
+
+  const templates: Record<string, string> = {
+    simple: `你是一个专业的配角 NPC 设计师。生成简洁的 NPC 设定。
+
+${contextBlock}输出格式（约150字）：
+【姓名】xxx
+【外貌】一句话描述
+【性格】2-3个关键词
+【与主角关系】一句话
+
+要求：极简风格，只保留核心信息，不要废话。`,
+
+    detailed: `你是一个专业的配角 NPC 设计师。生成详细的 NPC 设定。
+
+${contextBlock}输出格式（约300字）：
+【姓名】xxx
+【外貌特征】详细描述
+【性格特点】性格描述和行为习惯
+【背景故事】简短的来历
+【与主角关系】关系和态度
+【特殊技能/特点】如有
+
+要求：内容丰富但不啰嗦，避免八股套话。`,
+
+    dialogue: `你是一个专业的配角 NPC 设计师。生成带对话风格的 NPC 设定。
+
+${contextBlock}输出格式（约200字）：
+【姓名】xxx
+【外貌】简短描述
+【性格】关键词
+【说话方式】语气、用词特点
+【口头禅】1-2句标志性台词
+【示例对话】一段短对话展示性格
+
+要求：突出角色的说话风格和语言特点。`,
+  };
+
+  return templates[templateType] || templates.simple;
+};
+
+// NPC 快速生成函数（支持模板）
 const handleGenerateNpc = async () => {
   if (!npcDescription.value.trim()) {
     window.toastr.warning('请输入 NPC 描述');
+    return;
+  }
+
+  if (npcTemplateType.value === 'custom' && !npcCustomTemplate.value.trim()) {
+    window.toastr.warning('请输入自定义模板');
     return;
   }
 
@@ -4944,16 +5283,7 @@ const handleGenerateNpc = async () => {
     npcProgressPercent.value = 0;
     window.toastr.info('正在生成 NPC...');
 
-    // 使用用户选择的背景参考
-    const context = npcContext.value;
-
-    const systemPrompt = `你是一个专业的配角 NPC 设计师。根据用户的简短描述，生成一个精简但完整的 NPC 设定。
-
-${context ? '【背景参考】\n' + context + '\n\n' : ''}要求：
-1. 设定要精简，控制在 300 字以内
-2. 包含：姓名、外貌特征、性格特点、与主角的关系/态度、标志性行为或口头禅
-3. 风格自然，避免八股套话
-4. 直接输出设定内容，不要解释或前言`;
+    const systemPrompt = getNpcTemplatePrompt(npcTemplateType.value, npcContext.value, npcCustomTemplate.value);
 
     const requestPayload = {
       model: settings.value.model,
@@ -5001,6 +5331,103 @@ ${context ? '【背景参考】\n' + context + '\n\n' : ''}要求：
   } finally {
     isGeneratingNpc.value = false;
     npcProgressPercent.value = 0;
+  }
+};
+
+// 🆕 批量生成 NPC
+const handleBatchGenerateNpc = async () => {
+  if (!npcDescription.value.trim()) {
+    window.toastr.warning('请输入 NPC 描述/主题');
+    return;
+  }
+
+  const count = Math.min(Math.max(npcBatchCount.value, 1), 10); // 限制 1-10 个
+
+  try {
+    isBatchGeneratingNpc.value = true;
+    npcBatchResults.value = [];
+    npcBatchProgress.value = { current: 0, total: count, currentName: '' };
+
+    const systemPrompt = getNpcTemplatePrompt(npcTemplateType.value, npcContext.value, npcCustomTemplate.value);
+
+    for (let i = 0; i < count; i++) {
+      npcBatchProgress.value = { current: i + 1, total: count, currentName: `生成第 ${i + 1} 个...` };
+
+      const requestPayload = {
+        model: settings.value.model,
+        max_tokens: 1000,
+        temperature: 0.9, // 批量时温度稍高，增加多样性
+        stream: false,
+        messages: [
+          { role: 'system', content: systemPrompt + '\n\n注意：每次生成的 NPC 要有独特性，不要重复。' },
+          {
+            role: 'user',
+            content: `请为以下描述生成第 ${i + 1} 个独特的 NPC 设定：\n${npcDescription.value}\n\n已生成的 NPC 名字：${npcBatchResults.value.map(r => r.split('\n')[0]).join('、') || '无'}`,
+          },
+        ],
+      };
+
+      let generatedText = '';
+
+      if (settings.value.use_tavern_api) {
+        generatedText = await callAIWithTavernSupport(requestPayload.messages, settings.value, {});
+      } else {
+        const apiUrl = normalizeApiEndpoint(settings.value.api_endpoint);
+        const filteredPayload = filterApiParams(requestPayload, settings.value.api_endpoint);
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${settings.value.api_key}`,
+          },
+          body: JSON.stringify(filteredPayload),
+        });
+
+        if (!response.ok) throw new Error(`API 请求失败 (${response.status})`);
+        const data = await response.json();
+        generatedText = data.choices[0].message.content.trim();
+      }
+
+      npcBatchResults.value.push(cleanCharacterCardOutput(generatedText));
+    }
+
+    window.toastr.success(`成功生成 ${count} 个 NPC！`);
+  } catch (error) {
+    console.error('批量生成失败:', error);
+    window.toastr.error(translateError(error, '批量生成'));
+  } finally {
+    isBatchGeneratingNpc.value = false;
+    npcBatchProgress.value = { current: 0, total: 0, currentName: '' };
+  }
+};
+
+// 🆕 批量插入 NPC 到世界书
+const insertBatchNpcToWorldbook = async () => {
+  if (npcBatchResults.value.length === 0 || !npcInsertWorldbook.value) {
+    window.toastr.warning('请先批量生成 NPC 并选择目标世界书');
+    return;
+  }
+
+  try {
+    const tav = (window as any).TavernHelper;
+    if (!tav?.createWorldbookEntries) {
+      throw new Error('TavernHelper.createWorldbookEntries 不可用');
+    }
+
+    const entries = npcBatchResults.value.map((content, idx) => ({
+      content,
+      comment: `NPC ${idx + 1} - ${new Date().toLocaleString()}`,
+      keys: ['NPC', '配角'],
+      enabled: true,
+    }));
+
+    await tav.createWorldbookEntries(npcInsertWorldbook.value, entries, { render: 'immediate' });
+    window.toastr.success(`已将 ${entries.length} 个 NPC 插入到「${npcInsertWorldbook.value}」`);
+    npcBatchResults.value = [];
+    showNpcBatchDialog.value = false;
+  } catch (error) {
+    console.error('批量插入失败:', error);
+    window.toastr.error('批量插入失败');
   }
 };
 
