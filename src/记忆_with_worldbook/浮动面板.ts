@@ -701,7 +701,7 @@ $(() => {
         border: 1px solid #3a3a3a;
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        z-index: 999999;
+        z-index: 2147483646 !important;
         display: ${shouldAutoShow ? 'flex' : 'none'};
         flex-direction: column;
         overflow: hidden;
@@ -780,15 +780,15 @@ function createMinimizeIcon() {
   // 创建快捷菜单（初始位置，会动态更新）
   const quickMenu = $(`
     <div id="memoryPanelQuickMenu" style="
-      position: fixed;
+      position: fixed !important;
       top: 0;
       left: 0;
-      background: #2a2a2a;
-      border: 2px solid #4a9eff;
-      border-radius: 12px;
-      padding: 8px;
+      background: #2a2a2a !important;
+      border: 2px solid #4a9eff !important;
+      border-radius: 12px !important;
+      padding: 8px !important;
       display: none;
-      z-index: 999999;
+      z-index: 2147483647 !important;
       box-shadow: 0 8px 32px rgba(74, 158, 255, 0.6), 0 4px 16px rgba(0, 0, 0, 0.8);
       min-width: 200px;
       max-height: 80vh;
@@ -893,22 +893,25 @@ function createMinimizeIcon() {
 
   const icon = $(`
     <div id="memoryPanelMinimizeIcon" style="
-      position: fixed;
-      top: ${isMobile ? '20px' : '20px'};
-      right: ${isMobile ? '20px' : '20px'};
-      width: ${isMobile ? '64px' : '72px'};
-      height: ${isMobile ? '64px' : '72px'};
-      background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
-      border: 3px solid #4a9eff;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 999998;
-      box-shadow: 0 4px 16px rgba(74, 158, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+      position: fixed !important;
+      top: ${isMobile ? '20px' : '20px'} !important;
+      right: ${isMobile ? '20px' : '20px'} !important;
+      width: ${isMobile ? '64px' : '72px'} !important;
+      height: ${isMobile ? '64px' : '72px'} !important;
+      background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%) !important;
+      border: 3px solid #4a9eff !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      z-index: 2147483647 !important;
+      box-shadow: 0 4px 16px rgba(74, 158, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3) !important;
       transition: all 0.3s ease;
-      font-size: ${isMobile ? '32px' : '38px'};
+      font-size: ${isMobile ? '32px' : '38px'} !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
     ">
       🐱
     </div>
@@ -1057,6 +1060,42 @@ function createMinimizeIcon() {
   console.log('✅ 最小化图标已创建:', icon);
   console.log('✅ 快捷菜单已创建:', quickMenu);
   console.log('📍 快捷菜单是否在页面中:', $('#memoryPanelQuickMenu').length > 0);
+
+  // 🔥 暴露控制台命令作为备用入口
+  (window as any).maomaomz = {
+    open: () => {
+      $('#memoryManagementPanel').fadeIn(200);
+      console.log('✅ 面板已打开');
+    },
+    close: () => {
+      $('#memoryManagementPanel').fadeOut(200);
+      console.log('✅ 面板已关闭');
+    },
+    toggle: () => {
+      const panel = $('#memoryManagementPanel');
+      if (panel.is(':visible')) {
+        panel.fadeOut(200);
+        console.log('✅ 面板已关闭');
+      } else {
+        panel.fadeIn(200);
+        console.log('✅ 面板已打开');
+      }
+    },
+    showIcon: () => {
+      $('#memoryPanelMinimizeIcon').fadeIn(200);
+      console.log('✅ 图标已显示');
+    },
+    debug: () => {
+      console.log('🔍 调试信息:');
+      console.log('  - 面板存在:', $('#memoryManagementPanel').length > 0);
+      console.log('  - 面板可见:', $('#memoryManagementPanel').is(':visible'));
+      console.log('  - 图标存在:', $('#memoryPanelMinimizeIcon').length > 0);
+      console.log('  - 图标可见:', $('#memoryPanelMinimizeIcon').is(':visible'));
+      console.log('  - 导航按钮存在:', $('#memoryNavButton').length > 0);
+    },
+  };
+  console.log('💡 如果看不到猫猫图标，请在控制台输入: maomaomz.open() 打开面板');
+  console.log('💡 其他命令: maomaomz.toggle() / maomaomz.showIcon() / maomaomz.debug()');
 
   return icon;
 }
