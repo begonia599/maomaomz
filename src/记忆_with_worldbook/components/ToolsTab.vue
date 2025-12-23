@@ -5918,7 +5918,12 @@ const handleGenerateCharacterCard = async () => {
       }
 
       const data = await response.json();
-      generatedText = data.choices[0].message.content.trim();
+      const content = data.choices?.[0]?.message?.content?.trim();
+      if (!content) {
+        console.warn('⚠️ API 返回数据缺少内容:', JSON.stringify(data).substring(0, 300));
+        throw new Error('AI 返回了空内容，请检查 API 设置或重试');
+      }
+      generatedText = content;
       characterProgressPercent.value = 100;
     }
 
