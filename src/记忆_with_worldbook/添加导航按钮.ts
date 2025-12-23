@@ -18,37 +18,34 @@ $(() => {
         return;
       }
 
-      // 创建入口卡片
+      // 创建入口卡片（紧凑版）
       const entryCard = $(`
         <div id="maomaomz-extension-entry" class="extension_container" style="
-          background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, rgba(42, 42, 42, 0.8) 100%);
-          border: 1px solid #4a9eff;
-          border-radius: 8px;
-          padding: 12px 15px;
-          margin: 10px 0;
+          background: rgba(74, 158, 255, 0.08);
+          border: 1px solid rgba(74, 158, 255, 0.3);
+          border-radius: 5px;
+          padding: 6px 10px;
+          margin: 5px 0;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 10px;
+          gap: 8px;
         ">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 24px;">🐱</span>
-            <div>
-              <div style="font-weight: bold; color: #4a9eff;">猫猫的记忆管理工具</div>
-              <div style="font-size: 12px; color: #888;">点击按钮打开插件面板</div>
-            </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 16px;">🐱</span>
+            <span style="font-size: 13px; color: #aaa;">猫猫插件</span>
           </div>
           <button id="maomaomz-open-panel-btn" class="menu_button" style="
             background: #4a9eff;
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
+            padding: 4px 10px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
+            font-size: 12px;
             transition: all 0.2s;
           ">
-            打开面板
+            打开
           </button>
         </div>
       `);
