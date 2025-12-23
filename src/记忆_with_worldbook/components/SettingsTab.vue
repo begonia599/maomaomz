@@ -1,5 +1,25 @@
 <template>
   <div class="settings-tab" style="padding: 25px !important; background: transparent !important">
+    <!-- 初始化错误提示 -->
+    <div
+      v-if="initError"
+      style="
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+      "
+    >
+      <div style="font-size: 32px; margin-bottom: 12px">⚠️</div>
+      <div style="color: #ef4444; font-size: 16px; font-weight: 600; margin-bottom: 8px">设置页面加载异常</div>
+      <div style="color: #94a3b8; font-size: 13px; margin-bottom: 12px; word-break: break-all">
+        {{ initError }}
+      </div>
+      <div style="color: #64748b; font-size: 12px">请尝试：1. 刷新页面 2. 清除浏览器缓存 3. 重启 SillyTavern</div>
+    </div>
+
     <!-- 快速上手教程 -->
     <QuickGuide
       storage-key="maomaomz_settings_guide_hidden"
@@ -1883,7 +1903,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
   getTavernApiConfigForDisplay,
   getTavernApiPresets,
@@ -1898,8 +1918,41 @@ import { isApiConfigValid as checkApiConfig, getApiConfigError } from '../utils/
 import { preprocessContent } from '../utils/content-filter';
 import QuickGuide from './QuickGuide.vue';
 
-const settingsStore = useSettingsStore();
-const { settings } = storeToRefs(settingsStore);
+// 🔥 防御性初始化：确保 store 正确加载
+let settingsStore: ReturnType<typeof useSettingsStore>;
+let settings: ReturnType<typeof storeToRefs<ReturnType<typeof useSettingsStore>>>['settings'];
+const initError = ref<string>('');
+
+try {
+  settingsStore = useSettingsStore();
+  const refs = storeToRefs(settingsStore);
+  settings = refs.settings;
+
+  if (!settings || !settings.value) {
+    throw new Error('Settings store 初始化失败');
+  }
+} catch (e) {
+  console.error('❌ SettingsTab 初始化失败:', e);
+  initError.value = (e as Error).message || String(e);
+  // 创建一个空的 settings ref 防止后续报错
+  settings = ref({
+    api_endpoint: '',
+    api_key: '',
+    model: '',
+    api_provider: 'openai',
+    use_tavern_api: false,
+    auto_summarize_enabled: false,
+    summarize_interval: 50,
+    max_tokens: 4096,
+    temperature: 0.7,
+    top_p: 0.9,
+    presence_penalty: 0,
+    frequency_penalty: 0,
+    summary_prompt: '',
+    auto_bind_worldbook: false,
+    worldbook_entry_name: '',
+  }) as any;
+}
 
 // 酒馆当前模型
 const tavernCurrentModel = ref<string>('');
