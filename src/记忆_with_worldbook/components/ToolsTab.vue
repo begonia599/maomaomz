@@ -4037,6 +4037,7 @@
                 font-family: inherit;
                 box-sizing: border-box;
                 -webkit-appearance: none;
+                appearance: none;
               "
             ></textarea>
           </div>
