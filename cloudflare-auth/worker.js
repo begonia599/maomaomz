@@ -1191,8 +1191,9 @@ function handleAdmin(env) {
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
     /* 搜索框 */
-    .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
-    .search-box input { flex: 1; }
+    .search-box { display: flex; gap: 8px; margin-bottom: 16px; width: 100%; }
+    .search-box input { flex: 1; min-width: 200px; }
+    .search-box select { flex-shrink: 0; width: auto; min-width: 120px; }
 
     /* 滚动 */
     .scroll { max-height: 400px; overflow-y: auto; }

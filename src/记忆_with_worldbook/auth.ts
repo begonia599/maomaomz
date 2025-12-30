@@ -620,6 +620,16 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeout: numb
 }
 
 /**
+ * 🔒 验证授权码格式（防注入攻击）
+ * 只允许：大写字母、数字、连字符，长度 8-50
+ */
+function isValidCodeFormat(code: string): boolean {
+  // 只允许 A-Z, 0-9, - 字符，长度 8-50
+  const codePattern = /^[A-Z0-9-]{8,50}$/;
+  return codePattern.test(code);
+}
+
+/**
  * 验证授权码（带API端点追踪 + 重试机制）
  */
 async function verifyAuthCode(
@@ -632,6 +642,16 @@ async function verifyAuthCode(
     const model = getCurrentModel();
 
     const trimmedCode = code.trim().toUpperCase();
+
+    // 🔒 防注入：验证授权码格式
+    if (!isValidCodeFormat(trimmedCode)) {
+      console.warn('⚠️ 授权码格式无效，可能是注入攻击');
+      return {
+        valid: false,
+        message: '❌ 授权码格式无效\n\n授权码只能包含大写字母、数字和连字符',
+        networkError: false,
+      };
+    }
 
     const requestBody = {
       code: trimmedCode,
@@ -913,9 +933,9 @@ function showBannedDialog(message: string): void {
 
 /**
  * 显示授权输入对话框
- * @param allowSkip 是否允许跳过（验证失败多次后允许用户选择禁用插件）
+ * @param allowSkip 是否允许跳过（默认允许，跳过后插件功能不可用但不阻止酒馆使用）
  */
-function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
+function showAuthDialog(allowSkip: boolean = true): Promise<string | null | 'SKIP'> {
   return new Promise(resolve => {
     // 先移除旧的对话框
     document.getElementById('maomaomz-auth-overlay')?.remove();
@@ -931,7 +951,7 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
       bottom: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.92);
+      background: rgba(0, 0, 0, 0.85);
       z-index: 9999999 !important;
       display: flex;
       align-items: center;
@@ -955,6 +975,7 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
       color: #e0e0e0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      position: relative;
     `;
 
     dialog.innerHTML = `
@@ -968,6 +989,29 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
           to { transform: translateY(0); opacity: 1; }
         }
       </style>
+      ${allowSkip ? `
+      <button
+        id="authCloseBtn"
+        style="
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          width: 32px;
+          height: 32px;
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 50%;
+          color: #888;
+          font-size: 18px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        "
+        title="关闭（插件功能将不可用）"
+      >✕</button>
+      ` : ''}
       <div style="text-align: center; animation: slideUp 0.4s ease;">
         <div style="font-size: 60px; margin-bottom: 20px;">🐱</div>
         <h2 style="
@@ -1025,11 +1069,12 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
             box-sizing: border-box;
           "
         />
-        <div style="display: flex; gap: 12px;">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
           <button
             id="authSubmitBtn"
             style="
               flex: 1;
+              min-width: 150px;
               padding: 14px 24px;
               background: linear-gradient(135deg, #4a9eff 0%, #3b82f6 100%);
               border: none;
@@ -1044,9 +1089,39 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
           >
             ✅ 验证授权码
           </button>
+          ${allowSkip ? `
+          <button
+            id="authSkipBtn"
+            style="
+              flex: 1;
+              min-width: 150px;
+              padding: 14px 24px;
+              background: transparent;
+              border: 2px solid #555;
+              border-radius: 12px;
+              color: #888;
+              font-size: 14px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.3s ease;
+            "
+          >
+            暂时跳过
+          </button>
+          ` : ''}
         </div>
+        ${allowSkip ? `
         <p style="
-          margin-top: 20px;
+          margin-top: 15px;
+          font-size: 12px;
+          color: #f59e0b;
+          line-height: 1.5;
+        ">
+          💡 跳过后插件功能不可用，但不影响酒馆正常使用
+        </p>
+        ` : ''}
+        <p style="
+          margin-top: 15px;
           font-size: 12px;
           color: #666;
           line-height: 1.5;
@@ -1062,15 +1137,20 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
 
     const input = dialog.querySelector('#authCodeInput') as HTMLInputElement;
     const submitBtn = dialog.querySelector('#authSubmitBtn') as HTMLButtonElement;
+    const skipBtn = dialog.querySelector('#authSkipBtn') as HTMLButtonElement | null;
+    const closeBtn = dialog.querySelector('#authCloseBtn') as HTMLButtonElement | null;
 
-    // 🔥 启动反绕过保护
-    let cleanupProtection: (() => void) | null = null;
-    cleanupProtection = startAntiBypassProtection('maomaomz-auth-overlay', () => {
-      // 用户试图删除 overlay，直接返回 null 让循环继续
-      console.warn('🚫 检测到遮罩层被删除/隐藏，重新验证...');
-      cleanupProtection?.();
-      resolve(null);
-    });
+    // 关闭对话框的通用函数
+    const closeDialog = () => {
+      overlay.remove();
+    };
+
+    // 跳过/关闭处理
+    const handleSkip = () => {
+      console.log('⏭️ 用户选择跳过授权验证');
+      closeDialog();
+      resolve('SKIP');
+    };
 
     // 自动聚焦输入框
     setTimeout(() => input.focus(), 100);
@@ -1084,6 +1164,53 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
       submitBtn.style.transform = 'translateY(0)';
       submitBtn.style.boxShadow = '0 4px 16px rgba(74, 158, 255, 0.3)';
     });
+
+    // 跳过按钮效果
+    if (skipBtn) {
+      skipBtn.addEventListener('mouseenter', () => {
+        skipBtn.style.borderColor = '#888';
+        skipBtn.style.color = '#aaa';
+      });
+      skipBtn.addEventListener('mouseleave', () => {
+        skipBtn.style.borderColor = '#555';
+        skipBtn.style.color = '#888';
+      });
+      skipBtn.addEventListener('click', handleSkip);
+    }
+
+    // 关闭按钮效果
+    if (closeBtn) {
+      closeBtn.addEventListener('mouseenter', () => {
+        closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
+        closeBtn.style.color = '#fff';
+      });
+      closeBtn.addEventListener('mouseleave', () => {
+        closeBtn.style.background = 'rgba(255, 255, 255, 0.1)';
+        closeBtn.style.color = '#888';
+      });
+      closeBtn.addEventListener('click', handleSkip);
+    }
+
+    // ESC 键关闭（如果允许跳过）
+    if (allowSkip) {
+      const handleEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          document.removeEventListener('keydown', handleEsc);
+          handleSkip();
+        }
+      };
+      document.addEventListener('keydown', handleEsc);
+    }
+
+    // 点击遮罩层关闭（如果允许跳过）
+    if (allowSkip) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          handleSkip();
+        }
+      });
+    }
 
     // 输入框焦点效果
     input.addEventListener('focus', () => {
@@ -1103,8 +1230,7 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
         input.focus();
         return;
       }
-      cleanupProtection?.(); // 🔥 清理保护
-      document.body.removeChild(overlay);
+      closeDialog();
       resolve(code);
     };
 
@@ -1114,16 +1240,14 @@ function showAuthDialog(allowSkip: boolean = false): Promise<string | null> {
         handleSubmit();
       }
     });
-
-    // 🔥 不提供取消按钮，必须输入授权码
   });
 }
 
 /**
- * 检查并执行授权验证（强制模式 + 网络容错）
+ * 检查并执行授权验证（非阻塞模式 - 跳过后只禁用插件，不影响酒馆使用）
  */
 export async function checkAuthorization(): Promise<boolean> {
-  console.log('🔐 【强制授权】开始授权验证...');
+  console.log('🔐 开始授权验证...');
 
   // 先清理可能存在的旧遮罩层
   const oldOverlay = document.getElementById('maomaomz-auth-overlay');
@@ -1133,7 +1257,6 @@ export async function checkAuthorization(): Promise<boolean> {
 
   // 检查是否已有授权码
   const savedCode = localStorage.getItem(STORAGE_KEY);
-  const savedVerified = localStorage.getItem(STORAGE_VERIFIED_KEY);
 
   // 🔥 每次都重新验证
   if (savedCode) {
@@ -1152,15 +1275,18 @@ export async function checkAuthorization(): Promise<boolean> {
       console.error('🚫 检测到封禁端点');
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_VERIFIED_KEY);
+      // 封禁仍然显示阻塞对话框（这是严重问题）
       showBannedDialog(result.message || '您的 API 端点已被禁用');
       return false;
     }
 
-    // 🔥 网络错误 - 显示明确的对话框而不是只靠 toastr
+    // 🔥 网络错误 - 给用户选择：可以跳过或重试
     if (result.networkError) {
-      console.error('❌ 网络错误，需要重新验证');
-      showNetworkRequiredDialog();
-      return false;
+      console.warn('⚠️ 网络错误，提示用户');
+      (window as any).toastr?.warning('⚠️ 网络连接失败，无法验证授权码。你可以选择跳过（插件功能不可用）或刷新页面重试', '网络错误', {
+        timeOut: 8000,
+      });
+      // 不阻塞，继续显示授权对话框让用户选择跳过
     }
 
     // 授权码错误，清除并重新输入
@@ -1169,72 +1295,67 @@ export async function checkAuthorization(): Promise<boolean> {
     localStorage.removeItem(STORAGE_VERIFIED_KEY);
   }
 
-  // 需要用户输入授权码 - 必须弹出对话框
-  console.log('🔐 需要用户输入授权码，显示授权对话框...');
-  console.log('📊 当前状态:', {
-    hasSavedCode: !!savedCode,
-  });
+  // 需要用户输入授权码 - 弹出对话框（可跳过）
+  console.log('🔐 显示授权对话框...');
 
   let attempts = 0;
-  const MAX_ATTEMPTS = 5; // 增加尝试次数
+  const MAX_ATTEMPTS = 5;
 
   while (attempts < MAX_ATTEMPTS) {
-    // 🔥 强制显示授权对话框
-    console.log(`🎯 准备显示授权对话框 (尝试 ${attempts + 1}/${MAX_ATTEMPTS})...`);
-    const code = await showAuthDialog();
-    console.log('📝 用户输入结果:', code ? '已输入授权码' : '用户取消');
+    console.log(`🎯 显示授权对话框 (尝试 ${attempts + 1}/${MAX_ATTEMPTS})...`);
+    const code = await showAuthDialog(true); // allowSkip = true
 
+    // 🔥 用户选择跳过
+    if (code === 'SKIP') {
+      console.log('⏭️ 用户选择跳过授权，插件功能将不可用');
+      (window as any).toastr?.info('💡 已跳过授权验证，插件功能不可用。如需使用，请刷新页面重新输入授权码', '提示', {
+        timeOut: 6000,
+      });
+      return false; // 返回 false，但不阻塞酒馆
+    }
+
+    // 用户取消（不应该发生，因为现在有跳过按钮）
     if (!code) {
-      // 🔥 用户取消 - 不允许绕过，直接重新显示对话框
-      console.warn('⚠️ 用户取消了授权，重新显示对话框');
-      (window as any).toastr?.warning('⚠️ 必须输入授权码才能使用插件', '', { timeOut: 3000 });
-      // 继续循环，重新显示对话框
+      console.warn('⚠️ 用户取消了授权对话框');
       continue;
     }
 
-    console.log(`🔄 验证授权码...`);
-
-    // 显示加载提示
+    console.log('🔄 验证授权码...');
     (window as any).toastr?.info('🔄 正在验证授权码，请稍候...', '', { timeOut: 3000 });
 
     const result = await verifyAuthCode(code);
 
     if (result.valid) {
-      // 验证成功，保存授权码
       localStorage.setItem(STORAGE_KEY, code);
       localStorage.setItem(STORAGE_VERIFIED_KEY, 'true');
       console.log('✅ 授权验证成功！');
-      (window as any).toastr?.success(result.message, '授权成功', {
-        timeOut: 3000,
-      });
+      (window as any).toastr?.success(result.message, '授权成功', { timeOut: 3000 });
       return true;
-    } else {
-      // 🔥 检测到封禁端点，显示封禁对话框
-      if (result.blocked) {
-        console.error('🚫 检测到封禁端点');
-        showBannedDialog(result.message || '您的 API 端点已被禁用');
-        return false;
-      }
+    }
 
-      // 🔥 网络错误时显示不同的提示
-      if (result.networkError) {
-        (window as any).toastr?.warning('⚠️ 网络连接失败，请检查网络后重试', '网络错误', { timeOut: 5000 });
-        continue; // 网络错误不计入尝试次数
-      }
+    // 检测到封禁端点
+    if (result.blocked) {
+      console.error('🚫 检测到封禁端点');
+      showBannedDialog(result.message || '您的 API 端点已被禁用');
+      return false;
+    }
 
-      attempts++;
-      console.warn(`❌ 授权验证失败 (尝试 ${attempts}/${MAX_ATTEMPTS}):`, result.message);
-      (window as any).toastr?.error(result.message, `验证失败 (${attempts}/${MAX_ATTEMPTS})`, {
-        timeOut: 5000,
+    // 网络错误
+    if (result.networkError) {
+      (window as any).toastr?.warning('⚠️ 网络连接失败，请检查网络后重试，或点击"暂时跳过"', '网络错误', { timeOut: 5000 });
+      continue; // 网络错误不计入尝试次数
+    }
+
+    // 授权码错误
+    attempts++;
+    console.warn(`❌ 授权验证失败 (尝试 ${attempts}/${MAX_ATTEMPTS}):`, result.message);
+    (window as any).toastr?.error(result.message, `验证失败 (${attempts}/${MAX_ATTEMPTS})`, { timeOut: 5000 });
+
+    if (attempts >= MAX_ATTEMPTS) {
+      (window as any).toastr?.warning('⚠️ 验证失败次数过多。你可以选择"暂时跳过"以继续使用酒馆（插件功能不可用）', '提示', {
+        timeOut: 8000,
       });
-
-      if (attempts >= MAX_ATTEMPTS) {
-        (window as any).toastr?.error('❌ 授权验证失败次数过多\n\n插件已被禁用，请刷新页面重试', '授权失败', {
-          timeOut: 0,
-          extendedTimeOut: 0,
-        });
-        return false;
-      }
+      // 不阻塞，继续循环让用户可以选择跳过
     }
   }
 

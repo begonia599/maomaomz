@@ -312,10 +312,24 @@ export function getTavernApiConfig() {
   }
 }
 
+/**
+ * 🔒 URL 格式验证（防注入）
+ * 只允许 http:// 或 https:// 开头的有效 URL
+ */
+const safeUrlSchema = z.string().refine(
+  val => {
+    if (!val || val.trim() === '') return true; // 允许空值（使用默认）
+    const trimmed = val.trim();
+    // 只允许 http/https 协议，防止 javascript: 等注入
+    return /^https?:\/\/[a-zA-Z0-9][-a-zA-Z0-9.]*/.test(trimmed);
+  },
+  { message: 'API 端点格式无效，必须以 http:// 或 https:// 开头' },
+);
+
 const Settings = z.object({
   use_tavern_api: z.boolean().default(false), // 是否使用酒馆主界面配置的 API（绕过 CORS）
   api_provider: z.string().default('openai'), // 'openai' | 'gemini'
-  api_endpoint: z.string().default('https://api.openai.com/v1'), // 兼容酒馆格式：base URL
+  api_endpoint: safeUrlSchema.default('https://api.openai.com/v1'), // 🔒 防注入验证
   api_key: z.string().default(''),
   model: z.string().default('gpt-4o-mini'),
   max_tokens: z.number().default(4000),
@@ -493,7 +507,8 @@ export const useSettingsStore = defineStore('settings', () => {
       console.log('🔍 localStorage 原始数据:', saved ? saved.substring(0, 200) + '...' : 'null');
       if (saved) {
         localSettings = JSON.parse(saved);
-        console.log('📦 从 localStorage 读取到的完整设置:', JSON.stringify(localSettings, null, 2));
+        // 🔒 安全：不打印完整设置，避免泄露 API Key
+        console.log('📦 从 localStorage 读取到设置，api_endpoint:', localSettings.api_endpoint || '未设置');
       } else {
         console.log('📦 localStorage 中没有保存的设置 (tavern_helper_settings 为空)');
       }
@@ -562,7 +577,8 @@ export const useSettingsStore = defineStore('settings', () => {
       if (settingsToSave.api_endpoint) settingsToSave.api_endpoint = settingsToSave.api_endpoint.trim();
       if (settingsToSave.model) settingsToSave.model = settingsToSave.model.trim();
 
-      console.log('💾 插件环境：立即保存设置到 localStorage:', settingsToSave);
+      // 🔒 安全：不打印完整设置，避免泄露 API Key
+      console.log('💾 插件环境：保存设置到 localStorage，api_endpoint:', settingsToSave.api_endpoint);
       localStorage.setItem('tavern_helper_settings', JSON.stringify(settingsToSave));
       console.log('✅ 设置已保存到 localStorage');
     } catch (e) {

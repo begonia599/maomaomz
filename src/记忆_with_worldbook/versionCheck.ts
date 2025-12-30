@@ -116,8 +116,13 @@ async function fetchRemoteVersion(): Promise<string | null> {
       if (data.content) {
         const content = atob(data.content.replace(/\n/g, ''));
         const manifest = JSON.parse(content);
-        console.log('📡 GitHub API 获取版本成功:', manifest.version);
-        return manifest.version || null;
+        // 🔒 防注入：验证版本号格式（只允许 x.y.z 格式）
+        if (manifest.version && /^\d+\.\d+\.\d+$/.test(manifest.version)) {
+          console.log('📡 GitHub API 获取版本成功:', manifest.version);
+          return manifest.version;
+        }
+        console.warn('⚠️ 版本号格式无效:', manifest.version);
+        return null;
       }
     } else if (response.status === 403) {
       // GitHub API 限流，继续尝试 CDN 备用源
@@ -138,7 +143,10 @@ async function fetchRemoteVersion(): Promise<string | null> {
       const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
       if (response.ok) {
         const data = await response.json();
-        return data.version || null;
+        // 🔒 防注入：验证版本号格式
+        if (data.version && /^\d+\.\d+\.\d+$/.test(data.version)) {
+          return data.version;
+        }
       }
     } catch (e) {
       console.warn('获取远程版本失败:', e);
