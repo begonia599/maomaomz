@@ -583,6 +583,29 @@
           </div>
         </div>
 
+        <!-- 🆕 输出长度限制配置 -->
+        <div class="form-group" style="margin: 15px 0">
+          <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
+            输出长度限制：
+          </label>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <input
+              v-model.number="npcMaxTokens"
+              type="range"
+              min="300"
+              max="4000"
+              step="100"
+              style="flex: 1; cursor: pointer; accent-color: #ffc107"
+            />
+            <span style="color: #ffc107; font-size: 14px; font-weight: 600; min-width: 100px; text-align: right">
+              {{ npcMaxTokens }} tokens
+            </span>
+          </div>
+          <p style="margin: 6px 0 0 0; color: #888; font-size: 11px">
+            💡 约等于 {{ Math.round(npcMaxTokens * 0.75) }}-{{ npcMaxTokens }} 字中文
+          </p>
+        </div>
+
         <!-- 🆕 自定义模板输入 -->
         <div v-if="npcTemplateType === 'custom'" class="form-group" style="margin: 15px 0">
           <label style="display: block; margin-bottom: 8px; color: #ccc; font-size: 13px; font-weight: 500">
@@ -4199,6 +4222,7 @@ const isBatchGeneratingNpc = ref(false);
 const npcBatchProgress = ref({ current: 0, total: 0, currentName: '' });
 const npcBatchResults = ref<string[]>([]);
 const showNpcBatchDialog = ref(false);
+const npcMaxTokens = ref(1000); // 🆕 用户可配置的 Token 限制
 const npcTemplates = [
   { value: 'simple', label: '🎯 简洁版', desc: '姓名+外貌+性格+关系（约150字）' },
   { value: 'detailed', label: '📖 详细版', desc: '完整设定含背景故事（约300字）' },
@@ -5287,7 +5311,7 @@ const handleGenerateNpc = async () => {
 
     const requestPayload = {
       model: settings.value.model,
-      max_tokens: 1000,
+      max_tokens: npcMaxTokens.value,
       temperature: 0.8,
       stream: enableNpcStreaming.value,
       messages: [
@@ -5355,7 +5379,7 @@ const handleBatchGenerateNpc = async () => {
 
       const requestPayload = {
         model: settings.value.model,
-        max_tokens: 1000,
+        max_tokens: npcMaxTokens.value,
         temperature: 0.9, // 批量时温度稍高，增加多样性
         stream: false,
         messages: [
