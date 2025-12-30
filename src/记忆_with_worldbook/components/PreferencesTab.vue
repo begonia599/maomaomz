@@ -160,7 +160,7 @@
       >
         <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 12px">
           <i class="fa-solid fa-palette" style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"></i>
-          主题色
+          {{ t('pref_theme_color') }}
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
           <div
@@ -246,7 +246,7 @@
                 class="fa-solid fa-wand-magic-sparkles"
                 style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"
               ></i>
-              渐变色模式
+              {{ t('pref_gradient_mode') }}
             </div>
             <label class="maomaomz-toggle-switch">
               <input v-model="preferences.useGradient" type="checkbox" @change="savePreferences" />
@@ -258,7 +258,7 @@
           <div v-if="preferences.useGradient" style="display: flex; flex-direction: column; gap: 12px">
             <!-- 第二颜色选择 -->
             <div style="display: flex; align-items: center; gap: 12px">
-              <span style="color: #888; font-size: 12px; min-width: 60px">第二颜色</span>
+              <span style="color: #888; font-size: 12px; min-width: 60px">{{ t('pref_gradient_color2') }}</span>
               <input
                 type="color"
                 :value="preferences.gradientColor2"
@@ -304,7 +304,7 @@
 
             <!-- 渐变角度 -->
             <div style="display: flex; align-items: center; gap: 12px">
-              <span style="color: #888; font-size: 12px; min-width: 60px">渐变角度</span>
+              <span style="color: #888; font-size: 12px; min-width: 60px">{{ t('pref_gradient_angle') }}</span>
               <input
                 v-model.number="preferences.gradientAngle"
                 type="range"
@@ -340,7 +340,7 @@
       >
         <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 12px">
           <i class="fa-solid fa-image" style="margin-right: 8px; color: var(--maomaomz-theme-color, #8b5cf6)"></i>
-          背景图片
+          {{ t('pref_background_image') }}
         </div>
         <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
           <label
@@ -359,7 +359,7 @@
             "
           >
             <i class="fa-solid fa-upload"></i>
-            上传图片
+            {{ t('pref_upload_image') }}
             <input type="file" accept="image/*" style="display: none" @change="handleBackgroundUpload" />
           </label>
           <button
@@ -377,12 +377,12 @@
             @click="clearBackground"
           >
             <i class="fa-solid fa-trash" style="margin-right: 6px"></i>
-            清除背景
+            {{ t('pref_clear_background') }}
           </button>
         </div>
         <div v-if="preferences.backgroundImage" style="margin-top: 12px">
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px">
-            <span style="color: #888; font-size: 12px">透明度:</span>
+            <span style="color: #888; font-size: 12px">{{ t('pref_opacity') }}:</span>
             <input
               v-model.number="preferences.backgroundOpacity"
               type="range"
@@ -421,7 +421,7 @@
     >
       <h4 style="color: #fff; margin: 0 0 15px 0; font-size: 16px; display: flex; align-items: center; gap: 8px">
         <i class="fa-solid fa-bell" style="color: #10b981"></i>
-        通知设置
+        {{ t('pref_notifications') }}
       </h4>
 
       <!-- 成功通知 -->
@@ -437,8 +437,10 @@
         "
       >
         <div style="flex: 1">
-          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示成功通知</div>
-          <div style="color: #888; font-size: 12px">操作成功时显示提示消息</div>
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">
+            {{ t('pref_show_success_toast') }}
+          </div>
+          <div style="color: #888; font-size: 12px">{{ t('pref_show_success_toast_desc') }}</div>
         </div>
         <label class="maomaomz-toggle-switch">
           <input v-model="preferences.showSuccessToast" type="checkbox" @change="savePreferences" />
@@ -458,8 +460,10 @@
         "
       >
         <div style="flex: 1">
-          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">显示错误通知</div>
-          <div style="color: #888; font-size: 12px">操作失败时显示错误消息</div>
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">
+            {{ t('pref_show_error_toast') }}
+          </div>
+          <div style="color: #888; font-size: 12px">{{ t('pref_show_error_toast_desc') }}</div>
         </div>
         <label class="maomaomz-toggle-switch">
           <input v-model="preferences.showErrorToast" type="checkbox" @change="savePreferences" />
@@ -480,7 +484,7 @@
     >
       <h4 style="color: #fff; margin: 0 0 15px 0; font-size: 16px; display: flex; align-items: center; gap: 8px">
         <i class="fa-solid fa-graduation-cap" style="color: #fbbf24"></i>
-        教程设置
+        {{ t('pref_tutorials') }}
       </h4>
 
       <div
@@ -495,8 +499,10 @@
         "
       >
         <div style="flex: 1">
-          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">重新显示所有教程</div>
-          <div style="color: #888; font-size: 12px">点击后各页面的快速上手教程将重新显示</div>
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">
+            {{ t('pref_reset_tutorials') }}
+          </div>
+          <div style="color: #888; font-size: 12px">{{ t('pref_reset_tutorials_desc') }}</div>
         </div>
         <button
           style="
@@ -515,12 +521,12 @@
           @click="resetAllGuides"
         >
           <i class="fa-solid fa-eye"></i>
-          重新显示
+          {{ t('pref_reset_tutorials_btn') }}
         </button>
       </div>
 
       <div style="color: #666; font-size: 11px; padding: 0 5px">
-        💡 提示：每个页面顶部的教程可以单独关闭，关闭后不会再显示。如果想重新查看，点击上方按钮即可。
+        {{ t('pref_tutorials_tip') }}
       </div>
     </div>
 
@@ -536,7 +542,7 @@
     >
       <h4 style="color: #fff; margin: 0 0 15px 0; font-size: 16px; display: flex; align-items: center; gap: 8px">
         <i class="fa-solid fa-database" style="color: #60a5fa"></i>
-        数据备份
+        {{ t('pref_data_backup') }}
       </h4>
 
       <div
@@ -551,8 +557,10 @@
         "
       >
         <div style="flex: 1">
-          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">导出数据</div>
-          <div style="color: #888; font-size: 12px">导出所有设置、总结历史和偏好配置到 JSON 文件</div>
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">
+            {{ t('pref_export_data') }}
+          </div>
+          <div style="color: #888; font-size: 12px">{{ t('pref_export_data_desc') }}</div>
         </div>
         <button
           style="
@@ -571,7 +579,7 @@
           @click="exportData"
         >
           <i class="fa-solid fa-download"></i>
-          导出
+          {{ t('pref_export_btn') }}
         </button>
       </div>
 
@@ -587,8 +595,10 @@
         "
       >
         <div style="flex: 1">
-          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">导入数据</div>
-          <div style="color: #888; font-size: 12px">从 JSON 文件恢复设置和数据（会覆盖现有配置）</div>
+          <div style="color: #e0e0e0; font-size: 14px; font-weight: 500; margin-bottom: 4px">
+            {{ t('pref_import_data') }}
+          </div>
+          <div style="color: #888; font-size: 12px">{{ t('pref_import_data_desc') }}</div>
         </div>
         <label
           style="
@@ -606,13 +616,13 @@
           "
         >
           <i class="fa-solid fa-upload"></i>
-          导入
+          {{ t('pref_import_btn') }}
           <input type="file" accept=".json" style="display: none" @change="importData" />
         </label>
       </div>
 
       <div style="color: #666; font-size: 11px; padding: 0 5px">
-        💡 提示：定期备份数据可以防止数据丢失。导入时会覆盖现有配置，请谨慎操作。
+        {{ t('pref_backup_tip') }}
       </div>
     </div>
 
@@ -635,7 +645,7 @@
         @click="resetPreferences"
       >
         <i class="fa-solid fa-undo"></i>
-        恢复默认
+        {{ t('pref_reset_default') }}
       </button>
     </div>
   </div>
