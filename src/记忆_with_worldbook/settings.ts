@@ -9,6 +9,10 @@ import { z } from 'zod';
 /**
  * 获取酒馆的 API 连接配置列表
  */
+// 🔧 缓存找到的选择器，避免重复查找
+let cachedPresetSelector: HTMLSelectElement | null = null;
+let cachedPresetSelectorId: string | null = null;
+
 export function getTavernApiPresets(): Array<{ name: string; value: string }> {
   try {
     const presets: Array<{ name: string; value: string }> = [];
@@ -47,8 +51,14 @@ export function getTavernApiPresets(): Array<{ name: string; value: string }> {
 
     for (const selector of selectors) {
       const profileSelect = mainDoc.querySelector(selector) as HTMLSelectElement;
-      if (profileSelect && profileSelect.options && profileSelect.options.length > 2) {
+      // 🔧 修复：放宽条件，只要有选项就尝试读取（从 > 2 改为 >= 1）
+      if (profileSelect && profileSelect.options && profileSelect.options.length >= 1) {
         console.log(`✅ 找到选择器 ${selector}，选项数: ${profileSelect.options.length}`);
+
+        // 🔧 缓存选择器，后续查找可以直接使用
+        cachedPresetSelector = profileSelect;
+        cachedPresetSelectorId = selector;
+
         for (let i = 0; i < profileSelect.options.length; i++) {
           const option = profileSelect.options[i];
           if (option.value && option.value.trim() !== '' && option.text !== 'None' && option.text !== '<None>') {
@@ -58,10 +68,14 @@ export function getTavernApiPresets(): Array<{ name: string; value: string }> {
             });
           }
         }
-        if (presets.length > 0) return presets;
+        if (presets.length > 0) {
+          console.log(`✅ 获取到 ${presets.length} 个预设`);
+          return presets;
+        }
       }
     }
 
+    console.log('⚠️ 未找到有效的预设选择器');
     return presets;
   } catch (error) {
     console.error('❌ 获取酒馆 API 配置失败:', error);
@@ -72,6 +86,16 @@ export function getTavernApiPresets(): Array<{ name: string; value: string }> {
 // 找到正确的预设选择器
 function findPresetSelector(): HTMLSelectElement | null {
   const mainDoc = window.parent?.document || document;
+
+  // 🔧 先尝试使用缓存的选择器
+  if (cachedPresetSelectorId) {
+    const cachedEl = mainDoc.querySelector(cachedPresetSelectorId) as HTMLSelectElement;
+    if (cachedEl && cachedEl.options && cachedEl.options.length >= 1) {
+      console.log(`📍 使用缓存的选择器: ${cachedPresetSelectorId}`);
+      return cachedEl;
+    }
+  }
+
   const selectors = [
     '#connection_profile',
     '#openai_proxy_preset',
@@ -80,10 +104,16 @@ function findPresetSelector(): HTMLSelectElement | null {
   ];
   for (const selector of selectors) {
     const el = mainDoc.querySelector(selector) as HTMLSelectElement;
-    if (el && el.options && el.options.length > 2) {
+    // 🔧 修复：放宽条件（从 > 2 改为 >= 1）
+    if (el && el.options && el.options.length >= 1) {
+      console.log(`📍 找到预设选择器: ${selector}, 选项数: ${el.options.length}`);
+      // 缓存找到的选择器
+      cachedPresetSelector = el;
+      cachedPresetSelectorId = selector;
       return el;
     }
   }
+  console.log('⚠️ findPresetSelector: 未找到有效的选择器');
   return null;
 }
 

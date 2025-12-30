@@ -4439,11 +4439,30 @@ const loadExistingEntriesList = async () => {
       return;
     }
 
-    // 使用 TavernHelper 获取世界书条目
-    const entries = tav.getWorldbookEntries?.(loadExistingWorldbook.value) || [];
+    // 🔧 修复：使用 getWorldbook API（与其他地方一致），而非 getWorldbookEntries
+    // getWorldbook 是异步的，需要 await
+    let entries: any[] = [];
+    if (typeof tav.getWorldbook === 'function') {
+      entries = (await tav.getWorldbook(loadExistingWorldbook.value)) || [];
+      console.log(`📚 通过 getWorldbook 获取到条目:`, entries);
+    } else if (typeof tav.getWorldbookEntries === 'function') {
+      // 回退到 getWorldbookEntries（可能是旧版 API）
+      entries = tav.getWorldbookEntries(loadExistingWorldbook.value) || [];
+      console.log(`📚 通过 getWorldbookEntries 获取到条目:`, entries);
+    } else {
+      window.toastr.warning('世界书 API 不可用');
+      return;
+    }
+
+    if (!Array.isArray(entries) || entries.length === 0) {
+      console.log('⚠️ 世界书条目为空或格式不正确');
+      loadExistingEntries.value = [];
+      return;
+    }
+
     loadExistingEntries.value = entries.map((entry: any) => ({
       uid: entry.uid,
-      comment: entry.comment,
+      comment: entry.comment || entry.name, // 兼容不同的字段名
       key: entry.key,
       content: entry.content,
       enabled: entry.enabled,
@@ -4457,7 +4476,7 @@ const loadExistingEntriesList = async () => {
     console.log(`✅ 已加载 ${loadExistingEntries.value.length} 个条目`);
   } catch (error) {
     console.error('❌ 加载条目失败:', error);
-    window.toastr.error('加载条目失败');
+    window.toastr.error('加载条目失败: ' + (error as Error).message);
   }
 };
 
