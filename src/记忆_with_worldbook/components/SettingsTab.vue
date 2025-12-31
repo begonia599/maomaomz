@@ -13,11 +13,13 @@
       "
     >
       <div style="font-size: 32px; margin-bottom: 12px">⚠️</div>
-      <div style="color: #ef4444; font-size: 16px; font-weight: 600; margin-bottom: 8px">设置页面加载异常</div>
+      <div style="color: #ef4444; font-size: 16px; font-weight: 600; margin-bottom: 8px">
+        {{ t('settings_init_error') }}
+      </div>
       <div style="color: #94a3b8; font-size: 13px; margin-bottom: 12px; word-break: break-all">
         {{ initError }}
       </div>
-      <div style="color: #64748b; font-size: 12px">请尝试：1. 刷新页面 2. 清除浏览器缓存 3. 重启 SillyTavern</div>
+      <div style="color: #64748b; font-size: 12px">{{ t('settings_init_error_tips') }}</div>
     </div>
 
     <!-- 快速上手教程 -->
@@ -71,7 +73,7 @@
           "
         >
           <i class="fa-solid fa-cog" style="color: #6b8299; font-size: 16px"></i>
-          API 配置
+          {{ t('settings_api_config') }}
         </h3>
         <i
           :class="expandedSections['api'] ? 'fa-chevron-up' : 'fa-chevron-down'"

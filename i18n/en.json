@@ -93,6 +93,8 @@
   "pref_saved": "Preferences saved",
   "pref_image_too_large": "Image size cannot exceed 2MB",
 
+  "settings_init_error": "Settings page loading error",
+  "settings_init_error_tips": "Try: 1. Refresh page 2. Clear browser cache 3. Restart SillyTavern",
   "settings_api_config": "API Configuration",
   "settings_api_provider": "API Provider",
   "settings_api_endpoint": "API Endpoint",

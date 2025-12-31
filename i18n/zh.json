@@ -93,6 +93,8 @@
   "pref_saved": "偏好设置已保存",
   "pref_image_too_large": "图片大小不能超过 2MB",
 
+  "settings_init_error": "设置页面加载异常",
+  "settings_init_error_tips": "请尝试：1. 刷新页面 2. 清除浏览器缓存 3. 重启 SillyTavern",
   "settings_api_config": "API 配置",
   "settings_api_provider": "API 提供商",
   "settings_api_endpoint": "API 端点",
