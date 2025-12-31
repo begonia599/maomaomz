@@ -1904,6 +1904,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from '../i18n';
 import {
   getTavernApiConfig,
   getTavernApiConfigForDisplay,
