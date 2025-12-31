@@ -26,6 +26,18 @@
   "tab_tools": "Tools",
   "tab_settings": "Settings",
   "tab_preferences": "Preferences",
+  "tab_summary_history": "History",
+  "tab_table": "Table",
+  "tab_greetings": "Greetings",
+  "tab_status_bar_page": "Page Status",
+  "tab_status_bar_gen": "Status Bar",
+  "tab_frontend_project": "Frontend",
+  "tab_tools_template": "Tools",
+  "tab_token_stats": "Token Stats",
+  "tab_help": "Help",
+
+  "panel_title": "Maomaomz Tools",
+  "panel_warning": "Non-commercial | No resale",
 
   "pref_title": "Preferences",
   "pref_subtitle": "Customize your experience",

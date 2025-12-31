@@ -45,10 +45,10 @@
               WebkitTextFillColor: 'transparent',
               letterSpacing: '0.5px',
             }"
-            >猫猫的小破烂</span
+            >{{ t('panel_title') }}</span
           >
           <span style="font-size: 11px; color: #7a9bb8; font-weight: 500; letter-spacing: 0.5px; opacity: 0.8"
-            >⚠️ 禁止商业化 | 禁止倒卖 ⚠️</span
+            >⚠️ {{ t('panel_warning') }} ⚠️</span
           >
         </div>
       </div>
@@ -237,7 +237,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from '../i18n';
 import { minimizeMemoryPanel } from '../浮动面板';
+import ErrorBoundary from './ErrorBoundary.vue';
 import GreetingsTab from './GreetingsTab.vue';
 import HelpTab from './HelpTab.vue';
 import MvuBetaTab from './MvuBetaTab.vue';
@@ -251,21 +253,24 @@ import TableTab from './TableTab.vue';
 import TokenStatsTab from './TokenStatsTab.vue';
 import ToolsTab from './ToolsTab.vue';
 
+// 国际化
+const { t } = useI18n();
+
 // 标签页配置
-const tabs = [
-  { key: 'settings', label: '设置', icon: 'fa-solid fa-cog' },
-  { key: 'preferences', label: '偏好', icon: 'fa-solid fa-sliders' },
-  { key: 'summary', label: '历史总结', icon: 'fa-solid fa-list' },
-  { key: 'table', label: '表格', icon: 'fa-solid fa-table' },
-  { key: 'greetings', label: '开场白', icon: 'fa-solid fa-comments' },
-  { key: 'regex', label: '翻页状态栏', icon: 'fa-solid fa-book-open' },
-  { key: 'status', label: '状态栏生成', icon: 'fa-solid fa-chart-bar' },
-  { key: 'project', label: '前端项目', icon: 'fa-solid fa-laptop-code' },
-  { key: 'tools', label: '工具模板', icon: 'fa-solid fa-tools' },
-  { key: 'token', label: 'Token 统计', icon: 'fa-solid fa-chart-pie' },
+const tabs = computed(() => [
+  { key: 'settings', label: t('tab_settings'), icon: 'fa-solid fa-cog' },
+  { key: 'preferences', label: t('tab_preferences'), icon: 'fa-solid fa-sliders' },
+  { key: 'summary', label: t('tab_summary_history'), icon: 'fa-solid fa-list' },
+  { key: 'table', label: t('tab_table'), icon: 'fa-solid fa-table' },
+  { key: 'greetings', label: t('tab_greetings'), icon: 'fa-solid fa-comments' },
+  { key: 'regex', label: t('tab_status_bar_page'), icon: 'fa-solid fa-book-open' },
+  { key: 'status', label: t('tab_status_bar_gen'), icon: 'fa-solid fa-chart-bar' },
+  { key: 'project', label: t('tab_frontend_project'), icon: 'fa-solid fa-laptop-code' },
+  { key: 'tools', label: t('tab_tools_template'), icon: 'fa-solid fa-tools' },
+  { key: 'token', label: t('tab_token_stats'), icon: 'fa-solid fa-chart-pie' },
   { key: 'mvu', label: 'MVU Beta', icon: 'fa-solid fa-flask' },
-  { key: 'help', label: '帮助', icon: 'fa-solid fa-question-circle' },
-];
+  { key: 'help', label: t('tab_help'), icon: 'fa-solid fa-question-circle' },
+]);
 
 const activeTab = ref<
   | 'settings'
@@ -426,7 +431,7 @@ const switchTab = (tabKey: string) => {
 
 // 当前标签信息（用于移动端头部展示）
 const currentTab = computed(() => {
-  return tabs.find(tab => tab.key === activeTab.value) ?? tabs[0];
+  return tabs.value.find(tab => tab.key === activeTab.value) ?? tabs.value[0];
 });
 
 // 切换移动端菜单展开状态

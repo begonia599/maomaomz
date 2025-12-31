@@ -26,6 +26,18 @@
   "tab_tools": "工具箱",
   "tab_settings": "设置",
   "tab_preferences": "偏好",
+  "tab_summary_history": "历史总结",
+  "tab_table": "表格",
+  "tab_greetings": "开场白",
+  "tab_status_bar_page": "翻页状态栏",
+  "tab_status_bar_gen": "状态栏生成",
+  "tab_frontend_project": "前端项目",
+  "tab_tools_template": "工具模板",
+  "tab_token_stats": "Token 统计",
+  "tab_help": "帮助",
+
+  "panel_title": "猫猫的小破烂",
+  "panel_warning": "禁止商业化 | 禁止倒卖",
 
   "pref_title": "偏好设置",
   "pref_subtitle": "自定义你的使用体验",
