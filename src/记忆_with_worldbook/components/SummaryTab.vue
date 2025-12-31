@@ -35,14 +35,14 @@
           gap: 8px;
         "
       >
-        📝 历史总结记录
+        📝 {{ t('summary_history_title') }}
       </h3>
       <div class="header-actions" style="display: flex; align-items: center; gap: 10px">
         <span
           v-if="summary_history.length > 0"
           class="count-badge"
           style="background: #546b83; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px"
-          >{{ summary_history.length }} 条记录</span
+          >{{ summary_history.length }} {{ t('summary_records') }}</span
         >
         <button
           style="
@@ -60,7 +60,7 @@
           "
           @click="handleRefreshData"
         >
-          <i class="fa-solid fa-refresh"></i> 刷新数据
+          <i class="fa-solid fa-refresh"></i> {{ t('refresh_data') }}
         </button>
         <button
           v-if="summary_history.length >= 2"
@@ -81,7 +81,7 @@
           @click="handleMegaSummary"
         >
           <i :class="isMegaSummarizing ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-layer-group'"></i>
-          {{ isMegaSummarizing ? '生成中...' : '生成大总结' }}
+          {{ isMegaSummarizing ? t('generating') : t('generate_mega_summary') }}
         </button>
         <button
           style="
@@ -99,7 +99,7 @@
           "
           @click="createSummaryWorldbook"
         >
-          <i class="fa-solid fa-plus"></i> 创建总结世界书
+          <i class="fa-solid fa-plus"></i> {{ t('create_worldbook') }}
         </button>
         <button
           v-if="summary_history.length > 0"
@@ -118,7 +118,7 @@
           "
           @click="exportAllSummaries"
         >
-          <i class="fa-solid fa-download"></i> 导出全部
+          <i class="fa-solid fa-download"></i> {{ t('export_all') }}
         </button>
         <button
           v-if="summary_history.length > 0"
@@ -137,7 +137,7 @@
           "
           @click="clearAllSummaries"
         >
-          <i class="fa-solid fa-trash-can"></i> 清空全部
+          <i class="fa-solid fa-trash-can"></i> {{ t('clear_all') }}
         </button>
         <button
           style="
@@ -155,7 +155,7 @@
           "
           @click="showDebugPanel"
         >
-          <i class="fa-solid fa-bug"></i> 调试工具
+          <i class="fa-solid fa-bug"></i> {{ t('debug_tools') }}
         </button>
       </div>
     </div>

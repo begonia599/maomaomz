@@ -181,5 +181,15 @@
   "msg_please_select": "请先选择",
   "msg_loading_failed": "加载失败",
   "msg_tavern_helper_unavailable": "TavernHelper 不可用",
-  "msg_save_failed": "保存失败"
+  "msg_save_failed": "保存失败",
+
+  "summary_history_title": "历史总结记录",
+  "summary_records": "条记录",
+  "refresh_data": "刷新数据",
+  "generating": "生成中...",
+  "generate_mega_summary": "生成大总结",
+  "create_worldbook": "创建总结世界书",
+  "export_all": "导出全部",
+  "clear_all": "清空全部",
+  "debug_tools": "调试工具"
 }

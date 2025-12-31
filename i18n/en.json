@@ -181,5 +181,15 @@
   "msg_please_select": "Please select first",
   "msg_loading_failed": "Loading failed",
   "msg_tavern_helper_unavailable": "TavernHelper is not available",
-  "msg_save_failed": "Save failed"
+  "msg_save_failed": "Save failed",
+
+  "summary_history_title": "Summary History",
+  "summary_records": "records",
+  "refresh_data": "Refresh",
+  "generating": "Generating...",
+  "generate_mega_summary": "Generate Mega Summary",
+  "create_worldbook": "Create Worldbook",
+  "export_all": "Export All",
+  "clear_all": "Clear All",
+  "debug_tools": "Debug Tools"
 }
