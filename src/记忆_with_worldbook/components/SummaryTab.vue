@@ -193,7 +193,7 @@
           @click="toggleExpanded(index)"
         >
           <div class="history-info" style="display: flex; align-items: center; gap: 10px; flex: 1">
-            <span class="history-number" style="color: #4a9eff; font-weight: bold">#{{ index + 1 }}</span>
+            <span class="history-number" style="color: #4a9eff; font-weight: bold">#{{ Number(index) + 1 }}</span>
             <span class="history-range" style="color: #888; font-size: 12px"
               >楼层 {{ item.start_id }} - {{ item.end_id }}</span
             >
@@ -301,10 +301,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from '../i18n';
 import { useSummaryHistoryStore } from '../settings';
 import { getChatIdSafe, getScriptIdSafe } from '../utils';
 import { summarizeText } from '../总结功能';
 import QuickGuide from './QuickGuide.vue';
+
+// 国际化
+const { t } = useI18n();
 
 const historyStore = useSummaryHistoryStore();
 
