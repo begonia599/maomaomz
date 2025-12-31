@@ -4227,12 +4227,16 @@
 import { debounce } from 'lodash';
 import { storeToRefs } from 'pinia';
 import { computed, onBeforeUnmount, onMounted, ref, watch, type Ref } from 'vue';
+import { useI18n } from '../i18n';
 import { detectApiProvider, filterApiParams, normalizeApiEndpoint, useSettingsStore } from '../settings';
 import { copyToClipboard, getScriptIdSafe } from '../utils';
 import { callAIWithTavernSupport } from '../utils/api';
 import { translateError } from '../utils/error-handler';
 import QuickGuide from './QuickGuide.vue';
 import UIGenerator from './UIGenerator.vue';
+
+// 国际化
+const { t } = useI18n();
 
 const settingsStore = useSettingsStore();
 const { settings } = storeToRefs(settingsStore);
