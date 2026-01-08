@@ -22,13 +22,117 @@ if (typeof window !== 'undefined' && typeof (window as any).z === 'undefined') {
   console.log('✅ zod 已暴露到全局作用域，避免插件冲突');
 }
 
+// 🔧 移动端调试面板 - 在屏幕上显示日志和错误
+const debugLogs: string[] = [];
+const MAX_DEBUG_LOGS = 50;
+
+function addDebugLog(msg: string, type: 'info' | 'error' | 'warn' = 'info') {
+  const time = new Date().toLocaleTimeString();
+  const prefix = type === 'error' ? '❌' : type === 'warn' ? '⚠️' : '📝';
+  debugLogs.push(`[${time}] ${prefix} ${msg}`);
+  if (debugLogs.length > MAX_DEBUG_LOGS) debugLogs.shift();
+  updateDebugPanel();
+}
+
+function updateDebugPanel() {
+  const panel = document.getElementById('maomaomz-debug-panel');
+  if (panel) {
+    const content = panel.querySelector('.debug-content');
+    if (content) {
+      content.innerHTML = debugLogs.map(log => `<div>${log}</div>`).join('');
+      content.scrollTop = content.scrollHeight;
+    }
+  }
+}
+
+function createDebugPanel() {
+  // 检测是否是移动端
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (!isMobile) return; // 只在移动端显示
+
+  const panel = document.createElement('div');
+  panel.id = 'maomaomz-debug-panel';
+  panel.innerHTML = `
+    <style>
+      #maomaomz-debug-panel {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        max-height: 200px;
+        background: rgba(0,0,0,0.9);
+        color: #0f0;
+        font-family: monospace;
+        font-size: 11px;
+        border-radius: 8px;
+        z-index: 999999;
+        overflow: hidden;
+      }
+      #maomaomz-debug-panel .debug-header {
+        background: #333;
+        padding: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      #maomaomz-debug-panel .debug-content {
+        padding: 8px;
+        max-height: 150px;
+        overflow-y: auto;
+        word-break: break-all;
+      }
+      #maomaomz-debug-panel .debug-content div {
+        margin-bottom: 4px;
+        border-bottom: 1px solid #333;
+        padding-bottom: 4px;
+      }
+      #maomaomz-debug-panel button {
+        background: #555;
+        color: #fff;
+        border: none;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+    </style>
+    <div class="debug-header">
+      <span>🐱 猫猫插件调试</span>
+      <div>
+        <button onclick="document.getElementById('maomaomz-debug-panel').style.display='none'">隐藏</button>
+      </div>
+    </div>
+    <div class="debug-content"></div>
+  `;
+  document.body.appendChild(panel);
+  addDebugLog('调试面板已创建');
+  addDebugLog(`UA: ${navigator.userAgent.substring(0, 80)}...`);
+}
+
+// 捕获全局错误
+window.addEventListener('error', (e) => {
+  addDebugLog(`JS错误: ${e.message} @ ${e.filename}:${e.lineno}`, 'error');
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  addDebugLog(`Promise错误: ${e.reason}`, 'error');
+});
+
+// 暴露到全局
+(window as any).__maomaomz_debug = { addDebugLog, debugLogs };
+
 $(() => {
+  // � 创建移动端载调试面板
+  createDebugPanel();
+  addDebugLog('jQuery ready, 开始初始化');
+
   // 🔒 防止重复加载：检查全局标记
   if ((window as any).__MAOMAOMZ_LOADED__) {
+    addDebugLog('插件已加载，跳过重复初始化', 'warn');
     console.log('⚠️ 插件已加载，跳过重复初始化');
     return;
   }
   (window as any).__MAOMAOMZ_LOADED__ = true;
+  addDebugLog('设置加载标记');
 
   // 🔥 暴露调试命令（即使授权失败也可用）
   (window as any).maomaomz = (window as any).maomaomz || {};
@@ -50,9 +154,13 @@ $(() => {
   console.log('💡 调试命令已就绪: maomaomz.status()');
 
   setTimeout(async () => {
+    addDebugLog('setTimeout 触发，开始主初始化');
     console.log('====================================');
     console.log('🐱 猫猫的记忆管理工具开始初始化');
     console.log('====================================');
+    addDebugLog(`jQuery: ${typeof $ !== 'undefined' ? '✅' : '❌'}`);
+    addDebugLog(`TavernHelper: ${typeof (window as any).TavernHelper !== 'undefined' ? '✅' : '❌'}`);
+    addDebugLog(`SillyTavern: ${typeof SillyTavern !== 'undefined' ? '✅' : '❌'}`);
     console.log('📍 环境信息:');
     console.log('  - URL:', window.location.href);
     console.log('  - 浏览器:', navigator.userAgent.substring(0, 100));
@@ -69,8 +177,16 @@ $(() => {
     }, 100);
 
     // 🔐 UI加载后进行授权验证
+    addDebugLog('开始授权验证...');
     console.log('🔐 开始授权验证...');
-    const authorized = await checkAuthorization();
+    let authorized = false;
+    try {
+      authorized = await checkAuthorization();
+      addDebugLog(`授权结果: ${authorized ? '✅通过' : '❌失败'}`);
+    } catch (authError) {
+      addDebugLog(`授权异常: ${authError}`, 'error');
+      console.error('授权异常:', authError);
+    }
 
     if (!authorized) {
       console.error('❌ 授权验证失败，插件功能已被禁用');
@@ -136,11 +252,15 @@ $(() => {
 
     // 🔐 加载 UI 模块（带超时保护和错误处理）
     try {
+      addDebugLog('加载浮动面板模块...');
       await withTimeout(import('./浮动面板'), 10000, null, '浮动面板模块');
+      addDebugLog('加载导航按钮模块...');
       await withTimeout(import('./添加导航按钮'), 10000, null, '导航按钮模块');
       (window as any).__MAOMAOMZ_UI_LOADED__ = true;
+      addDebugLog('✅ UI 模块加载完成');
       console.log('✅ UI 模块已加载');
     } catch (e) {
+      addDebugLog(`UI模块加载失败: ${e}`, 'error');
       console.error('❌ UI 模块加载失败:', e);
       (window as any).toastr?.error('❌ 插件 UI 加载失败，请刷新页面重试', '加载错误', { timeOut: 5000 });
     }
