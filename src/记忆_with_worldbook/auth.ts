@@ -89,24 +89,25 @@ const capturedRealEndpoints: Set<string> = new Set();
 
 /**
  * 🔥 拦截网络请求，捕获真实的 API 端点
- * 🔧 修复：添加移动端检测，在移动端跳过拦截以避免 WebView 兼容性问题
+ * 🔧 修复：在所有移动端跳过拦截，避免 WebView 兼容性问题
  */
 function installNetworkInterceptor(): void {
   // 避免重复安装
   if ((window as any).__maomaomz_interceptor_installed) return;
   (window as any).__maomaomz_interceptor_installed = true;
 
-  // 🔧 移动端检测：在某些移动端 WebView 中跳过拦截
+  // 🔧 移动端检测：在所有移动端跳过网络拦截器
+  // 原因：移动端 WebView（尤其是安卓）对 fetch/XHR 拦截支持不稳定
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isProblematicWebView = isMobile && (
-    // 某些 Android WebView 不支持拦截
-    /wv\)/.test(navigator.userAgent) ||
-    // iOS WKWebView 可能有问题
-    (/iPhone|iPad|iPod/.test(navigator.userAgent) && !/Safari/.test(navigator.userAgent))
-  );
+  
+  // 额外检测：触摸屏设备 + 小屏幕
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth <= 768;
+  const isMobileDevice = isMobile || (isTouchDevice && isSmallScreen);
 
-  if (isProblematicWebView) {
-    console.log('📱 检测到移动端 WebView，跳过网络拦截器以避免兼容性问题');
+  if (isMobileDevice) {
+    console.log('📱 检测到移动端设备，跳过网络拦截器以避免兼容性问题');
+    console.log('📱 设备信息:', { isMobile, isTouchDevice, isSmallScreen, userAgent: navigator.userAgent.substring(0, 100) });
     return;
   }
 
