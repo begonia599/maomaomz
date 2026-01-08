@@ -4,6 +4,7 @@
  */
 
 import packageJson from '../../package.json';
+import { fetchWithTimeout } from './utils/fetchWithTimeout';
 
 // 当前版本号（从 package.json 读取）
 export const CURRENT_VERSION = packageJson.version;
@@ -61,13 +62,16 @@ async function fetchLatestCommit(): Promise<{ commit: string; message: string } 
     try {
       console.log(`🔍 正在从 ${source.name} 获取最新 commit...`);
 
-      const response = await fetch(source.url, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(8000),
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
+      const response = await fetchWithTimeout(
+        source.url,
+        {
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+          },
         },
-      });
+        8000,
+      );
 
       if (!response.ok) {
         console.warn(`⚠️ ${source.name} 请求失败 (${response.status})`);
@@ -102,13 +106,16 @@ async function fetchRemoteVersion(): Promise<string | null> {
   const apiUrl = `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/contents/manifest.json`;
 
   try {
-    const response = await fetch(apiUrl, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(8000),
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
+    const response = await fetchWithTimeout(
+      apiUrl,
+      {
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+        },
       },
-    });
+      8000,
+    );
 
     if (response.ok) {
       const data = await response.json();
@@ -140,7 +147,7 @@ async function fetchRemoteVersion(): Promise<string | null> {
 
   for (const url of fallbackUrls) {
     try {
-      const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      const response = await fetchWithTimeout(url, { cache: 'no-store' }, 5000);
       if (response.ok) {
         const data = await response.json();
         // 🔒 防注入：验证版本号格式

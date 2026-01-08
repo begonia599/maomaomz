@@ -147,7 +147,8 @@ export default defineConfig(({ mode }) => ({
             mangle: false,
           },
 
-    target: 'esnext',
+    // 移动端 WebView（Android/iOS）对最新语法支持不一致，使用更保守的目标以避免直接语法解析失败。
+    target: 'es2018',
   },
 
   define: {

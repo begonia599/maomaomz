@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from './fetchWithTimeout';
+
 // API 端点类型
 export type ApiEndpointType = 'direct' | 'cors-proxy' | 'reverse-proxy' | 'local' | 'cloudflare' | 'custom';
 
@@ -216,10 +218,13 @@ export function detectApiProvider(endpoint: string): string | null {
 export async function testCorsProxy(proxyUrl: string): Promise<boolean> {
   try {
     const testUrl = proxyUrl + encodeURIComponent('https://api.github.com');
-    const response = await fetch(testUrl, {
-      method: 'GET',
-      signal: AbortSignal.timeout(5000),
-    });
+      const response = await fetchWithTimeout(
+        testUrl,
+        {
+          method: 'GET',
+        },
+        5000,
+      );
     return response.ok;
   } catch {
     return false;
@@ -233,10 +238,13 @@ export async function getAvailableCorsProxies(): Promise<string[]> {
   for (const proxy of CORS_PROXIES) {
     if (proxy.active && proxy.testUrl) {
       try {
-        const response = await fetch(proxy.testUrl, {
-          method: 'GET',
-          signal: AbortSignal.timeout(3000),
-        });
+          const response = await fetchWithTimeout(
+            proxy.testUrl,
+            {
+              method: 'GET',
+            },
+            3000,
+          );
         if (response.ok) {
           available.push(proxy.url);
         }
