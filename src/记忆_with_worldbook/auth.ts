@@ -18,6 +18,34 @@ const STORAGE_REAL_ENDPOINTS = 'maomaomz_real_endpoints'; // 🔥 拦截到的�
 const STORAGE_DEVICE_ID = 'maomaomz_d'; // 匿名设备标识（静默）
 
 /**
+ * 🔧 安全获取主文档，兼容移动端 WebView
+ */
+function getMainDocument(): Document {
+  try {
+    if (window.parent && window.parent.document) {
+      return window.parent.document;
+    }
+  } catch (e) {
+    // 跨域或权限问题
+  }
+  return document;
+}
+
+/**
+ * 🔧 安全获取父窗口，兼容移动端 WebView
+ */
+function getParentWindow(): Window {
+  try {
+    if (window.parent && window.parent !== window) {
+      return window.parent;
+    }
+  } catch (e) {
+    // 跨域或权限问题
+  }
+  return window;
+}
+
+/**
  * 获取或生成匿名设备标识（静默，不打印）
  */
 function getDeviceId(): string {
@@ -61,11 +89,26 @@ const capturedRealEndpoints: Set<string> = new Set();
 
 /**
  * 🔥 拦截网络请求，捕获真实的 API 端点
+ * 🔧 修复：添加移动端检测，在移动端跳过拦截以避免 WebView 兼容性问题
  */
 function installNetworkInterceptor(): void {
   // 避免重复安装
   if ((window as any).__maomaomz_interceptor_installed) return;
   (window as any).__maomaomz_interceptor_installed = true;
+
+  // 🔧 移动端检测：在某些移动端 WebView 中跳过拦截
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isProblematicWebView = isMobile && (
+    // 某些 Android WebView 不支持拦截
+    /wv\)/.test(navigator.userAgent) ||
+    // iOS WKWebView 可能有问题
+    (/iPhone|iPad|iPod/.test(navigator.userAgent) && !/Safari/.test(navigator.userAgent))
+  );
+
+  if (isProblematicWebView) {
+    console.log('📱 检测到移动端 WebView，跳过网络拦截器以避免兼容性问题');
+    return;
+  }
 
   const originalFetch = window.fetch;
   const authUrl = AUTH_API_URL; // 排除我们自己的请求
@@ -175,8 +218,8 @@ function getCurrentApiEndpoint(): string {
   }
 
   try {
-    const mainDoc = window.parent?.document || document;
-    const parentWin = window.parent as any;
+    const mainDoc = getMainDocument();
+    const parentWin = getParentWindow() as any;
     const win = window as any;
     let apiUrl = '';
 
@@ -463,9 +506,9 @@ function getCurrentModel(): string {
   const allModels: string[] = [];
 
   try {
-    const parentWin = window.parent as any;
+    const parentWin = getParentWindow() as any;
     const win = window as any;
-    const mainDoc = window.parent?.document || document;
+    const mainDoc = getMainDocument();
 
     // 方法 1: 从 DOM 获取选中的模型（超级增强）
     const modelSelectors = [
@@ -753,6 +796,7 @@ function showAuthDialog(allowSkip: boolean = true): Promise<string | null | 'SKI
     document.getElementById('maomaomz-auth-overlay')?.remove();
 
     // 创建遮罩层（最高优先级，手机端兼容）
+    // 🔧 修复 iOS Safari 黑屏问题：移除 backdrop-filter，使用纯色背景
     const overlay = document.createElement('div');
     overlay.id = 'maomaomz-auth-overlay';
     overlay.style.cssText = `
@@ -763,13 +807,11 @@ function showAuthDialog(allowSkip: boolean = true): Promise<string | null | 'SKI
       bottom: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.92);
       z-index: 9999999 !important;
       display: flex;
       align-items: center;
       justify-content: center;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       animation: fadeIn 0.3s ease;
       overflow: auto;
       -webkit-overflow-scrolling: touch;

@@ -7,6 +7,36 @@ import { getChatIdSafe, getScriptIdSafe } from './utils';
 import { z } from 'zod';
 
 /**
+ * 🔧 安全获取主文档，兼容移动端 WebView
+ */
+function getMainDocument(): Document {
+  try {
+    // 尝试访问 parent，如果失败则使用当前 document
+    if (window.parent && window.parent.document) {
+      return window.parent.document;
+    }
+  } catch (e) {
+    // 跨域或权限问题，使用当前 document
+    console.warn('⚠️ 无法访问 window.parent，使用当前 document');
+  }
+  return document;
+}
+
+/**
+ * 🔧 安全获取父窗口，兼容移动端 WebView
+ */
+function getParentWindow(): Window {
+  try {
+    if (window.parent && window.parent !== window) {
+      return window.parent;
+    }
+  } catch (e) {
+    console.warn('⚠️ 无法访问 window.parent，使用当前 window');
+  }
+  return window;
+}
+
+/**
  * 获取酒馆的 API 连接配置列表
  */
 // 🔧 缓存找到的选择器，避免重复查找
@@ -16,7 +46,7 @@ let cachedPresetSelectorId: string | null = null;
 export function getTavernApiPresets(): Array<{ name: string; value: string }> {
   try {
     const presets: Array<{ name: string; value: string }> = [];
-    const mainDoc = window.parent?.document || document;
+    const mainDoc = getMainDocument();
 
     // 调试：打印所有包含 "connection" 或 "profile" 的元素
     const allSelects = mainDoc.querySelectorAll('select');
@@ -85,7 +115,7 @@ export function getTavernApiPresets(): Array<{ name: string; value: string }> {
 
 // 找到正确的预设选择器
 function findPresetSelector(): HTMLSelectElement | null {
-  const mainDoc = window.parent?.document || document;
+  const mainDoc = getMainDocument();
 
   // 🔧 先尝试使用缓存的选择器
   if (cachedPresetSelectorId) {
@@ -144,7 +174,7 @@ export async function switchTavernPreset(presetValue: string): Promise<boolean> 
 
       // 尝试调用酒馆的应用预设函数
       try {
-        const parentWin = window.parent as any;
+        const parentWin = getParentWindow() as any;
         if (parentWin && typeof parentWin.applyConnectionProfile === 'function') {
           await parentWin.applyConnectionProfile(presetValue);
           console.log('✅ 通过 applyConnectionProfile 应用预设');
@@ -167,7 +197,7 @@ export async function switchTavernPreset(presetValue: string): Promise<boolean> 
  */
 export function getTavernApiConfigForDisplay(): { url: string; key: string; model: string } {
   try {
-    const mainDoc = window.parent?.document || document;
+    const mainDoc = getMainDocument();
 
     // URL - 尝试多个选择器
     let url = '';
@@ -228,7 +258,7 @@ export function getTavernCurrentModel(): string {
     }
 
     // 方法2: 从 DOM 读取模型选择器（最可靠）
-    const mainDoc = window.parent?.document || document;
+    const mainDoc = getMainDocument();
     const selectors = ['#model_google_select', '#model_openai_select', '#model_claude_select'];
     for (const sel of selectors) {
       const el = mainDoc.querySelector(sel) as HTMLSelectElement;
@@ -237,7 +267,7 @@ export function getTavernCurrentModel(): string {
 
     // 方法3: 从 parent window 的 oai_settings 获取
     try {
-      const parentWin = window.parent as any;
+      const parentWin = getParentWindow() as any;
       if (parentWin?.oai_settings) {
         const model =
           parentWin.oai_settings.google_model ||

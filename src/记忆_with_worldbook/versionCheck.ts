@@ -246,8 +246,7 @@ export function showUpdateDialog(
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(10, 10, 20, 0.95);
-      backdrop-filter: blur(8px);
+      background: rgba(10, 10, 20, 0.98);
       z-index: 9999998 !important;
       display: flex;
       align-items: center;
